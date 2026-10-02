@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shop · AutoType</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="shop">
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a class="brand" href="index.html">
+      <span class="brand-logo"><img src="assets/logo.png" alt="AutoType"></span>
+      <span>AutoType</span>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" data-nav="home">Home</a>
+      <a href="play.html" data-nav="play">Play</a>
+      <a href="tournaments.html" data-nav="tournaments">Tournaments</a>
+      <a href="shop.html" data-nav="shop">Shop</a>
+      <a href="friends.html" data-nav="friends">Friends</a>
+      <details class="nav-more">
+        <summary>More</summary>
+        <div class="nav-more-menu">
+          <a href="create.html" data-nav="create">Create</a>
+          <a href="predictions.html" data-nav="predictions">Prediction Lab</a>
+          <a href="achievements.html" data-nav="achievements">Achievements</a>
+          <a href="leaderboard.html" data-nav="leaderboard">Leaderboard</a>
+          <a href="stats.html" data-nav="stats">Stats</a>
+          <a href="how-to.html" data-nav="help">How to Play</a>
+          <a href="settings.html" data-nav="settings">Settings</a>
+        </div>
+      </details>
+    </nav>
+    <div class="nav-spacer"></div>
+    <div class="nav-currency" id="navCurrency" hidden></div>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Open navigation">☰</button>
+    <div class="nav-account">
+      <button class="account-button" id="accountMenuButton"></button>
+      <div class="account-dropdown" id="accountDropdown" hidden></div>
+    </div>
+  </div>
+</header>
+<nav class="mobile-nav" id="mobileNav">
+  <a href="index.html">Home</a>
+  <a href="play.html">Play</a>
+  <a href="tournaments.html">Tournaments</a>
+  <a href="shop.html">Shop</a>
+  <a href="friends.html">Friends</a>
+  <a href="create.html">Create</a>
+  <a href="predictions.html">Prediction Lab</a>
+  <a href="achievements.html">Achievements</a>
+  <a href="leaderboard.html">Leaderboard</a>
+  <a href="stats.html">Stats</a>
+  <a href="how-to.html">How to Play</a>
+  <a href="settings.html">Settings</a>
+</nav>
+
+<main class="container page shop-page shop-v3">
+  <header class="shop-v3-head">
+    <div>
+      <div class="eyebrow">AutoType cosmetics</div>
+      <h1>Shop</h1>
+      <p>Collections and effects that actually change how your profile or game looks.</p>
+    </div>
+    <div class="shop-v3-wallet" id="shopWallet">
+      <button class="shop-wallet-item shop-wallet-coins" id="getCoinsButton" type="button" title="Get Coins">
+        <span>◉</span><strong id="shopCoins">0</strong><small>Coins · Get more</small>
+      </button>
+      <a href="tournaments.html" class="shop-wallet-item"><span>◆</span><strong id="shopTickets">0</strong><small>Tickets</small></a>
+      <button class="shop-wallet-item" data-shop-view-jump="crates" type="button"><span>▣</span><strong id="shopCrateTokens">0</strong><small>Crate Tokens</small></button>
+    </div>
+  </header>
+
+  <nav class="shop-v3-tabs" id="shopMainTabs">
+    <button class="active" data-shop-view="featured">Featured</button>
+    <button data-shop-view="cosmetics">Cosmetics</button>
+    <button data-shop-view="crates">Crates <span id="crateTabCount">0</span></button>
+  </nav>
+
+  <section class="shop-view" id="shopFeaturedView">
+    <div class="featured-collection" id="featuredCollection"></div>
+
+    <div class="shop-v3-section-head">
+      <div><span class="section-kicker">COLLECTIONS</span><h2>Complete looks</h2></div>
+      <span>Bundle savings · one-click equip</span>
+    </div>
+    <div class="collection-grid" id="collectionGrid"></div>
+
+    <div class="shop-v3-section-head">
+      <div><span class="section-kicker">POPULAR</span><h2>Popular right now</h2></div>
+      <button class="shop-text-button" data-open-cosmetics type="button">Browse all cosmetics →</button>
+    </div>
+    <div class="popular-grid" id="popularGrid"></div>
+  </section>
+
+  <section class="shop-view" id="shopCosmeticsView" hidden>
+    <div class="shop-v3-section-head">
+      <div><span class="section-kicker">COSMETICS</span><h2>Choose what players can actually notice</h2></div>
+      <a href="profile.html#inventory">Manage inventory →</a>
+    </div>
+    <div class="cosmetic-family-tabs" id="cosmeticFamilyTabs"></div>
+    <div class="shop-grid shop-v3-grid" id="shopGrid"></div>
+  </section>
+
+  <section class="shop-view" id="shopCratesView" hidden>
+    <div class="shop-v3-section-head">
+      <div><span class="section-kicker">CRATES</span><h2>Tournament reward crates</h2><p>Crate Tokens are earned from tournaments and special events.</p></div>
+      <div class="crate-key-balance">▣ <strong id="crateKeyBalance">0</strong> tokens</div>
+    </div>
+    <div class="crate-grid" id="crateGrid"></div>
+
+  </section>
+
+  <div class="modal-backdrop crate-modal-backdrop" id="crateOpeningModal" hidden>
+    <section class="crate-opening shop-v3-crate-opening crate-modal" id="crateOpening">
+      <div class="crate-opening-head">
+        <div><span class="section-kicker">OPENING</span><h2 id="crateOpeningName">Crate</h2></div>
+        <button class="button button-quiet" id="closeCrateOpening">Close</button>
+      </div>
+      <div class="crate-machine">
+        <div class="crate-reel-window">
+          <div class="crate-pointer"></div>
+          <div class="crate-reel" id="crateReel"></div>
+        </div>
+      </div>
+      <div class="crate-reveal" id="crateReveal" hidden></div>
+      <div class="crate-opening-actions">
+        <button class="button button-primary" id="openCrateButton">Open crate · 1 ▣</button>
+        <span>Visible odds · duplicate protection · ~5 second reveal</span>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-backdrop coin-store-backdrop" id="coinPackModal" hidden>
+    <div class="modal coin-store-modal" role="dialog" aria-modal="true" aria-labelledby="coinStoreTitle">
+      <div class="modal-head">
+        <div>
+          <span class="section-kicker">CURRENCY</span>
+          <h2 id="coinStoreTitle">Get Coins</h2>
+        </div>
+        <button class="modal-close" id="closeCoinPackModal" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="coin-store-current">
+          <span>Current balance</span>
+          <strong>◉ <span id="coinStoreBalance">0</span></strong>
+        </div>
+
+        <div class="coin-store-grid">
+          <article>
+            <div class="coin-stack">◉</div>
+            <strong>500</strong>
+            <span>Coins</span>
+            <b>$0.99</b>
+            <button class="button button-primary" disabled>Coming later</button>
+          </article>
+          <article class="featured-pack">
+            <div class="pack-badge">Popular</div>
+            <div class="coin-stack">◉</div>
+            <strong>1,800</strong>
+            <span>Coins</span>
+            <b>$2.99</b>
+            <button class="button button-primary" disabled>Coming later</button>
+          </article>
+          <article>
+            <div class="coin-stack">◉</div>
+            <strong>3,500</strong>
+            <span>Coins</span>
+            <b>$4.99</b>
+            <button class="button button-primary" disabled>Coming later</button>
+          </article>
+        </div>
+
+        <div class="coin-store-note">
+          <strong>What Coins are for</strong>
+          <span>Direct cosmetics and Collections only. Crate Tokens remain earned through tournaments and events.</span>
+        </div>
+        <p class="help">Payment is not connected in this local prototype yet.</p>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <span>AutoType · Competitive autocomplete typing</span>
+    <span>Local prototype · Accounts and social data stay on this device</span>
+  </div>
+</footer>
+<div class="toast"></div>
+<script src="core.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+  const account=AutoType.currentAccount();
+  const rarityColors={Default:"#8b949e",Common:"#8b949e",Uncommon:"#55b982",Rare:"#4aa9ff",Epic:"#b178ff",Legendary:"#e3b94e"};
+  const familyNames=["All","Profile","Arena Skins","Typing FX","Victory FX"];
+  let activeView="featured";
+  let activeFamily="All";
+  let selectedCrateId=null;
+  let opening=false;
+
+  const familyForItem=item=>{
+    if(["title","banner","frame"].includes(item.slot))return "Profile";
+    if(item.slot==="arena")return "Arena Skins";
+    if(["trail","cursor","predictor"].includes(item.slot))return "Typing FX";
+    if(item.slot==="result")return "Victory FX";
+    return item.category;
+  };
+
+  const purchasableItems=()=>AutoType.shopCatalog.filter(item=>item.price>0&&!item.collectionOnly&&!item.earnedOnly);
+
+  function renderWallet(){
+    const wallet=AutoType.currentWallet();
+    shopCoins.textContent=(wallet?.coins||0).toLocaleString();
+    const coinStoreBalance=document.querySelector("#coinStoreBalance");
+    if(coinStoreBalance)coinStoreBalance.textContent=(wallet?.coins||0).toLocaleString();
+    shopTickets.textContent=(wallet?.tickets||0).toLocaleString();
+    const tokens=wallet?.crateKeys||0;
+    crateKeyBalance.textContent=tokens.toLocaleString();
+    crateTabCount.textContent=tokens;
+    shopCrateTokens.textContent=tokens.toLocaleString();
+  }
+
+  function itemPreview(item){
+    if(item.slot==="banner")return `<div class="shop-profile-banner-preview" style="background:${item.css}"><small>PROFILE</small><strong>${AutoType.escapeHTML(account?AutoType.accountName(account):"Player")}</strong></div>`;
+    if(item.slot==="title")return `<div class="shop-title-preview"><small>PLAYER TITLE</small><strong>${AutoType.escapeHTML(item.value||item.name)}</strong></div>`;
+    if(item.slot==="frame")return `<div class="shop-mini-frame" style="--frame:${item.color}">A</div>`;
+    if(item.slot==="arena")return `<div class="shop-arena-preview" style="background:${item.background};border-color:${item.border};--arena-accent:${item.accent}"><small>ARENA</small><strong>${AutoType.escapeHTML(item.name)}</strong><span>mi<span>nutes</span></span></div>`;
+    if(item.slot==="trail")return `<div class="shop-trail-preview trail-demo-${item.effect}" style="--demo-color:${item.color}"><b>mi</b><i></i><i></i><i></i><i></i></div>`;
+    if(item.slot==="cursor")return `<div class="shop-fx-stage"><div class="shop-mini-cursor fx-${item.effect||"none"}" style="--demo-color:${item.color};background:${item.color}"></div><span>typing_</span></div>`;
+    if(item.slot==="predictor")return `<div class="shop-mini-word"><b>mi</b><span style="color:${item.color}">nutes</span></div>`;
+    if(item.slot==="result")return `<div class="shop-mini-result result-demo-${item.effect||"none"}">ROUND COMPLETE</div>`;
+    return `<div>${AutoType.escapeHTML(item.name)}</div>`;
+  }
+
+  function itemCard(item){
+    const wallet=AutoType.currentWallet();
+    const owned=wallet?.owned?.includes(item.id);
+    const equipped=wallet?.equipped?.[item.slot]===item.id;
+    const canAfford=AutoType.isDeveloper(account)||(wallet?.coins||0)>=item.price;
+
+    let action;
+    if(!account)action=`<a class="button button-secondary" href="account.html">Sign in</a>`;
+    else if(equipped)action=`<button class="button button-secondary" disabled>Equipped</button>`;
+    else if(owned)action=`<button class="button button-primary" data-equip="${item.id}">Equip</button>`;
+    else action=`<button class="button ${canAfford?"button-primary":"button-secondary"}" data-buy="${item.id}" ${canAfford?"":"disabled"}>${canAfford?`Buy · ${item.price.toLocaleString()} ◉`:`${item.price.toLocaleString()} ◉`}</button>`;
+
+    return `<article class="shop-item shop-v3-item ${equipped?"equipped":""}" style="--rarity:${rarityColors[item.rarity]||rarityColors.Default}">
+      <div class="shop-item-rarity">${item.rarity}</div>
+      <div class="shop-item-preview">${itemPreview(item)}</div>
+      <div class="shop-item-body">
+        <div class="shop-item-meta"><span>${familyForItem(item)}</span><h3>${AutoType.escapeHTML(item.name)}</h3></div>
+        <div class="shop-item-state">${equipped?"Equipped":owned?"Owned":`${item.price.toLocaleString()} ◉`}</div>
+      </div>
+      <div class="shop-item-action">${action}</div>
+    </article>`;
+  }
+
+  function bindItemActions(container){
+    container.querySelectorAll("[data-buy]").forEach(button=>button.addEventListener("click",()=>{
+      try{
+        const item=AutoType.purchaseShopItem(button.dataset.buy);
+        AutoType.toast(`${item.name} added to your inventory.`);
+        renderAll();
+      }catch(e){AutoType.toast(e.message)}
+    }));
+    container.querySelectorAll("[data-equip]").forEach(button=>button.addEventListener("click",()=>{
+      try{
+        const item=AutoType.equipShopItem(button.dataset.equip);
+        AutoType.toast(`${item.name} equipped.`);
+        renderAll();
+      }catch(e){AutoType.toast(e.message)}
+    }));
+  }
+
+  function collectionPreviewContent(collection,index=0){
+    const itemId=collection.items[index%collection.items.length];
+    const item=AutoType.shopCatalog.find(x=>x.id===itemId);
+    if(!item)return "";
+    return `<div class="collection-preview-item">${itemPreview(item)}<div class="collection-preview-caption"><span>${familyForItem(item)}</span><strong>${AutoType.escapeHTML(item.name)}</strong></div></div>`;
+  }
+
+  function collectionCard(collection,featured=false){
+    const missing=account?AutoType.collectionMissingItems(collection.id,account):collection.items;
+    const ownedCount=collection.items.length-missing.length;
+    const ownedAll=!!account&&!missing.length;
+    const price=AutoType.collectionPrice(collection.id,account);
+    const partial=!!account&&ownedCount>0&&!ownedAll;
+    const credit=Math.max(0,collection.price-price);
+    const itemNames=collection.items.map(id=>AutoType.shopCatalog.find(x=>x.id===id)?.name).filter(Boolean);
+
+    let action;
+    if(!account)action=`<a class="button button-primary" href="account.html">Sign in to collect</a>`;
+    else if(ownedAll)action=`<button class="button button-primary" data-equip-collection="${collection.id}">Equip full set</button>`;
+    else action=`<button class="button button-primary" data-buy-collection="${collection.id}">Buy set · ${price.toLocaleString()} ◉</button>`;
+
+    const priceLine=ownedAll
+      ? `<strong>Complete</strong>`
+      : partial
+        ? `<s>${collection.price.toLocaleString()} ◉</s><strong>${price.toLocaleString()} ◉</strong><em>${credit.toLocaleString()} coin ownership credit</em>`
+        : `<strong>${collection.price.toLocaleString()} ◉</strong>`;
+
+    return `<article class="${featured?"featured-collection-card":"collection-card"}" style="--collection-accent:${collection.accent};--collection-bg:${collection.preview}">
+      <div class="collection-art"><div class="collection-preview-cycle" data-collection-cycle="${collection.id}">${collectionPreviewContent(collection,0)}</div></div>
+      <div class="collection-copy">
+        <span class="section-kicker">${featured?"FEATURED COLLECTION":collection.rarity+" COLLECTION"}</span>
+        <h2>${AutoType.escapeHTML(collection.name)}</h2>
+        <p>${AutoType.escapeHTML(collection.tagline)}</p>
+        <div class="collection-items">${itemNames.slice(0,featured?6:4).map(name=>`<span>${AutoType.escapeHTML(name)}</span>`).join("")}</div>
+        <div class="collection-price-line">${priceLine}</div>
+        <div class="collection-footer"><small>${ownedAll?"All items owned":`${ownedCount}/${collection.items.length} owned · preview changes every 3 sec`}</small>${action}</div>
+      </div>
+    </article>`;
+  }
+
+  let collectionTimers=[];
+  function stopCollectionPreviews(){
+    collectionTimers.forEach(clearInterval);
+    collectionTimers=[];
+  }
+  function startCollectionPreviews(){
+    stopCollectionPreviews();
+    document.querySelectorAll("[data-collection-cycle]").forEach(host=>{
+      const collection=AutoType.collectionDefs.find(c=>c.id===host.dataset.collectionCycle);
+      if(!collection||collection.items.length<2)return;
+      let index=0;
+      const timer=setInterval(()=>{
+        index=(index+1)%collection.items.length;
+        host.classList.remove("preview-swap");
+        void host.offsetWidth;
+        host.classList.add("preview-swap");
+        host.innerHTML=collectionPreviewContent(collection,index);
+      },3000);
+      collectionTimers.push(timer);
+    });
+  }
+
+  function bindCollectionActions(container){
+    container.querySelectorAll("[data-buy-collection]").forEach(button=>button.addEventListener("click",()=>{
+      try{
+        const result=AutoType.purchaseCollection(button.dataset.buyCollection);
+        AutoType.toast(`${result.collection.name} unlocked.`);
+        renderAll();
+      }catch(e){AutoType.toast(e.message)}
+    }));
+    container.querySelectorAll("[data-equip-collection]").forEach(button=>button.addEventListener("click",()=>{
+      try{
+        const collection=AutoType.equipCollection(button.dataset.equipCollection);
+        AutoType.toast(`${collection.name} equipped.`);
+        renderAll();
+      }catch(e){AutoType.toast(e.message)}
+    }));
+  }
+
+  function renderFeatured(){
+    const [featured,...rest]=AutoType.collectionDefs;
+    featuredCollection.innerHTML=collectionCard(featured,true);
+    collectionGrid.innerHTML=rest.map(c=>collectionCard(c)).join("");
+    bindCollectionActions(featuredCollection);
+    bindCollectionActions(collectionGrid);
+    startCollectionPreviews();
+
+    const popularIds=["arena_terminal","trail_comet","banner_sunset"];
+    const popular=popularIds.map(id=>AutoType.shopCatalog.find(x=>x.id===id)).filter(Boolean);
+    popularGrid.innerHTML=popular.map(itemCard).join("");
+    bindItemActions(popularGrid);
+  }
+
+  function renderCosmetics(){
+    cosmeticFamilyTabs.innerHTML=familyNames.map(name=>`<button class="${activeFamily===name?"active":""}" data-family="${name}">${name}</button>`).join("");
+    cosmeticFamilyTabs.querySelectorAll("[data-family]").forEach(button=>button.addEventListener("click",()=>{
+      activeFamily=button.dataset.family;
+      renderCosmetics();
+    }));
+
+    const list=purchasableItems().filter(item=>activeFamily==="All"||familyForItem(item)===activeFamily);
+    shopGrid.innerHTML=list.map(itemCard).join("");
+    bindItemActions(shopGrid);
+  }
+
+  function cratePool(crate){
+    return AutoType.shopCatalog.filter(item=>item.price>0&&!item.collectionOnly&&!item.earnedOnly&&crate.categories.includes(item.category));
+  }
+
+  function renderCrates(){
+    crateGrid.innerHTML=AutoType.crateDefs.map(crate=>`<article class="crate-card">
+      <div class="crate-art"><div class="crate-box">AT</div><div class="crate-glow"></div></div>
+      <h3>${AutoType.escapeHTML(crate.name)}</h3>
+      <p>${AutoType.escapeHTML(crate.description)}</p>
+      <div class="crate-odds">${Object.entries(crate.odds).map(([rarity,odds])=>`<span style="--rarity:${rarityColors[rarity]}"><i></i>${rarity} ${odds}%</span>`).join("")}</div>
+      <button class="button button-secondary" data-view-crate="${crate.id}">Open details · ${crate.keyCost} ▣</button>
+    </article>`).join("");
+
+    crateGrid.querySelectorAll("[data-view-crate]").forEach(button=>button.addEventListener("click",()=>showCrate(button.dataset.viewCrate)));
+  }
+
+  function showCrate(id){
+    selectedCrateId=id;
+    const crate=AutoType.crateDefs.find(c=>c.id===id);
+    if(!crate)return;
+    crateOpeningName.textContent=crate.name;
+    crateOpeningModal.hidden=false;
+    document.body.classList.add("crate-modal-open");
+    crateReveal.hidden=true;
+    crateReveal.innerHTML="";
+    buildIdleReel(crate);
+  }
+
+  function reelCell(item){
+    return `<div class="crate-reel-item" style="--rarity:${rarityColors[item.rarity]||rarityColors.Default}">
+      <span>${item.rarity}</span><strong>${AutoType.escapeHTML(item.name)}</strong><small>${familyForItem(item)}</small>
+    </div>`;
+  }
+
+  function buildIdleReel(crate){
+    const pool=cratePool(crate);
+    const cells=Array.from({length:18},(_,i)=>pool[i%pool.length]);
+    crateReel.style.transition="none";
+    crateReel.style.transform="translateX(0px)";
+    crateReel.innerHTML=cells.map(reelCell).join("");
+  }
+
+  function animateCrateResult(result){
+    const crate=result.crate;
+    const pool=cratePool(crate);
+    const resultIndex=41;
+    const cells=Array.from({length:48},(_,i)=>i===resultIndex?result.item:pool[Math.floor(Math.random()*pool.length)]);
+
+    crateReel.classList.remove("is-spinning");
+    crateReel.style.transition="none";
+    crateReel.style.transform="translateX(0px)";
+    crateReel.innerHTML=cells.map(reelCell).join("");
+    void crateReel.offsetWidth;
+
+    const viewport=crateReel.parentElement.clientWidth;
+    const itemWidth=154;
+    const target=(resultIndex*itemWidth)-(viewport/2)+(itemWidth/2)+(Math.random()*24-12);
+
+    crateReel.classList.add("is-spinning");
+    crateReel.style.transition="transform 5s cubic-bezier(.055,.72,.08,1)";
+    crateReel.style.transform=`translateX(${-target}px)`;
+
+    setTimeout(()=>crateReel.classList.remove("is-spinning"),3900);
+    setTimeout(()=>{
+      crateReveal.hidden=false;
+      crateReveal.innerHTML=`<div class="crate-reveal-card" style="--rarity:${rarityColors[result.item.rarity]||rarityColors.Default}">
+        <span>${result.item.rarity}</span><strong>${AutoType.escapeHTML(result.item.name)}</strong>
+        <small>${result.duplicate?`Duplicate · +${result.compensation} coins`:`Added to inventory`}</small>
+      </div>`;
+      opening=false;
+      openCrateButton.disabled=false;
+      renderWallet();
+      renderCosmetics();
+    },5050);
+  }
+
+  function openSelectedCrate(){
+    if(opening||!selectedCrateId)return;
+    if(!account){location.href="account.html";return}
+    try{
+      const result=AutoType.openCrate(selectedCrateId);
+      opening=true;
+      openCrateButton.disabled=true;
+      crateReveal.hidden=true;
+      animateCrateResult(result);
+    }catch(e){AutoType.toast(e.message)}
+  }
+
+  function setView(view){
+    activeView=view;
+    shopMainTabs.querySelectorAll("[data-shop-view]").forEach(button=>button.classList.toggle("active",button.dataset.shopView===view));
+    shopFeaturedView.hidden=view!=="featured";
+    shopCosmeticsView.hidden=view!=="cosmetics";
+    shopCratesView.hidden=view!=="crates";
+    if(view==="featured")startCollectionPreviews();
+    else stopCollectionPreviews();
+    if(view==="crates")renderCrates();
+  }
+
+  function renderAll(){
+    renderWallet();
+    renderFeatured();
+    renderCosmetics();
+    renderCrates();
+  }
+
+  shopMainTabs.querySelectorAll("[data-shop-view]").forEach(button=>button.addEventListener("click",()=>setView(button.dataset.shopView)));
+  document.querySelectorAll("[data-open-cosmetics]").forEach(button=>button.addEventListener("click",()=>setView("cosmetics")));
+  openCrateButton.addEventListener("click",openSelectedCrate);
+  function closeCrateModal(){
+    if(opening)return;
+    crateOpeningModal.hidden=true;
+    document.body.classList.remove("crate-modal-open");
+  }
+  closeCrateOpening.addEventListener("click",closeCrateModal);
+  crateOpeningModal.addEventListener("click",event=>{if(event.target===crateOpeningModal)closeCrateModal()});
+  document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!crateOpeningModal.hidden)closeCrateModal()});
+  document.querySelectorAll("[data-shop-view-jump]").forEach(button=>button.addEventListener("click",()=>setView(button.dataset.shopViewJump)));
+
+  const coinPackModal=document.querySelector("#coinPackModal");
+  const getCoinsButton=document.querySelector("#getCoinsButton");
+  const closeCoinPackModal=document.querySelector("#closeCoinPackModal");
+
+  function closeCoinStore(){
+    if(coinPackModal)coinPackModal.hidden=true;
+    document.body.classList.remove("coin-store-open");
+  }
+
+  getCoinsButton?.addEventListener("click",()=>{
+    if(coinPackModal){
+      coinPackModal.hidden=false;
+      document.body.classList.add("coin-store-open");
+    }
+  });
+  closeCoinPackModal?.addEventListener("click",closeCoinStore);
+  coinPackModal?.addEventListener("click",event=>{
+    if(event.target===coinPackModal)closeCoinStore();
+  });
+  document.addEventListener("keydown",event=>{
+    if(event.key==="Escape"&&coinPackModal&&!coinPackModal.hidden)closeCoinStore();
+  });
+
+  renderAll();
+  setView(location.hash==="#crates"?"crates":"featured");
+});
+</script>
+</body>
+</html>
