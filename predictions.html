@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prediction Lab · AutoType</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="predictions">
+
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a class="brand" href="index.html">
+      <span class="brand-logo"><img src="assets/logo.png" alt="AutoType"></span>
+      <span>AutoType</span>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" data-nav="home">Home</a>
+      <a href="play.html" data-nav="play">Play</a>
+      <a href="tournaments.html" data-nav="tournaments">Tournaments</a>
+      <a href="shop.html" data-nav="shop">Shop</a>
+      <a href="friends.html" data-nav="friends">Friends</a>
+      <details class="nav-more">
+        <summary>More</summary>
+        <div class="nav-more-menu">
+          <a href="create.html" data-nav="create">Create</a>
+          <a href="predictions.html" data-nav="predictions">Prediction Lab</a>
+          <a href="achievements.html" data-nav="achievements">Achievements</a>
+          <a href="leaderboard.html" data-nav="leaderboard">Leaderboard</a>
+          <a href="stats.html" data-nav="stats">Stats</a>
+          <a href="how-to.html" data-nav="help">How to Play</a>
+          <a href="settings.html" data-nav="settings">Settings</a>
+        </div>
+      </details>
+    </nav>
+    <div class="nav-spacer"></div>
+    <div class="nav-currency" id="navCurrency" hidden></div>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Open navigation">☰</button>
+    <div class="nav-account">
+      <button class="account-button" id="accountMenuButton"></button>
+      <div class="account-dropdown" id="accountDropdown" hidden></div>
+    </div>
+  </div>
+</header>
+<nav class="mobile-nav" id="mobileNav">
+  <a href="index.html">Home</a>
+  <a href="play.html">Play</a>
+  <a href="tournaments.html">Tournaments</a>
+  <a href="shop.html">Shop</a>
+  <a href="friends.html">Friends</a>
+  <a href="create.html">Create</a>
+  <a href="predictions.html">Prediction Lab</a>
+  <a href="achievements.html">Achievements</a>
+  <a href="leaderboard.html">Leaderboard</a>
+  <a href="stats.html">Stats</a>
+  <a href="how-to.html">How to Play</a>
+  <a href="settings.html">Settings</a>
+</nav>
+
+
+<main class="container page">
+  <header class="platform-page-heading"><div><span class="section-kicker">PREDICTION LAB</span><h1>Teach AutoType better guesses.</h1><p>Community mappings feed directly into the candidate list. Submit exact prefix → completion pairs and vote on useful suggestions.</p></div><a class="button button-secondary" href="play.html?mode=classic">Test predictions</a></header>
+  <div class="lab-metrics"><div><span>Total mappings</span><strong id="labMappingCount">0</strong></div><div><span>Your mappings</span><strong id="labMineCount">0</strong></div><div><span>Total votes</span><strong id="labVoteCount">0</strong></div></div>
+  <div class="lab-layout">
+    <section class="platform-section"><div class="platform-section-head"><div><span class="section-kicker">SUBMIT</span><h2>New mappings</h2></div></div><textarea class="textarea mapping lab-input" id="suggestionInput" placeholder="s-snow, sh-shark&#10;co-computer"></textarea><div class="help">Format: prefix-word · prefix 1–8 letters · completion must begin with the prefix.</div><div class="row-wrap lab-actions"><button class="button button-primary" id="submitButton">Submit</button><button class="button button-secondary" id="clearButton">Clear</button></div></section>
+    <section class="platform-section"><div class="platform-section-head"><div><span class="section-kicker">VALIDATION</span><h2>Preview</h2></div></div><div class="list" id="previewList"></div></section>
+  </div>
+  <section class="platform-section"><div class="platform-section-head"><div><span class="section-kicker">COMMUNITY</span><h2>Suggestion board</h2></div><span class="help">Highest votes first</span></div><div class="list" id="suggestionList"></div></section>
+</main>
+
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <span>AutoType · Competitive autocomplete typing</span>
+    <span>Local prototype · Accounts and social data stay on this device</span>
+  </div>
+</footer>
+<div class="toast"></div>
+
+<script src="core.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+  const store=AutoType.store();
+  function parse(raw){
+    return raw.split(/[,\n]+/).map(x=>x.trim()).filter(Boolean).map(raw=>{
+      const i=raw.indexOf("-");if(i<=0)return{raw,valid:false,error:"Use prefix-word"};
+      const prefix=raw.slice(0,i).trim().toLowerCase(),word=raw.slice(i+1).trim().toLowerCase();
+      if(!/^[a-z]{1,8}$/.test(prefix))return{raw,prefix,word,valid:false,error:"Prefix must be 1–8 letters"};
+      if(!/^[a-z][a-z']{1,30}$/.test(word))return{raw,prefix,word,valid:false,error:"Invalid word"};
+      if(!word.startsWith(prefix))return{raw,prefix,word,valid:false,error:"Word must start with prefix"};
+      if(word===prefix)return{raw,prefix,word,valid:false,error:"Completion needs extra letters"};
+      return{raw,prefix,word,valid:true};
+    })
+  }
+  function owner(s){const a=store.accounts.find(x=>x.id===s.accountId);return a?AutoType.accountName(a):(s.submittedBy||"Guest")}
+  function renderPreview(){
+    const p=parse(suggestionInput.value);
+    previewList.innerHTML=p.length?p.map(x=>`<div class="list-row suggestion-row"><div class="mapping"><b>${AutoType.escapeHTML(x.prefix||"?")}</b> → ${AutoType.escapeHTML(x.word||x.raw)}<div class="help">${x.valid?"Valid mapping":AutoType.escapeHTML(x.error)}</div></div><span>${x.valid?"✓":"!"}</span></div>`).join(""):`<div class="empty">Type mappings to preview them.</div>`
+  }
+  function render(){
+    const account=AutoType.currentAccount();
+    labMappingCount.textContent=store.suggestions.length;
+    labMineCount.textContent=account?store.suggestions.filter(s=>s.accountId===account.id).length:0;
+    labVoteCount.textContent=store.suggestions.reduce((sum,s)=>sum+(s.voters?.length||0),0);
+    const list=[...store.suggestions].sort((a,b)=>(b.voters?.length||0)-(a.voters?.length||0));
+    suggestionList.innerHTML=list.length?list.map(s=>`<div class="list-row suggestion-row"><div class="mapping"><b>${AutoType.escapeHTML(s.prefix)}</b> → ${AutoType.escapeHTML(s.word)}<div class="help">by ${AutoType.escapeHTML(owner(s))}</div></div><div class="vote"><button class="button button-secondary" data-vote="${s.id}">▲</button><span>${s.voters?.length||0}</span></div></div>`).join(""):`<div class="empty">No suggestions yet.</div>`;
+    suggestionList.querySelectorAll("[data-vote]").forEach(b=>b.addEventListener("click",()=>{const s=store.suggestions.find(x=>x.id===b.dataset.vote);if(!s)return;const voter=AutoType.currentAccount()?.id||"guest";s.voters=s.voters||[];s.voters=s.voters.includes(voter)?s.voters.filter(x=>x!==voter):[...s.voters,voter];AutoType.save();render()}))
+  }
+  submitButton.addEventListener("click",()=>{
+    const valid=parse(suggestionInput.value).filter(x=>x.valid);if(!valid.length){AutoType.toast("Add at least one valid mapping.");return}
+    let added=0;
+    valid.forEach(x=>{if(store.suggestions.some(s=>s.prefix===x.prefix&&s.word===x.word))return;store.suggestions.push({id:"sug_"+Date.now()+"_"+Math.random().toString(36).slice(2,6),prefix:x.prefix,word:x.word,accountId:AutoType.currentAccount()?.id||null,submittedBy:AutoType.currentAccount()?AutoType.accountName(AutoType.currentAccount()):"Guest",createdAt:Date.now(),voters:[AutoType.currentAccount()?.id||"guest"]});added++});
+    AutoType.save();suggestionInput.value="";renderPreview();render();AutoType.toast(added?`${added} suggestion${added===1?"":"s"} added.`:"Those mappings already exist.")
+  });
+  clearButton.addEventListener("click",()=>{suggestionInput.value="";renderPreview()});
+  suggestionInput.addEventListener("input",renderPreview);renderPreview();render();
+});
+</script>
+
+</body>
+</html>
