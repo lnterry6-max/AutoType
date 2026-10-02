@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Account · AutoType</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="">
+
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a class="brand" href="index.html">
+      <span class="brand-logo"><img src="assets/logo.png" alt="AutoType"></span>
+      <span>AutoType</span>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" data-nav="home">Home</a>
+      <a href="play.html" data-nav="play">Play</a>
+      <a href="tournaments.html" data-nav="tournaments">Tournaments</a>
+      <a href="shop.html" data-nav="shop">Shop</a>
+      <a href="friends.html" data-nav="friends">Friends</a>
+      <details class="nav-more">
+        <summary>More</summary>
+        <div class="nav-more-menu">
+          <a href="create.html" data-nav="create">Create</a>
+          <a href="predictions.html" data-nav="predictions">Prediction Lab</a>
+          <a href="achievements.html" data-nav="achievements">Achievements</a>
+          <a href="leaderboard.html" data-nav="leaderboard">Leaderboard</a>
+          <a href="stats.html" data-nav="stats">Stats</a>
+          <a href="how-to.html" data-nav="help">How to Play</a>
+          <a href="settings.html" data-nav="settings">Settings</a>
+        </div>
+      </details>
+    </nav>
+    <div class="nav-spacer"></div>
+    <div class="nav-currency" id="navCurrency" hidden></div>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Open navigation">☰</button>
+    <div class="nav-account">
+      <button class="account-button" id="accountMenuButton"></button>
+      <div class="account-dropdown" id="accountDropdown" hidden></div>
+    </div>
+  </div>
+</header>
+<nav class="mobile-nav" id="mobileNav">
+  <a href="index.html">Home</a>
+  <a href="play.html">Play</a>
+  <a href="tournaments.html">Tournaments</a>
+  <a href="shop.html">Shop</a>
+  <a href="friends.html">Friends</a>
+  <a href="create.html">Create</a>
+  <a href="predictions.html">Prediction Lab</a>
+  <a href="achievements.html">Achievements</a>
+  <a href="leaderboard.html">Leaderboard</a>
+  <a href="stats.html">Stats</a>
+  <a href="how-to.html">How to Play</a>
+  <a href="settings.html">Settings</a>
+</nav>
+
+
+<main class="container page account-page">
+  <section class="account-intro"><span class="section-kicker">AUTOTYPE ACCOUNT</span><h1>Your progress should feel like yours.</h1><p>Keep separate profiles, cosmetics, friends, achievements, tournament registrations, and settings on this device.</p><div class="account-benefits"><div><strong>Progress</strong><span>Stats, XP, achievements</span></div><div><strong>Identity</strong><span>Profile, titles, banners, inventory</span></div><div><strong>Social</strong><span>Friends, races, tournaments</span></div></div></section>
+  <div class="auth-wrap">
+    <section class="platform-section auth-card">
+      <div class="tabs"><button class="tab active" data-tab="login">Sign in</button><button class="tab" data-tab="create">Create account</button></div>
+      <div id="loginPanel">
+        <div class="form-group"><label class="label">Username or email</label><input class="input" id="loginIdentity" autocomplete="username"></div>
+        <div class="form-group"><label class="label">Password</label><input class="input" id="loginPassword" type="password" autocomplete="current-password"></div>
+        <button class="button button-primary" id="loginButton">Sign in</button>
+      </div>
+      <div id="createPanel" hidden>
+        <div class="form-group"><label class="label">Username</label><input class="input" id="createUsername"></div>
+        <div class="form-group"><label class="label">Email <span style="color:#7f8790">(optional)</span></label><input class="input" id="createEmail" type="email"></div>
+        <div class="form-group">
+          <label class="label">Password</label>
+          <input class="input" id="createPassword" type="password" minlength="8" maxlength="128" autocomplete="new-password">
+          <div class="password-rules" id="passwordRules">
+            <span data-rule="length">8+ characters</span>
+            <span data-rule="lower">lowercase</span>
+            <span data-rule="upper">uppercase</span>
+            <span data-rule="number">number</span>
+            <span data-rule="symbol">symbol</span>
+            <span data-rule="spaces">no spaces</span>
+          </div>
+        </div>
+        <div class="form-group"><label class="label">Confirm password</label><input class="input" id="createPasswordConfirm" type="password" autocomplete="new-password"></div>
+        <div class="form-group">
+          <label class="label">Security question</label>
+          <select class="select" id="createSecurityQuestion">
+            <option value="">Choose a question</option>
+            <option>What was the first game you remember loving?</option>
+            <option>What nickname did you use in a game?</option>
+            <option>What fictional place would you most like to visit?</option>
+            <option>What was the name of a favorite childhood toy?</option>
+            <option>What is a memorable word only you would know?</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="label">Security answer</label><input class="input" id="createSecurityAnswer" autocomplete="off"><div class="help">Your answer is salted and hashed. It is used when changing your password.</div></div>
+        <button class="button button-primary" id="createButton">Create account</button>
+      </div>
+      <div class="security-note">Passwords are stored locally as salted PBKDF2-SHA-256 hashes. This is still a browser prototype, not production server authentication.</div>
+    </section>
+  </div>
+</main>
+
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <span>AutoType · Competitive autocomplete typing</span>
+    <span>Local prototype · Accounts and social data stay on this device</span>
+  </div>
+</footer>
+<div class="toast"></div>
+
+<script src="core.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+  function setTab(t){
+    document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.tab===t));
+    loginPanel.hidden=t!=="login";
+    createPanel.hidden=t!=="create";
+  }
+  document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>setTab(b.dataset.tab)));
+  if(location.hash==="#create")setTab("create");
+
+  function renderPasswordRules(){
+    const p=createPassword.value;
+    const checks={
+      length:p.length>=8,
+      lower:/[a-z]/.test(p),
+      upper:/[A-Z]/.test(p),
+      number:/[0-9]/.test(p),
+      symbol:/[^A-Za-z0-9\s]/.test(p),
+      spaces:!/\s/.test(p)
+    };
+    document.querySelectorAll("#passwordRules [data-rule]").forEach(el=>{
+      el.classList.toggle("ok",!!checks[el.dataset.rule]);
+    });
+  }
+  createPassword.addEventListener("input",renderPasswordRules);
+  renderPasswordRules();
+
+  loginButton.addEventListener("click",async()=>{
+    loginButton.disabled=true;
+    try{
+      await AutoType.login(loginIdentity.value,loginPassword.value);
+      location.href="index.html";
+    }catch(e){AutoType.toast(e.message)}
+    finally{loginButton.disabled=false}
+  });
+
+  createButton.addEventListener("click",async()=>{
+    if(createPassword.value!==createPasswordConfirm.value){
+      AutoType.toast("Passwords do not match.");
+      return;
+    }
+    const problems=AutoType.passwordProblems(createPassword.value,createUsername.value||createEmail.value);
+    if(problems.length){
+      AutoType.toast(`Password needs ${problems[0]}.`);
+      return;
+    }
+    createButton.disabled=true;
+    try{
+      await AutoType.createAccount({
+        username:createUsername.value,
+        email:createEmail.value,
+        password:createPassword.value,
+        securityQuestion:createSecurityQuestion.value,
+        securityAnswer:createSecurityAnswer.value
+      });
+      location.href="profile.html";
+    }catch(e){AutoType.toast(e.message)}
+    finally{createButton.disabled=false}
+  });
+});
+</script>
+
+</body>
+</html>
