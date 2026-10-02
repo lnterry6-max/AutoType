@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Play · AutoType</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="play">
+
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a class="brand" href="index.html">
+      <span class="brand-logo"><img src="assets/logo.png" alt="AutoType"></span>
+      <span>AutoType</span>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" data-nav="home">Home</a>
+      <a href="play.html" data-nav="play">Play</a>
+      <a href="tournaments.html" data-nav="tournaments">Tournaments</a>
+      <a href="shop.html" data-nav="shop">Shop</a>
+      <a href="friends.html" data-nav="friends">Friends</a>
+      <details class="nav-more">
+        <summary>More</summary>
+        <div class="nav-more-menu">
+          <a href="create.html" data-nav="create">Create</a>
+          <a href="predictions.html" data-nav="predictions">Prediction Lab</a>
+          <a href="achievements.html" data-nav="achievements">Achievements</a>
+          <a href="leaderboard.html" data-nav="leaderboard">Leaderboard</a>
+          <a href="stats.html" data-nav="stats">Stats</a>
+          <a href="how-to.html" data-nav="help">How to Play</a>
+          <a href="settings.html" data-nav="settings">Settings</a>
+        </div>
+      </details>
+    </nav>
+    <div class="nav-spacer"></div>
+    <div class="nav-currency" id="navCurrency" hidden></div>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Open navigation">☰</button>
+    <div class="nav-account">
+      <button class="account-button" id="accountMenuButton"></button>
+      <div class="account-dropdown" id="accountDropdown" hidden></div>
+    </div>
+  </div>
+</header>
+<nav class="mobile-nav" id="mobileNav">
+  <a href="index.html">Home</a>
+  <a href="play.html">Play</a>
+  <a href="tournaments.html">Tournaments</a>
+  <a href="shop.html">Shop</a>
+  <a href="friends.html">Friends</a>
+  <a href="create.html">Create</a>
+  <a href="predictions.html">Prediction Lab</a>
+  <a href="achievements.html">Achievements</a>
+  <a href="leaderboard.html">Leaderboard</a>
+  <a href="stats.html">Stats</a>
+  <a href="how-to.html">How to Play</a>
+  <a href="settings.html">Settings</a>
+</nav>
+
+
+<main class="container page">
+  <section class="page-narrow play-mode-page" id="modePicker">
+    <header class="platform-page-heading mode-heading">
+      <div><span class="section-kicker">PLAY</span><h1>Choose how AutoType fights back.</h1><p>Same core mechanic. Different information available to the predictor.</p></div>
+      <a class="button button-secondary" href="how-to.html">How it works</a>
+    </header>
+
+    <div class="mode-card-grid">
+      <a class="mode-tile primary-mode" href="play.html?mode=classic"><span class="mode-number">01</span><div><small>CORE</small><h2>Word</h2><p>Your current prefix is all AutoType knows.</p></div><b>Play →</b></a>
+      <a class="mode-tile" href="play.html?mode=context"><span class="mode-number">02</span><div><small>SMARTER</small><h2>Context</h2><p>The previous word influences the next prediction.</p></div><b>Play →</b></a>
+      <a class="mode-tile" href="play.html?mode=sentence"><span class="mode-number">03</span><div><small>FULL VIEW</small><h2>Sentence</h2><p>See where AutoType thinks the whole sentence is heading.</p></div><b>Play →</b></a>
+      <a class="mode-tile evil-mode" href="play.html?mode=evil"><span class="mode-number">04</span><div><small>CHAOS</small><h2>Evil</h2><p>Plausible wrong guesses and slang are intentionally prioritized.</p></div><b>Play →</b></a>
+    </div>
+
+    <div class="special-mode-strip">
+      <a href="play.html?mode=daily"><span>DAILY</span><strong>Daily Challenge</strong><small>One fixed challenge today</small></a>
+      <a href="create.html"><span>CREATE</span><strong>Custom</strong><small>Write the target yourself</small></a>
+      <a href="friends.html"><span>SOCIAL</span><strong>Race</strong><small>Challenge a friend</small></a>
+      <a href="tournaments.html"><span>COMPETE</span><strong>Tournaments</strong><small>Skill-based events</small></a>
+    </div>
+  </section>
+
+  <section class="game-page" id="gameArea" hidden>
+    <div class="game-head">
+      <div class="game-mode"><span>Mode</span><strong id="modeName">Word</strong></div>
+      <div class="game-stats">
+        <div><span>Score</span><strong id="score">0</strong></div>
+        <div><span>Streak</span><strong id="streak">0</strong></div>
+        <div><span>Time</span><strong id="time">0:00</strong></div>
+        <div><span>Keys</span><strong id="keys">0</strong></div>
+        <div><span>AI Erased</span><strong id="erasedCount">0</strong></div>
+      </div>
+    </div>
+
+    <div class="target-wrap">
+      <div class="target-label">Target sentence</div>
+      <div class="target" id="target"></div>
+      <div class="sentence-prediction" id="sentencePrediction"></div>
+    </div>
+
+    <div class="panel arena">
+      <div class="combo-badge" id="comboBadge" hidden>Combo ×2</div>
+      <div class="guess-row">
+        <div>
+          <div class="guess-label">Autocomplete</div>
+          <div class="guess" id="guess">type a letter…</div>
+        </div>
+        <div class="word-count"><strong id="wordCount">1 / 1</strong><span>word</span></div>
+      </div>
+      <div class="type-line"><div class="typing-trail" id="typingTrail"></div><div class="cursor"></div><div class="typed" id="typedPrefix">_</div><div class="key-help">SPACE lock · BACKSPACE erase</div></div>
+      <div class="message" id="message">Type one letter. AutoType will fill the rest.</div>
+      <div class="progress"><i id="progress"></i></div>
+    </div>
+
+    <div class="game-actions">
+      <p id="roundInfo">Use as few clue letters and backspaces as possible.</p>
+      <div class="row"><button class="button button-quiet" id="restartBtn">Restart</button><button class="button button-secondary" id="newBtn">New sentence</button></div>
+    </div>
+
+    <details class="prediction-details">
+      <summary>Prediction queue</summary>
+      <div id="predictionQueue"></div>
+    </details>
+
+    <section class="results" id="results" hidden>
+      <h2>Round complete</h2>
+      <div class="result-score" id="resultScore">0</div>
+      <div class="result-grid">
+        <div class="result-box"><strong id="resultTime">0:00</strong><span>Time</span></div>
+        <div class="result-box"><strong id="resultKeys">0</strong><span>Keys</span></div>
+        <div class="result-box"><strong id="resultErrors">0</strong><span>Errors</span></div>
+        <div class="result-box"><strong id="resultErased">0</strong><span>AI erased</span></div>
+        <div class="result-box reward-result"><strong id="resultCoins">+0</strong><span>Coins earned</span></div>
+      </div>
+      <div class="achievement-unlocks" id="achievementUnlocks" hidden></div>
+      <div class="row-wrap"><button class="button button-primary" id="againBtn">Play again</button><a class="button button-secondary" href="play.html">Modes</a></div>
+    </section>
+  </section>
+</main>
+
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <span>AutoType · Competitive autocomplete typing</span>
+    <span>Local prototype · Accounts and social data stay on this device</span>
+  </div>
+</footer>
+<div class="toast"></div>
+
+<script src="core.js"></script>
+
+<script src="game.js"></script>
+
+</body>
+</html>
