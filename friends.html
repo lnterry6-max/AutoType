@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Friends · AutoType</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="friends">
+
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a class="brand" href="index.html">
+      <span class="brand-logo"><img src="assets/logo.png" alt="AutoType"></span>
+      <span>AutoType</span>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" data-nav="home">Home</a>
+      <a href="play.html" data-nav="play">Play</a>
+      <a href="tournaments.html" data-nav="tournaments">Tournaments</a>
+      <a href="shop.html" data-nav="shop">Shop</a>
+      <a href="friends.html" data-nav="friends">Friends</a>
+      <details class="nav-more">
+        <summary>More</summary>
+        <div class="nav-more-menu">
+          <a href="create.html" data-nav="create">Create</a>
+          <a href="predictions.html" data-nav="predictions">Prediction Lab</a>
+          <a href="achievements.html" data-nav="achievements">Achievements</a>
+          <a href="leaderboard.html" data-nav="leaderboard">Leaderboard</a>
+          <a href="stats.html" data-nav="stats">Stats</a>
+          <a href="how-to.html" data-nav="help">How to Play</a>
+          <a href="settings.html" data-nav="settings">Settings</a>
+        </div>
+      </details>
+    </nav>
+    <div class="nav-spacer"></div>
+    <div class="nav-currency" id="navCurrency" hidden></div>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Open navigation">☰</button>
+    <div class="nav-account">
+      <button class="account-button" id="accountMenuButton"></button>
+      <div class="account-dropdown" id="accountDropdown" hidden></div>
+    </div>
+  </div>
+</header>
+<nav class="mobile-nav" id="mobileNav">
+  <a href="index.html">Home</a>
+  <a href="play.html">Play</a>
+  <a href="tournaments.html">Tournaments</a>
+  <a href="shop.html">Shop</a>
+  <a href="friends.html">Friends</a>
+  <a href="create.html">Create</a>
+  <a href="predictions.html">Prediction Lab</a>
+  <a href="achievements.html">Achievements</a>
+  <a href="leaderboard.html">Leaderboard</a>
+  <a href="stats.html">Stats</a>
+  <a href="how-to.html">How to Play</a>
+  <a href="settings.html">Settings</a>
+</nav>
+
+
+<main class="container page">
+  <header class="platform-page-heading"><div><span class="section-kicker">SOCIAL</span><h1>Friends & races</h1><p>Requests are mutual now—send one, wait for acceptance, then race the same challenge.</p></div><a class="button button-secondary" href="leaderboard.html">Leaderboard</a></header>
+  <div class="social-metrics">
+    <div><span>Friends</span><strong id="friendCountMetric">0</strong></div><div><span>Incoming</span><strong id="incomingMetric">0</strong></div><div><span>Races</span><strong id="raceCountMetric">0</strong></div>
+  </div>
+  <section class="platform-section" id="requestsPanel"><div class="platform-section-head"><div><span class="section-kicker">REQUESTS</span><h2>Friend requests</h2></div><span class="request-count" id="requestCount">0</span></div><div class="list" id="requestList"></div></section>
+  <div class="social-grid">
+    <section class="platform-section"><div class="platform-section-head"><div><span class="section-kicker">YOUR NETWORK</span><h2>Friends</h2></div></div><div class="list" id="friendsList"></div></section>
+    <section class="platform-section"><div class="platform-section-head"><div><span class="section-kicker">DISCOVER</span><h2>Find people</h2></div></div><input class="input" id="friendSearch" placeholder="Search username"><div class="list social-search-list" id="searchList"></div></section>
+  </div>
+  <section class="platform-section"><div class="platform-section-head"><div><span class="section-kicker">COMPETITION</span><h2>Race history</h2></div><a href="tournaments.html">Tournaments →</a></div><div class="list" id="raceList"></div></section>
+</main>
+
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <span>AutoType · Competitive autocomplete typing</span>
+    <span>Local prototype · Accounts and social data stay on this device</span>
+  </div>
+</footer>
+<div class="toast"></div>
+
+<script src="core.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+  const a=AutoType.currentAccount();
+  const store=AutoType.store();
+
+  if(!a){
+    requestsPanel.innerHTML=`<div class="empty">Sign in to use friend requests.<br><br><a class="button button-primary" href="account.html">Sign in</a></div>`;
+    friendsList.innerHTML="";
+    searchList.innerHTML="";
+    raceList.innerHTML="";
+    friendSearch.disabled=true;
+    friendCountMetric.textContent="0";incomingMetric.textContent="0";raceCountMetric.textContent="0";
+    return;
+  }
+
+  const accountById=id=>store.accounts.find(x=>x.id===id);
+  const friendAccounts=()=>store.accounts.filter(x=>(a.friends||[]).includes(x.id));
+  const incoming=()=>store.friendRequests.filter(r=>r.status==="pending"&&r.toId===a.id);
+  const outgoing=()=>store.friendRequests.filter(r=>r.status==="pending"&&r.fromId===a.id);
+
+  function personRow(x,actions=""){
+    return `<div class="list-row friend-row">
+      <div class="person">${AutoType.avatarMarkup(x,"avatar")}<div class="person-copy"><strong>${AutoType.escapeHTML(AutoType.accountName(x))}</strong><span>${AutoType.escapeHTML(x.bio||`@${x.username}`)}</span></div></div>
+      <div class="friend-actions">${actions}</div>
+    </div>`;
+  }
+
+  function sendRequest(toId){
+    if(a.friends.includes(toId))return;
+    const reverse=store.friendRequests.find(r=>r.status==="pending"&&r.fromId===toId&&r.toId===a.id);
+    if(reverse){acceptRequest(reverse.id);return}
+    if(store.friendRequests.some(r=>r.status==="pending"&&r.fromId===a.id&&r.toId===toId))return;
+
+    store.friendRequests.push({
+      id:"fr_"+Date.now()+"_"+Math.random().toString(36).slice(2,6),
+      fromId:a.id,
+      toId,
+      status:"pending",
+      createdAt:Date.now()
+    });
+    AutoType.save();
+    render();
+    AutoType.toast("Friend request sent.");
+  }
+
+  function acceptRequest(id){
+    const request=store.friendRequests.find(r=>r.id===id&&r.toId===a.id&&r.status==="pending");
+    if(!request)return;
+    const other=accountById(request.fromId);
+    if(!other)return;
+
+    a.friends=a.friends||[];
+    other.friends=other.friends||[];
+    if(!a.friends.includes(other.id))a.friends.push(other.id);
+    if(!other.friends.includes(a.id))other.friends.push(a.id);
+
+    store.friendRequests=store.friendRequests.filter(r=>r.id!==id);
+    AutoType.save();
+    render();
+    AutoType.toast(`${AutoType.accountName(other)} is now your friend.`);
+  }
+
+  function declineRequest(id){
+    store.friendRequests=store.friendRequests.filter(r=>!(r.id===id&&r.toId===a.id));
+    AutoType.save();
+    render();
+  }
+
+  function cancelRequest(id){
+    store.friendRequests=store.friendRequests.filter(r=>!(r.id===id&&r.fromId===a.id));
+    AutoType.save();
+    render();
+  }
+
+  function renderRequests(){
+    const incomingRequests=incoming();
+    const outgoingRequests=outgoing();
+    requestCount.textContent=incomingRequests.length;
+
+    let html="";
+    if(incomingRequests.length){
+      html+=incomingRequests.map(r=>{
+        const x=accountById(r.fromId);
+        if(!x)return"";
+        return personRow(x,`<button class="button button-primary" data-accept="${r.id}">Accept</button><button class="button button-quiet" data-decline="${r.id}">Decline</button>`);
+      }).join("");
+    }
+
+    if(outgoingRequests.length){
+      html+=`<div class="request-subhead">Sent requests</div>`;
+      html+=outgoingRequests.map(r=>{
+        const x=accountById(r.toId);
+        if(!x)return"";
+        return personRow(x,`<button class="button button-quiet" data-cancel="${r.id}">Cancel request</button>`);
+      }).join("");
+    }
+
+    requestList.innerHTML=html||`<div class="empty">No pending friend requests.</div>`;
+    requestList.querySelectorAll("[data-accept]").forEach(b=>b.addEventListener("click",()=>acceptRequest(b.dataset.accept)));
+    requestList.querySelectorAll("[data-decline]").forEach(b=>b.addEventListener("click",()=>declineRequest(b.dataset.decline)));
+    requestList.querySelectorAll("[data-cancel]").forEach(b=>b.addEventListener("click",()=>cancelRequest(b.dataset.cancel)));
+  }
+
+  function renderSearch(){
+    const q=friendSearch.value.trim().toLowerCase();
+    const incomingIds=new Set(incoming().map(r=>r.fromId));
+    const outgoingMap=new Map(outgoing().map(r=>[r.toId,r]));
+    const matches=store.accounts.filter(x=>
+      x.id!==a.id &&
+      !a.friends.includes(x.id) &&
+      (!q||x.username.toLowerCase().includes(q)||AutoType.accountName(x).toLowerCase().includes(q))
+    );
+
+    searchList.innerHTML=matches.length?matches.slice(0,8).map(x=>{
+      if(incomingIds.has(x.id)){
+        return personRow(x,`<span class="request-state">Sent you a request</span>`);
+      }
+      const request=outgoingMap.get(x.id);
+      if(request){
+        return personRow(x,`<button class="button button-quiet" data-cancel="${request.id}">Requested</button>`);
+      }
+      return personRow(x,`<button class="button button-secondary" data-request="${x.id}">Send request</button>`);
+    }).join(""):`<div class="empty">No matching accounts.</div>`;
+
+    searchList.querySelectorAll("[data-request]").forEach(b=>b.addEventListener("click",()=>sendRequest(b.dataset.request)));
+    searchList.querySelectorAll("[data-cancel]").forEach(b=>b.addEventListener("click",()=>cancelRequest(b.dataset.cancel)));
+  }
+
+  function createRace(id){
+    const other=accountById(id);
+    if(!other||!a.friends.includes(id))return;
+    const sentences=[
+      "the moon looked bright over the quiet city",
+      "our code worked perfectly until somebody touched one line",
+      "the final answer looked obvious only after we solved it",
+      "the keyboard sounded louder in the empty computer lab"
+    ];
+    const race={
+      id:"race_"+Date.now(),
+      playerIds:[a.id,id],
+      sentence:sentences[Math.floor(Math.random()*sentences.length)],
+      mode:"context",
+      createdAt:Date.now(),
+      results:{}
+    };
+    store.races.push(race);
+    AutoType.save();
+    location.href=`play.html?race=${race.id}`;
+  }
+
+  function render(){
+    renderRequests();
+    friendCountMetric.textContent=friendAccounts().length;
+    incomingMetric.textContent=incoming().length;
+    raceCountMetric.textContent=store.races.filter(r=>r.playerIds.includes(a.id)).length;
+
+    const fs=friendAccounts();
+    friendsList.innerHTML=fs.length?fs.map(x=>personRow(x,
+      `<button class="button button-secondary" data-race="${x.id}">Race</button><button class="button button-quiet" data-remove="${x.id}">Remove</button>`
+    )).join(""):`<div class="empty">No friends yet.</div>`;
+
+    friendsList.querySelectorAll("[data-remove]").forEach(b=>b.addEventListener("click",()=>{
+      const id=b.dataset.remove;
+      const other=accountById(id);
+      a.friends=a.friends.filter(x=>x!==id);
+      if(other)other.friends=(other.friends||[]).filter(x=>x!==a.id);
+      AutoType.save();
+      render();
+    }));
+    friendsList.querySelectorAll("[data-race]").forEach(b=>b.addEventListener("click",()=>createRace(b.dataset.race)));
+
+    renderSearch();
+
+    const races=store.races.filter(r=>r.playerIds.includes(a.id)).slice().reverse();
+    raceList.innerHTML=races.length?races.map(r=>{
+      const other=accountById(r.playerIds.find(id=>id!==a.id));
+      const mine=r.results?.[a.id];
+      const theirs=r.results?.[other?.id];
+      return `<div class="list-row friend-row">
+        <div><strong>${AutoType.escapeHTML(AutoType.accountName(other))}</strong><div class="help">${mine?`You: ${AutoType.formatTime(mine.time)} · ${mine.errors} errors`:"You haven't played yet"}${theirs?` · Them: ${AutoType.formatTime(theirs.time)}`:""}</div></div>
+        <a class="button button-secondary" href="play.html?race=${encodeURIComponent(r.id)}">${mine?"Replay":"Play"}</a>
+      </div>`;
+    }).join(""):`<div class="empty">No race challenges yet.</div>`;
+  }
+
+  friendSearch.addEventListener("input",renderSearch);
+  render();
+});
+</script>
+
+</body>
+</html>
