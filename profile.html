@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Profile · AutoType</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="">
+
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a class="brand" href="index.html">
+      <span class="brand-logo"><img src="assets/logo.png" alt="AutoType"></span>
+      <span>AutoType</span>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" data-nav="home">Home</a>
+      <a href="play.html" data-nav="play">Play</a>
+      <a href="tournaments.html" data-nav="tournaments">Tournaments</a>
+      <a href="shop.html" data-nav="shop">Shop</a>
+      <a href="friends.html" data-nav="friends">Friends</a>
+      <details class="nav-more">
+        <summary>More</summary>
+        <div class="nav-more-menu">
+          <a href="create.html" data-nav="create">Create</a>
+          <a href="predictions.html" data-nav="predictions">Prediction Lab</a>
+          <a href="achievements.html" data-nav="achievements">Achievements</a>
+          <a href="leaderboard.html" data-nav="leaderboard">Leaderboard</a>
+          <a href="stats.html" data-nav="stats">Stats</a>
+          <a href="how-to.html" data-nav="help">How to Play</a>
+          <a href="settings.html" data-nav="settings">Settings</a>
+        </div>
+      </details>
+    </nav>
+    <div class="nav-spacer"></div>
+    <div class="nav-currency" id="navCurrency" hidden></div>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Open navigation">☰</button>
+    <div class="nav-account">
+      <button class="account-button" id="accountMenuButton"></button>
+      <div class="account-dropdown" id="accountDropdown" hidden></div>
+    </div>
+  </div>
+</header>
+<nav class="mobile-nav" id="mobileNav">
+  <a href="index.html">Home</a>
+  <a href="play.html">Play</a>
+  <a href="tournaments.html">Tournaments</a>
+  <a href="shop.html">Shop</a>
+  <a href="friends.html">Friends</a>
+  <a href="create.html">Create</a>
+  <a href="predictions.html">Prediction Lab</a>
+  <a href="achievements.html">Achievements</a>
+  <a href="leaderboard.html">Leaderboard</a>
+  <a href="stats.html">Stats</a>
+  <a href="how-to.html">How to Play</a>
+  <a href="settings.html">Settings</a>
+</nav>
+
+
+<main class="container page">
+  <section class="profile-banner-display" id="profileBannerDisplay">
+    <div>
+      <span class="profile-equipped-title" id="profileEquippedTitle"></span>
+      <h1 id="profileTitle">Guest</h1>
+      <p>Customize how you appear and review your progression.</p>
+    </div>
+    <div class="profile-wallet" id="profileWallet" hidden></div>
+  </section>
+  <div class="profile-layout">
+    <aside class="profile-side">
+      <div class="profile-avatar-large" id="profileAvatar">G</div>
+      <input type="file" id="imageInput" accept="image/*" hidden>
+      <button class="button button-secondary" id="changeImage">Change image</button>
+      <button class="button button-quiet" id="removeImage">Remove image</button>
+    </aside>
+    <div>
+      <details class="platform-section profile-edit-disclosure" id="profileEditor"><summary>Edit profile</summary><div class="profile-edit-body">
+        <div class="form-group"><label class="label">Display name</label><input class="input" id="displayName"></div>
+        <div class="form-group"><label class="label">Bio</label><textarea class="textarea" id="bio" maxlength="180"></textarea><div class="help"><span id="bioCount">0</span>/180</div></div>
+        <div class="form-group"><label class="label">Favorite modes</label><div class="tag-row" id="favoriteModes"></div></div>
+        <button class="button button-primary" id="saveProfile">Save profile</button>
+      </div></details>
+
+      <div class="divider"></div>
+      <div class="grid-3">
+        <div class="stat"><strong id="levelStat">1</strong><span>Level</span></div>
+        <div class="stat"><strong id="bestStat">0</strong><span>Best score</span></div>
+        <div class="stat"><strong id="roundStat">0</strong><span>Rounds</span></div>
+      </div>
+
+      <div class="divider"></div>
+      <section class="platform-section">
+        <div class="section-title-row"><h2 class="section-title">Level progress</h2><strong id="xpText"></strong></div>
+        <div class="xp-bar"><i id="xpBar"></i></div>
+        <div class="help" id="xpNext"></div>
+      </section>
+
+      <div class="divider"></div>
+      <section class="platform-section">
+        <div class="section-title-row"><h2 class="section-title">Cosmetic loadout</h2><a class="text-link" href="shop.html">Open shop →</a></div>
+        <div class="cosmetic-loadout" id="cosmeticLoadout"></div>
+      </section>
+
+
+
+      <div class="divider"></div>
+      <section class="platform-section" id="inventory">
+        <div class="section-title-row">
+          <div><h2 class="section-title">Inventory</h2><p class="help">Everything you own. Equip cosmetics directly from your profile.</p></div>
+          <a class="text-link" href="shop.html">Shop →</a>
+        </div>
+        <div class="inventory-tabs" id="inventoryTabs"></div>
+        <div class="inventory-grid" id="inventoryGrid"></div>
+      </section>
+
+      <details class="platform-section developer-panel" id="developerPanel" hidden><summary><span>Developer tools</span><span class="developer-badge">Developer</span></summary><div class="developer-body">
+        <p class="help">Local prototype controls for the bound developer account only.</p>
+        <div class="developer-controls">
+          <div class="developer-balance-grid">
+            <div class="form-group"><label class="label">Coins</label><input class="input" id="developerCoinAmount" type="number" min="0" max="999999999" step="1"></div>
+            <div class="form-group"><label class="label">Tournament Tickets</label><input class="input" id="developerTicketAmount" type="number" min="0" max="999999999" step="1"></div>
+            <div class="form-group"><label class="label">Crate Tokens</label><input class="input" id="developerKeyAmount" type="number" min="0" max="999999999" step="1"></div>
+          </div>
+          <div class="row-wrap">
+            <button class="button button-primary" id="developerApplyBalances">Apply balances</button>
+            <button class="button button-secondary" id="developerAddCoins">+10,000 coins</button>
+            <button class="button button-secondary" id="developerGrantAll">Grant all cosmetics</button>
+            <a class="button button-secondary" href="admin.html">Open Admin Console</a>
+          </div>
+        </div>
+      </div></details>
+
+      <div class="divider"></div>
+      <section class="platform-section">
+        <div class="section-title-row"><h2 class="section-title">Achievements</h2><a class="text-link" href="achievements.html">View all →</a></div>
+        <div class="badges" id="achievementBadges"></div>
+        <div class="help" id="achievementText"></div>
+        <div class="row-wrap" style="margin-top:14px">
+          <a class="button button-secondary" href="stats.html">View stats</a>
+          <a class="button button-secondary" href="leaderboard.html">Leaderboard</a>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <span>AutoType · Competitive autocomplete typing</span>
+    <span>Local prototype · Accounts and social data stay on this device</span>
+  </div>
+</footer>
+<div class="toast"></div>
+
+<script src="core.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+  const a=AutoType.currentAccount(),p=AutoType.currentProfile();
+  const target=a||{id:"guest",displayName:"Guest",bio:"Local guest profile",favoriteModes:[],avatarImage:""};
+  profileTitle.textContent=AutoType.accountName(target);displayName.value=target.displayName||"Guest";bio.value=target.bio||"";bioCount.textContent=bio.value.length;
+
+  if(a){
+    const wallet=AutoType.currentWallet();
+    const banner=AutoType.equippedItem("banner",a);
+    const title=AutoType.equippedItem("title",a);
+    profileBannerDisplay.style.background=banner?.css||"var(--surface)";
+    profileEquippedTitle.textContent=title?.value||"";
+    profileWallet.hidden=false;
+    profileWallet.innerHTML=`<span>◉ ${wallet.coins||0} coins</span><span>◆ ${wallet.tickets||0} tickets</span><span>▣ ${wallet.crateKeys||0} tokens</span>${AutoType.isDeveloper(a)?`<span class="dev-wallet-tag">DEV</span>`:""}`;
+
+    const slots=["title","banner","frame","arena","trail","cursor","predictor","result"];
+    const equippedCursor=AutoType.equippedItem("cursor",a);
+    const equippedPredictor=AutoType.equippedItem("predictor",a);
+    const equippedResult=AutoType.equippedItem("result",a);
+    const equippedTrail=AutoType.equippedItem("trail",a);
+    const equippedArena=AutoType.equippedItem("arena",a);
+
+    cosmeticLoadout.innerHTML=`<div class="profile-loadout-live">
+      <div class="profile-arena-demo" style="--profile-arena:${equippedArena?.background||"var(--surface)"};--profile-arena-border:${equippedArena?.border||"var(--border)"}">
+        <small>ARENA</small><strong>${AutoType.escapeHTML(equippedArena?.name||"Default Arena")}</strong>
+      </div>
+      <div class="profile-game-fx-preview">
+        <div class="profile-trail-demo trail-demo-${equippedTrail?.effect||"none"}" style="--demo-color:${equippedTrail?.color||"#00a2ff"}"><i></i><i></i><i></i><i></i></div>
+        <span class="profile-demo-cursor fx-${equippedCursor?.effect||"none"}" style="--demo-color:${equippedCursor?.color||"#00a2ff"};background:${equippedCursor?.color||"#00a2ff"}"></span>
+        <b>co</b><em style="color:${equippedPredictor?.color||"#89929b"}">mputer</em>
+      </div>
+      <div class="profile-result-demo result-demo-${equippedResult?.effect||"none"}">ROUND COMPLETE</div>
+    </div>`+slots.map(slot=>{
+      const item=AutoType.equippedItem(slot,a);
+      return `<div class="loadout-name"><span>${slot}</span><strong>${AutoType.escapeHTML(item?.name||"Custom / none")}</strong></div>`;
+    }).join("");
+
+    let inventoryCategory="All";
+    const categories=["All","Profile","Arena Skins","Typing FX","Victory FX"];
+    const familyForItem=item=>{
+      if(["title","banner","frame"].includes(item.slot))return "Profile";
+      if(item.slot==="arena")return "Arena Skins";
+      if(["trail","cursor","predictor"].includes(item.slot))return "Typing FX";
+      if(item.slot==="result")return "Victory FX";
+      return item.category;
+    };
+
+    const rarityColors={Default:"#8b949e",Common:"#8b949e",Uncommon:"#55b982",Rare:"#4aa9ff",Epic:"#b178ff",Legendary:"#e3b94e"};
+
+    function inventoryPreview(item){
+      if(item.slot==="banner")return `<div class="inventory-banner-preview" style="background:${item.css}"><span>${AutoType.escapeHTML(AutoType.accountName(target))}</span></div>`;
+      if(item.slot==="title")return `<div class="inventory-title-preview"><small>TITLE</small><strong>${AutoType.escapeHTML(item.value||item.name)}</strong></div>`;
+      if(item.slot==="frame")return `<div class="inventory-frame" style="--frame:${item.color}">A</div>`;
+      if(item.slot==="arena")return `<div class="inventory-arena-preview" style="background:${item.background};border-color:${item.border}"><small>ARENA</small><strong>${AutoType.escapeHTML(item.name)}</strong></div>`;
+      if(item.slot==="trail")return `<div class="inventory-trail trail-demo-${item.effect}" style="--demo-color:${item.color}"><b>co</b><i></i><i></i><i></i></div>`;
+      if(item.slot==="cursor")return `<div class="inventory-fx-row"><span class="inventory-cursor fx-${item.effect||"none"}" style="--demo-color:${item.color};background:${item.color}"></span><b>typing_</b></div>`;
+      if(item.slot==="predictor")return `<div class="inventory-word"><b>co</b><span style="color:${item.color}">mputer</span></div>`;
+      if(item.slot==="result")return `<div class="inventory-result result-demo-${item.effect||"none"}">WIN</div>`;
+      return `<div class="inventory-text-preview">${AutoType.escapeHTML(item.value||item.name)}</div>`;
+    }
+
+    function renderInventory(){
+      inventoryTabs.innerHTML=categories.map(cat=>`<button class="${cat===inventoryCategory?"active":""}" data-inv-cat="${cat}">${cat}</button>`).join("");
+      inventoryTabs.querySelectorAll("[data-inv-cat]").forEach(b=>b.addEventListener("click",()=>{inventoryCategory=b.dataset.invCat;renderInventory()}));
+
+      const owned=AutoType.shopCatalog.filter(item=>wallet.owned.includes(item.id)&&(inventoryCategory==="All"||familyForItem(item)===inventoryCategory));
+      inventoryGrid.innerHTML=owned.length?owned.map(item=>{
+        const equipped=wallet.equipped[item.slot]===item.id;
+        return `<article class="inventory-item ${equipped?"equipped":""}" style="--rarity:${rarityColors[item.rarity]||rarityColors.Default}">
+          <div class="inventory-preview">${inventoryPreview(item)}</div>
+          <div><span>${familyForItem(item)} · ${item.rarity}</span><strong>${AutoType.escapeHTML(item.name)}</strong></div>
+          <button class="button ${equipped?"button-secondary":"button-primary"}" data-inventory-equip="${item.id}" ${equipped?"disabled":""}>${equipped?"Equipped":"Equip"}</button>
+        </article>`;
+      }).join(""):`<div class="empty">No items in this category yet.</div>`;
+      inventoryGrid.querySelectorAll("[data-inventory-equip]").forEach(b=>b.addEventListener("click",()=>{
+        try{AutoType.equipShopItem(b.dataset.inventoryEquip);location.reload()}catch(e){AutoType.toast(e.message)}
+      }));
+    }
+    renderInventory();
+
+    if(AutoType.isDeveloper(a)){
+      developerPanel.hidden=false;
+      developerCoinAmount.value=wallet.coins||0;
+      developerTicketAmount.value=wallet.tickets||0;
+      developerKeyAmount.value=wallet.crateKeys||0;
+
+      developerApplyBalances.addEventListener("click",()=>{
+        try{
+          const coins=AutoType.setDeveloperCoins(developerCoinAmount.value);
+          const tickets=AutoType.setDeveloperTickets(developerTicketAmount.value);
+          const keys=AutoType.setDeveloperCrateKeys(developerKeyAmount.value);
+          AutoType.toast(`Developer balances updated: ${coins.toLocaleString()} coins, ${tickets.toLocaleString()} tickets, ${keys.toLocaleString()} tokens.`);
+          setTimeout(()=>location.reload(),450);
+        }catch(e){AutoType.toast(e.message)}
+      });
+      developerAddCoins.addEventListener("click",()=>{
+        try{AutoType.grantDeveloperCoins(10000);location.reload()}catch(e){AutoType.toast(e.message)}
+      });
+      developerGrantAll.addEventListener("click",()=>{
+        try{AutoType.grantAllCosmetics();AutoType.toast("All cosmetics granted.");setTimeout(()=>location.reload(),350)}catch(e){AutoType.toast(e.message)}
+      });
+    }
+
+  }else{
+    profileBannerDisplay.style.background="var(--surface)";
+    cosmeticLoadout.innerHTML=`<div class="help">Sign in to collect and equip shop cosmetics.</div>`;
+    inventoryTabs.innerHTML="";
+    inventoryGrid.innerHTML=`<div class="empty">Sign in to view your inventory.</div>`;
+  }
+  function renderAvatar(){
+    profileAvatar.innerHTML=target.avatarImage?`<img src="${target.avatarImage}" alt="">`:AutoType.escapeHTML(AutoType.accountName(target).slice(0,1).toUpperCase());
+    profileAvatar.style.background=target.avatarImage?"#252a30":AutoType.avatarColor(target);
+  }
+  renderAvatar();
+  const modes=[["classic","Word"],["context","Context"],["sentence","Sentence"],["evil","Evil"]];
+  favoriteModes.innerHTML=modes.map(([id,n])=>`<button class="tag ${(target.favoriteModes||[]).includes(id)?"selected":""}" data-mode="${id}">${n}</button>`).join("");
+  favoriteModes.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>b.classList.toggle("selected")));
+  const info=AutoType.levelInfo(p);
+  levelStat.textContent=info.level;bestStat.textContent=p.bestScore||0;roundStat.textContent=p.rounds||0;
+  xpText.textContent=`${info.xp} XP`;
+  xpBar.style.width=`${info.pct}%`;
+  xpNext.textContent=`${info.remaining} XP until level ${info.level+1}.`;
+
+  removeImage.addEventListener("click",()=>{target.avatarImage="";renderAvatar()});
+  saveProfile.addEventListener("click",()=>{
+    if(!a)return;
+    AutoType.patchCurrentAccount({
+      displayName:displayName.value.trim()||a.username,
+      bio:bio.value.trim().slice(0,180),
+      avatarImage:target.avatarImage||"",
+      favoriteModes:[...favoriteModes.querySelectorAll(".selected")].map(x=>x.dataset.mode)
+    });
+    AutoType.toast("Profile saved.");setTimeout(()=>location.reload(),450);
+  });
+});
+</script>
+
+</body>
+</html>
