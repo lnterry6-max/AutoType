@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stats · AutoType</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="stats">
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a class="brand" href="index.html">
+      <span class="brand-logo"><img src="assets/logo.png" alt="AutoType"></span>
+      <span>AutoType</span>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" data-nav="home">Home</a>
+      <a href="play.html" data-nav="play">Play</a>
+      <a href="tournaments.html" data-nav="tournaments">Tournaments</a>
+      <a href="shop.html" data-nav="shop">Shop</a>
+      <a href="friends.html" data-nav="friends">Friends</a>
+      <details class="nav-more">
+        <summary>More</summary>
+        <div class="nav-more-menu">
+          <a href="create.html" data-nav="create">Create</a>
+          <a href="predictions.html" data-nav="predictions">Prediction Lab</a>
+          <a href="achievements.html" data-nav="achievements">Achievements</a>
+          <a href="leaderboard.html" data-nav="leaderboard">Leaderboard</a>
+          <a href="stats.html" data-nav="stats">Stats</a>
+          <a href="how-to.html" data-nav="help">How to Play</a>
+          <a href="settings.html" data-nav="settings">Settings</a>
+        </div>
+      </details>
+    </nav>
+    <div class="nav-spacer"></div>
+    <div class="nav-currency" id="navCurrency" hidden></div>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Open navigation">☰</button>
+    <div class="nav-account">
+      <button class="account-button" id="accountMenuButton"></button>
+      <div class="account-dropdown" id="accountDropdown" hidden></div>
+    </div>
+  </div>
+</header>
+<nav class="mobile-nav" id="mobileNav">
+  <a href="index.html">Home</a>
+  <a href="play.html">Play</a>
+  <a href="tournaments.html">Tournaments</a>
+  <a href="shop.html">Shop</a>
+  <a href="friends.html">Friends</a>
+  <a href="create.html">Create</a>
+  <a href="predictions.html">Prediction Lab</a>
+  <a href="achievements.html">Achievements</a>
+  <a href="leaderboard.html">Leaderboard</a>
+  <a href="stats.html">Stats</a>
+  <a href="how-to.html">How to Play</a>
+  <a href="settings.html">Settings</a>
+</nav>
+
+<main class="container page">
+  <div class="page-heading platform-page-heading">
+    <div class="eyebrow">Performance</div>
+    <h1>Your stats</h1>
+    <p>A complete view of the progress AutoType has saved for the current profile.</p>
+  </div>
+
+  <div class="stats-page-grid">
+    <div class="stat"><strong id="sBest">0</strong><span>Best score</span></div>
+    <div class="stat"><strong id="sRounds">0</strong><span>Rounds</span></div>
+    <div class="stat"><strong id="sWords">0</strong><span>Words cleared</span></div>
+    <div class="stat"><strong id="sFastest">—</strong><span>Fastest round</span></div>
+    <div class="stat"><strong id="sStreak">0</strong><span>Best streak</span></div>
+    <div class="stat"><strong id="sErased">0</strong><span>AI letters erased</span></div>
+    <div class="stat"><strong id="sPerfect">0</strong><span>Perfect rounds</span></div>
+    <div class="stat"><strong id="sMind">0</strong><span>One-clue words</span></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="grid-2">
+    <section class="panel panel-pad">
+      <h2 class="section-title">Efficiency</h2>
+      <div class="metric-list">
+        <div><span>Average score</span><strong id="avgScore">—</strong></div>
+        <div><span>Average keys per round</span><strong id="avgKeys">—</strong></div>
+        <div><span>Average errors per round</span><strong id="avgErrors">—</strong></div>
+        <div><span>Most AI erased in one round</span><strong id="bestErased">0</strong></div>
+      </div>
+    </section>
+
+    <section class="panel panel-pad">
+      <h2 class="section-title">Progression</h2>
+      <div class="metric-list">
+        <div><span>Level</span><strong id="statLevel">1</strong></div>
+        <div><span>Total XP</span><strong id="statXP">0</strong></div>
+        <div><span>Achievements</span><strong id="statAchievements">0 / 6</strong></div>
+        <div><span>Today's Daily best</span><strong id="statDaily">—</strong></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <span>AutoType · Competitive autocomplete typing</span>
+    <span>Local prototype · Accounts and social data stay on this device</span>
+  </div>
+</footer>
+<div class="toast"></div>
+<script src="core.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+  const p=AutoType.currentProfile();
+  const info=AutoType.levelInfo(p);
+  const rounds=p.rounds||0;
+  const date=new Date();
+  const key=`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+
+  sBest.textContent=p.bestScore||0;
+  sRounds.textContent=rounds;
+  sWords.textContent=p.words||0;
+  sFastest.textContent=AutoType.formatTime(p.fastest);
+  sStreak.textContent=p.bestStreak||0;
+  sErased.textContent=p.erased||0;
+  sPerfect.textContent=p.perfectRounds||0;
+  sMind.textContent=p.mindReaderCount||0;
+
+  avgScore.textContent=rounds?Math.round((p.totalScore||0)/rounds):"—";
+  avgKeys.textContent=rounds?((p.totalKeys||0)/rounds).toFixed(1):"—";
+  avgErrors.textContent=rounds?((p.totalErrors||0)/rounds).toFixed(1):"—";
+  bestErased.textContent=p.bestErasedRound||0;
+
+  statLevel.textContent=info.level;
+  statXP.textContent=info.xp;
+  statAchievements.textContent=`${AutoType.unlockedAchievements(p).length} / ${AutoType.achievementDefs.length}`;
+  statDaily.textContent=p.daily?.[key]||"—";
+});
+</script>
+</body>
+</html>
