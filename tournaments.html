@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tournaments · AutoType</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="tournaments">
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a class="brand" href="index.html">
+      <span class="brand-logo"><img src="assets/logo.png" alt="AutoType"></span>
+      <span>AutoType</span>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" data-nav="home">Home</a>
+      <a href="play.html" data-nav="play">Play</a>
+      <a href="tournaments.html" data-nav="tournaments">Tournaments</a>
+      <a href="shop.html" data-nav="shop">Shop</a>
+      <a href="friends.html" data-nav="friends">Friends</a>
+      <details class="nav-more">
+        <summary>More</summary>
+        <div class="nav-more-menu">
+          <a href="create.html" data-nav="create">Create</a>
+          <a href="predictions.html" data-nav="predictions">Prediction Lab</a>
+          <a href="achievements.html" data-nav="achievements">Achievements</a>
+          <a href="leaderboard.html" data-nav="leaderboard">Leaderboard</a>
+          <a href="stats.html" data-nav="stats">Stats</a>
+          <a href="how-to.html" data-nav="help">How to Play</a>
+          <a href="settings.html" data-nav="settings">Settings</a>
+        </div>
+      </details>
+    </nav>
+    <div class="nav-spacer"></div>
+    <div class="nav-currency" id="navCurrency" hidden></div>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Open navigation">☰</button>
+    <div class="nav-account">
+      <button class="account-button" id="accountMenuButton"></button>
+      <div class="account-dropdown" id="accountDropdown" hidden></div>
+    </div>
+  </div>
+</header>
+<nav class="mobile-nav" id="mobileNav">
+  <a href="index.html">Home</a>
+  <a href="play.html">Play</a>
+  <a href="tournaments.html">Tournaments</a>
+  <a href="shop.html">Shop</a>
+  <a href="friends.html">Friends</a>
+  <a href="create.html">Create</a>
+  <a href="predictions.html">Prediction Lab</a>
+  <a href="achievements.html">Achievements</a>
+  <a href="leaderboard.html">Leaderboard</a>
+  <a href="stats.html">Stats</a>
+  <a href="how-to.html">How to Play</a>
+  <a href="settings.html">Settings</a>
+</nav>
+
+<main class="container page">
+  <div class="tournament-hero">
+    <div>
+      <div class="eyebrow">Competitive events</div>
+      <h1>Tournaments</h1>
+      <p>Register for skill-based AutoType events. Entry is free or uses Tournament Tickets earned through play.</p>
+    </div>
+    <div class="tournament-hero-actions">
+      <div class="tournament-wallet" id="tournamentWallet">
+        <span>◆ Tournament Tickets</span>
+        <strong id="ticketBalance">0</strong>
+      </div>
+      <a class="button button-secondary" href="admin.html#tournaments" id="manageTournamentsLink" hidden>Manage tournaments</a>
+    </div>
+  </div>
+
+  <div class="tournament-flow"><div><span>1</span><strong>Earn tickets</strong><small>Play normal rounds</small></div><div><span>2</span><strong>Register</strong><small>Free or ticket entry</small></div><div><span>3</span><strong>Compete</strong><small>Same skill-based challenge</small></div><div><span>4</span><strong>Win rewards</strong><small>Coins, titles, trophies</small></div></div>
+
+  <div class="tournament-policy">
+    <strong>No paid wagering.</strong>
+    <span>Purchased coins cannot buy tournament entry, tickets cannot be purchased, and rewards have no cash-out value.</span>
+  </div>
+
+  <section class="tournament-grid" id="tournamentGrid"></section>
+
+  <div class="divider"></div>
+
+  <section class="panel panel-pad">
+    <div class="section-title-row">
+      <div><h2 class="section-title">Your registrations</h2><p class="help">This local prototype tracks registration. Live brackets and server-verified results come with the backend.</p></div>
+    </div>
+    <div id="registrationList" class="tournament-registration-list"></div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <span>AutoType · Competitive autocomplete typing</span>
+    <span>Local prototype · Accounts and social data stay on this device</span>
+  </div>
+</footer>
+<div class="toast"></div>
+<script src="core.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+  const account=AutoType.currentAccount();
+  const store=AutoType.store();
+
+  if(account&&AutoType.isDeveloper(account))manageTournamentsLink.hidden=false;
+
+  function statusLabel(t){
+    return t.status==="open"?"Registration open":t.status==="scheduled"?"Coming soon":"Closed";
+  }
+
+  function render(){
+    const wallet=AutoType.currentWallet();
+    ticketBalance.textContent=wallet?.tickets||0;
+    const defs=AutoType.tournaments();
+
+    tournamentGrid.innerHTML=defs.length?defs.map(t=>{
+      const entry=account?AutoType.tournamentEntry(t.id,account.id):null;
+      const entrants=store.tournamentEntries.filter(e=>e.tournamentId===t.id).length;
+      const entryText=t.entryType==="free"?"Free entry":`${t.entryCost} ◆`;
+      const full=entrants>=t.maxPlayers;
+      let action;
+
+      if(!account){
+        action=`<a class="button button-secondary" href="account.html">Sign in to register</a>`;
+      }else if(entry){
+        action=`<button class="button button-quiet" data-leave="${t.id}" ${t.status==="closed"?"disabled":""}>${t.status==="closed"?"Tournament closed":"Leave tournament"}</button>`;
+      }else if(t.status!=="open"){
+        action=`<button class="button button-secondary" disabled>${t.status==="scheduled"?"Registration not open":"Registration closed"}</button>`;
+      }else if(full){
+        action=`<button class="button button-secondary" disabled>Tournament full</button>`;
+      }else{
+        action=`<button class="button button-primary" data-join="${t.id}">Register · ${entryText}</button>`;
+      }
+
+      return `<article class="tournament-card ${entry?"registered":""} status-${t.status}">
+        <div class="tournament-card-top">
+          <span>${AutoType.escapeHTML(t.schedule)}</span>
+          <span class="tournament-status">${statusLabel(t)}</span>
+        </div>
+        <h2>${AutoType.escapeHTML(t.name)}</h2>
+        <p>${AutoType.escapeHTML(t.description)}</p>
+        <div class="tournament-prizes">
+          <div><span>Entry</span><strong>${entryText}</strong></div>
+          <div><span>Players</span><strong>${entrants}/${t.maxPlayers}</strong></div>
+          <div><span>Coins</span><strong>${t.rewardCoins} ◉</strong></div>
+          <div><span>Crate tokens</span><strong>${t.rewardCrateTokens||0} ▣</strong></div>
+        </div>
+        ${t.rewardTitle?`<div class="tournament-title-prize">Winner title · ${AutoType.escapeHTML(t.rewardTitle)}</div>`:""}
+        <div class="tournament-card-action">${action}</div>
+      </article>`;
+    }).join(""):`<div class="empty tournament-empty">No tournaments are currently configured.</div>`;
+
+    tournamentGrid.querySelectorAll("[data-join]").forEach(b=>b.addEventListener("click",()=>{
+      try{
+        const t=AutoType.joinTournament(b.dataset.join);
+        AutoType.toast(`Registered for ${t.name}.`);
+        render();
+      }catch(e){AutoType.toast(e.message)}
+    }));
+
+    tournamentGrid.querySelectorAll("[data-leave]").forEach(b=>b.addEventListener("click",()=>{
+      try{
+        AutoType.leaveTournament(b.dataset.leave);
+        AutoType.toast("Registration cancelled. Ticket returned if one was used.");
+        render();
+      }catch(e){AutoType.toast(e.message)}
+    }));
+
+    if(!account){
+      registrationList.innerHTML=`<div class="empty">Sign in to register for tournaments.</div>`;
+      return;
+    }
+
+    const entries=store.tournamentEntries.filter(e=>e.accountId===account.id);
+    registrationList.innerHTML=entries.length?entries.map(e=>{
+      const t=AutoType.tournamentById(e.tournamentId);
+      return `<div class="tournament-registration">
+        <div><strong>${AutoType.escapeHTML(t?.name||e.tournamentId)}</strong><span>${AutoType.escapeHTML(t?.schedule||"")} · ${new Date(e.joinedAt).toLocaleDateString()}</span></div>
+        <span class="status-pill">${e.status==="winner"?"Winner":"Registered"}</span>
+      </div>`;
+    }).join(""):`<div class="empty">You are not registered for any tournaments.</div>`;
+  }
+
+  render();
+});
+</script>
+</body>
+</html>
