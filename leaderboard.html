@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Leaderboard · AutoType</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="leaderboard">
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a class="brand" href="index.html">
+      <span class="brand-logo"><img src="assets/logo.png" alt="AutoType"></span>
+      <span>AutoType</span>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" data-nav="home">Home</a>
+      <a href="play.html" data-nav="play">Play</a>
+      <a href="tournaments.html" data-nav="tournaments">Tournaments</a>
+      <a href="shop.html" data-nav="shop">Shop</a>
+      <a href="friends.html" data-nav="friends">Friends</a>
+      <details class="nav-more">
+        <summary>More</summary>
+        <div class="nav-more-menu">
+          <a href="create.html" data-nav="create">Create</a>
+          <a href="predictions.html" data-nav="predictions">Prediction Lab</a>
+          <a href="achievements.html" data-nav="achievements">Achievements</a>
+          <a href="leaderboard.html" data-nav="leaderboard">Leaderboard</a>
+          <a href="stats.html" data-nav="stats">Stats</a>
+          <a href="how-to.html" data-nav="help">How to Play</a>
+          <a href="settings.html" data-nav="settings">Settings</a>
+        </div>
+      </details>
+    </nav>
+    <div class="nav-spacer"></div>
+    <div class="nav-currency" id="navCurrency" hidden></div>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Open navigation">☰</button>
+    <div class="nav-account">
+      <button class="account-button" id="accountMenuButton"></button>
+      <div class="account-dropdown" id="accountDropdown" hidden></div>
+    </div>
+  </div>
+</header>
+<nav class="mobile-nav" id="mobileNav">
+  <a href="index.html">Home</a>
+  <a href="play.html">Play</a>
+  <a href="tournaments.html">Tournaments</a>
+  <a href="shop.html">Shop</a>
+  <a href="friends.html">Friends</a>
+  <a href="create.html">Create</a>
+  <a href="predictions.html">Prediction Lab</a>
+  <a href="achievements.html">Achievements</a>
+  <a href="leaderboard.html">Leaderboard</a>
+  <a href="stats.html">Stats</a>
+  <a href="how-to.html">How to Play</a>
+  <a href="settings.html">Settings</a>
+</nav>
+
+<main class="container page">
+  <div class="page-heading platform-page-heading">
+    <div class="eyebrow">Local ranking</div>
+    <h1>Leaderboard</h1>
+    <p>Compare the AutoType accounts saved in this browser. Online/global rankings will require the future backend.</p>
+  </div>
+
+  <div class="leaderboard-self" id="leaderboardSelf"><div><span>Your local rank</span><strong id="currentRankMetric">—</strong></div><div><span>Your best</span><strong id="currentBestMetric">0</strong></div><div><span>Level</span><strong id="currentLevelMetric">1</strong></div></div>
+
+  <div class="grid-2 leaderboard-columns">
+    <section class="panel panel-pad">
+      <div class="section-title-row"><h2 class="section-title">All-time</h2><span class="help">Best score</span></div>
+      <div class="leaderboard-list" id="allTimeBoard"></div>
+    </section>
+
+    <section class="panel panel-pad">
+      <div class="section-title-row"><h2 class="section-title">Daily</h2><span class="help" id="dailyDate"></span></div>
+      <div class="leaderboard-list" id="dailyBoard"></div>
+      <div class="daily-claim" id="dailyClaim" hidden>
+        <span>You currently hold #1 locally.</span>
+        <button class="button button-primary" id="claimDailyReward">Claim 150 ◉</button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <span>AutoType · Competitive autocomplete typing</span>
+    <span>Local prototype · Accounts and social data stay on this device</span>
+  </div>
+</footer>
+<div class="toast"></div>
+<script src="core.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+  const store=AutoType.store();
+  const current=AutoType.currentAccount();
+  const d=new Date();
+  const dateKey=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  dailyDate.textContent=d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+
+  function row(a,score,rank){
+    const level=AutoType.levelInfo(a.profile).level;
+    return `<div class="leaderboard-row ${current?.id===a.id?"me":""}">
+      <span class="rank">${rank}</span>
+      <span class="leader-person">${AutoType.avatarMarkup(a,"avatar")}<span><strong>${AutoType.escapeHTML(AutoType.accountName(a))}</strong><small>LV ${level}</small></span></span>
+      <strong class="leader-score">${score}</strong>
+    </div>`;
+  }
+
+  const all=[...store.accounts].sort((a,b)=>(b.profile?.bestScore||0)-(a.profile?.bestScore||0));
+  if(current){
+    currentRankMetric.textContent=`#${Math.max(1,all.findIndex(a=>a.id===current.id)+1)}`;
+    currentBestMetric.textContent=current.profile?.bestScore||0;
+    currentLevelMetric.textContent=AutoType.levelInfo(current.profile).level;
+  }
+  allTimeBoard.innerHTML=all.length?all.map((a,i)=>row(a,a.profile?.bestScore||0,i+1)).join(""):`<div class="empty">Create an account to appear here.</div>`;
+
+  const daily=[...store.accounts]
+    .map(a=>({a,score:a.profile?.daily?.[dateKey]||0}))
+    .filter(x=>x.score>0)
+    .sort((x,y)=>y.score-x.score);
+  dailyBoard.innerHTML=daily.length?daily.map((x,i)=>row(x.a,x.score,i+1)).join(""):`<div class="empty">No Daily Challenge scores yet today.</div>`;
+
+  if(current&&daily[0]?.a.id===current.id){
+    const claimKey=`dailyFirst:${dateKey}`;
+    dailyClaim.hidden=false;
+    const already=!!current.wallet?.claims?.[claimKey];
+    claimDailyReward.disabled=already;
+    claimDailyReward.textContent=already?"Claimed":"Claim 150 ◉";
+    claimDailyReward.addEventListener("click",()=>{
+      if(current.wallet.claims[claimKey])return;
+      current.wallet.claims[claimKey]=true;
+      AutoType.addCoins(150,"Daily leaderboard #1");
+      AutoType.save();
+      claimDailyReward.disabled=true;
+      claimDailyReward.textContent="Claimed";
+      AutoType.toast("150 coins claimed.");
+    });
+  }
+});
+</script>
+</body>
+</html>
