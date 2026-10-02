@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Home · AutoType</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="home">
+
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a class="brand" href="index.html">
+      <span class="brand-logo"><img src="assets/logo.png" alt="AutoType"></span>
+      <span>AutoType</span>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" data-nav="home">Home</a>
+      <a href="play.html" data-nav="play">Play</a>
+      <a href="tournaments.html" data-nav="tournaments">Tournaments</a>
+      <a href="shop.html" data-nav="shop">Shop</a>
+      <a href="friends.html" data-nav="friends">Friends</a>
+      <details class="nav-more">
+        <summary>More</summary>
+        <div class="nav-more-menu">
+          <a href="create.html" data-nav="create">Create</a>
+          <a href="predictions.html" data-nav="predictions">Prediction Lab</a>
+          <a href="achievements.html" data-nav="achievements">Achievements</a>
+          <a href="leaderboard.html" data-nav="leaderboard">Leaderboard</a>
+          <a href="stats.html" data-nav="stats">Stats</a>
+          <a href="how-to.html" data-nav="help">How to Play</a>
+          <a href="settings.html" data-nav="settings">Settings</a>
+        </div>
+      </details>
+    </nav>
+    <div class="nav-spacer"></div>
+    <div class="nav-currency" id="navCurrency" hidden></div>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Open navigation">☰</button>
+    <div class="nav-account">
+      <button class="account-button" id="accountMenuButton"></button>
+      <div class="account-dropdown" id="accountDropdown" hidden></div>
+    </div>
+  </div>
+</header>
+<nav class="mobile-nav" id="mobileNav">
+  <a href="index.html">Home</a>
+  <a href="play.html">Play</a>
+  <a href="tournaments.html">Tournaments</a>
+  <a href="shop.html">Shop</a>
+  <a href="friends.html">Friends</a>
+  <a href="create.html">Create</a>
+  <a href="predictions.html">Prediction Lab</a>
+  <a href="achievements.html">Achievements</a>
+  <a href="leaderboard.html">Leaderboard</a>
+  <a href="stats.html">Stats</a>
+  <a href="how-to.html">How to Play</a>
+  <a href="settings.html">Settings</a>
+</nav>
+
+
+<main class="container platform-home">
+  <section class="home-announcement" id="homeAnnouncement" hidden aria-live="polite"></section>
+  <section class="home-command-shelf">
+    <div class="home-command-copy">
+      <div class="eyebrow" id="homeGreeting">AUTOTYPE</div>
+      <h1>Beat the prediction.<br>Own the sentence.</h1>
+      <p>AutoType commits to a word before you finish typing. Reject bad guesses, feed it better clues, and lock each word with the fewest moves possible.</p>
+      <div class="hero-actions">
+        <a class="button button-primary home-play-button" href="play.html">Play AutoType</a>
+        <a class="button button-secondary" href="play.html?mode=daily">Daily Challenge</a>
+      </div>
+      <div class="home-mini-stats">
+        <div><span>Best</span><strong id="homeBestScore">0</strong></div>
+        <div><span>Level</span><strong id="homeLevelMetric">1</strong></div>
+        <div><span>Best streak</span><strong id="homeBestStreak">0</strong></div>
+      </div>
+    </div>
+
+    <div class="home-game-preview">
+      <div class="home-game-preview-head"><span>LIVE PREDICTOR</span><span class="live-dot"><i></i> active</span></div>
+      <div class="home-target-sample">Target: <strong>minutes</strong></div>
+      <div class="preview-word"><span class="preview-user" id="demoUser">m</span><span class="preview-ai-correct" id="demoCorrect">i</span><span class="preview-ai" id="demoAi">ld</span></div>
+      <div class="preview-caption" id="demoCaption">The i is correct. Keep it and erase only ld.</div>
+      <div class="home-preview-keys"><span>TYPE</span><b>→</b><span>PREDICT</span><b>→</b><span>REJECT / LOCK</span></div>
+    </div>
+  </section>
+
+  <section class="platform-section">
+    <div class="platform-section-head"><div><span class="section-kicker">PLAY</span><h2>Pick your fight</h2></div><a href="play.html">All modes →</a></div>
+    <div class="home-mode-grid">
+      <a class="home-mode-card featured" href="play.html?mode=classic"><span>WORD</span><strong>Classic</strong><p>Pure prefix vs autocomplete.</p><b>Play →</b></a>
+      <a class="home-mode-card" href="play.html?mode=context"><span>CONTEXT</span><strong>Context</strong><p>The last word changes the next guess.</p><b>Play →</b></a>
+      <a class="home-mode-card" href="play.html?mode=evil"><span>CHAOS</span><strong>Evil</strong><p>Wrong-but-plausible guesses get priority.</p><b>Play →</b></a>
+      <a class="home-mode-card" href="create.html"><span>CUSTOM</span><strong>Create</strong><p>Bring your own sentence.</p><b>Build →</b></a>
+    </div>
+  </section>
+
+  <div class="home-dashboard-grid">
+    <section class="platform-section compact-section">
+      <div class="platform-section-head"><div><span class="section-kicker">PROGRESS</span><h2 id="homePlayerName">Guest</h2></div><a href="profile.html">Profile →</a></div>
+      <div class="home-progress-line"><span id="homeXpText">0 XP</span><span id="homeXpNext">500 to next</span></div>
+      <div class="xp-bar"><i id="homeXpBar"></i></div>
+      <div class="metric-row-3">
+        <div><span>Achievements</span><strong id="homeAchievementMetric">0 / 6</strong></div>
+        <div><span>Rounds</span><strong id="homeRoundsMetric">0</strong></div>
+        <div><span>Words</span><strong id="homeWordsMetric">0</strong></div>
+      </div>
+    </section>
+
+    <section class="platform-section compact-section">
+      <div class="platform-section-head"><div><span class="section-kicker">WALLET</span><h2>Cosmetics</h2></div><a href="shop.html">Shop →</a></div>
+      <div class="home-wallet" id="homeWallet">
+        <div><span>◉</span><strong id="homeCoins">—</strong><small>Coins</small></div>
+        <div><span>◆</span><strong id="homeTickets">—</strong><small>Tickets</small></div>
+        <div><span>▣</span><strong id="homeCrateKeys">—</strong><small>Crate Tokens</small></div>
+      </div>
+      <p class="section-note" id="homeWalletNote">Sign in to collect cosmetics and currency.</p>
+    </section>
+  </div>
+
+  <div class="home-dashboard-grid">
+    <section class="platform-section compact-section home-feature-link">
+      <div class="feature-icon">◆</div>
+      <div><span class="section-kicker">TOURNAMENTS</span><h2>Competitive events</h2><p><span id="homeTournamentMetric">0</span> registrations · free or earned-ticket entry.</p></div>
+      <a class="button button-secondary" href="tournaments.html">View events</a>
+    </section>
+    <section class="platform-section compact-section home-feature-link">
+      <div class="feature-icon">◎</div>
+      <div><span class="section-kicker">COMMUNITY</span><h2>Friends & predictions</h2><p><span id="homeRequestMetric">0</span> requests · <span id="homeSuggestionMetric">0</span> lab suggestions.</p></div>
+      <a class="button button-secondary" href="friends.html">Open social</a>
+    </section>
+  </div>
+</main>
+
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <span>AutoType · Competitive autocomplete typing</span>
+    <span>Local prototype · Accounts and social data stay on this device</span>
+  </div>
+</footer>
+<div class="toast"></div>
+
+<script src="core.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+  const $=id=>document.getElementById(id);
+  const demos=[
+    ["m","i","ld","AutoType got i right. Keep it and erase only ld."],
+    ["min","u","te","Correct overlap stays while only the wrong tail gets erased."],
+    ["minu","tes","","A full correct prediction can be locked with Space or Enter."],
+    ["you'","re","","Apostrophes count as real input too."]
+  ];
+
+  let demoIndex=0;
+  const renderDemo=()=>{
+    const demo=demos[demoIndex];
+    if($("demoUser")) $("demoUser").textContent=demo[0];
+    if($("demoCorrect")) $("demoCorrect").textContent=demo[1];
+    if($("demoAi")) $("demoAi").textContent=demo[2];
+    if($("demoCaption")) $("demoCaption").textContent=demo[3];
+  };
+  renderDemo();
+  setInterval(()=>{demoIndex=(demoIndex+1)%demos.length;renderDemo()},2300);
+
+  function renderAnnouncement(store){
+    const el=$("homeAnnouncement");
+    if(!el)return;
+    const message=String(store?.announcement?.message||"").trim();
+    const active=!!store?.announcement?.active && !!message;
+    el.hidden=!active;
+    el.innerHTML=active
+      ? `<strong>Announcement</strong><span>${AutoType.escapeHTML(message)}</span>`
+      : "";
+  }
+
+  function renderProgress(account,profile){
+    const info=AutoType.levelInfo(profile);
+    const set=(id,value)=>{const el=$(id);if(el)el.textContent=value};
+
+    set("homeGreeting",account?`WELCOME BACK, ${AutoType.accountName(account).toUpperCase()}`:"AUTOTYPE");
+    set("homePlayerName",account?AutoType.accountName(account):"Guest progress");
+    set("homeBestScore",profile.bestScore||0);
+    set("homeLevelMetric",info.level);
+    set("homeBestStreak",profile.bestStreak||0);
+    set("homeXpText",`${info.xp} XP`);
+    set("homeXpNext",`${info.remaining} to level ${info.level+1}`);
+    set("homeAchievementMetric",`${AutoType.unlockedAchievements(profile).length} / ${AutoType.achievementDefs.length}`);
+    set("homeRoundsMetric",profile.rounds||0);
+    set("homeWordsMetric",profile.words||0);
+
+    const bar=$("homeXpBar");
+    if(bar)bar.style.width=`${Math.max(0,Math.min(100,info.pct))}%`;
+  }
+
+  function renderWallet(account,wallet){
+    const set=(id,value)=>{const el=$(id);if(el)el.textContent=value};
+    const note=$("homeWalletNote");
+
+    if(account&&wallet){
+      set("homeCoins",Number(wallet.coins||0).toLocaleString());
+      set("homeTickets",Number(wallet.tickets||0).toLocaleString());
+      set("homeCrateKeys",Number(wallet.crateKeys||0).toLocaleString());
+      if(note){
+        const title=AutoType.equippedItem("title",account)?.value;
+        note.textContent=title?`Equipped title: ${title}`:"Open the Shop to build your loadout.";
+      }
+    }else{
+      set("homeCoins","—");set("homeTickets","—");set("homeCrateKeys","—");
+      if(note)note.textContent="Sign in to collect cosmetics and currency.";
+    }
+  }
+
+  function renderCommunity(account,store){
+    const set=(id,value)=>{const el=$(id);if(el)el.textContent=value};
+    set("homeSuggestionMetric",Array.isArray(store?.suggestions)?store.suggestions.length:0);
+    set("homeRequestMetric",account&&Array.isArray(store?.friendRequests)
+      ? store.friendRequests.filter(r=>r.status==="pending"&&r.toId===account.id).length
+      : 0);
+    set("homeTournamentMetric",account&&Array.isArray(store?.tournamentEntries)
+      ? store.tournamentEntries.filter(e=>e.accountId===account.id).length
+      : 0);
+  }
+
+  function renderHome(){
+    // Each surface renders separately so an optional widget can never blank the
+    // player's progress or wallet again.
+    const store=AutoType.store();
+    const account=AutoType.currentAccount();
+    const profile=AutoType.currentProfile();
+    const wallet=AutoType.currentWallet();
+
+    try{renderAnnouncement(store)}catch(err){console.error("Home announcement render failed",err)}
+    try{renderProgress(account,profile)}catch(err){console.error("Home progress render failed",err)}
+    try{renderWallet(account,wallet)}catch(err){console.error("Home wallet render failed",err)}
+    try{renderCommunity(account,store)}catch(err){console.error("Home community render failed",err)}
+  }
+
+  renderHome();
+
+  // Refresh when another AutoType page modifies local data in another tab.
+  window.addEventListener("storage",event=>{
+    if(event.key==="autotypeAccountsStore")renderHome();
+  });
+  window.addEventListener("pageshow",renderHome);
+});
+</script>
+
+</body>
+</html>
