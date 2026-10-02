@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How to Play · AutoType</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="help">
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a class="brand" href="index.html">
+      <span class="brand-logo"><img src="assets/logo.png" alt="AutoType"></span>
+      <span>AutoType</span>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" data-nav="home">Home</a>
+      <a href="play.html" data-nav="play">Play</a>
+      <a href="tournaments.html" data-nav="tournaments">Tournaments</a>
+      <a href="shop.html" data-nav="shop">Shop</a>
+      <a href="friends.html" data-nav="friends">Friends</a>
+      <details class="nav-more">
+        <summary>More</summary>
+        <div class="nav-more-menu">
+          <a href="create.html" data-nav="create">Create</a>
+          <a href="predictions.html" data-nav="predictions">Prediction Lab</a>
+          <a href="achievements.html" data-nav="achievements">Achievements</a>
+          <a href="leaderboard.html" data-nav="leaderboard">Leaderboard</a>
+          <a href="stats.html" data-nav="stats">Stats</a>
+          <a href="how-to.html" data-nav="help">How to Play</a>
+          <a href="settings.html" data-nav="settings">Settings</a>
+        </div>
+      </details>
+    </nav>
+    <div class="nav-spacer"></div>
+    <div class="nav-currency" id="navCurrency" hidden></div>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Open navigation">☰</button>
+    <div class="nav-account">
+      <button class="account-button" id="accountMenuButton"></button>
+      <div class="account-dropdown" id="accountDropdown" hidden></div>
+    </div>
+  </div>
+</header>
+<nav class="mobile-nav" id="mobileNav">
+  <a href="index.html">Home</a>
+  <a href="play.html">Play</a>
+  <a href="tournaments.html">Tournaments</a>
+  <a href="shop.html">Shop</a>
+  <a href="friends.html">Friends</a>
+  <a href="create.html">Create</a>
+  <a href="predictions.html">Prediction Lab</a>
+  <a href="achievements.html">Achievements</a>
+  <a href="leaderboard.html">Leaderboard</a>
+  <a href="stats.html">Stats</a>
+  <a href="how-to.html">How to Play</a>
+  <a href="settings.html">Settings</a>
+</nav>
+
+<main class="container page">
+  <div class="page-heading platform-page-heading">
+    <div class="eyebrow">Guide</div>
+    <h1>How to Play</h1>
+    <p>AutoType is not a normal typing test. The predictor physically inserts its guess, and you have to fight it when it's wrong.</p>
+  </div>
+
+  <section class="mechanic-demo platform-section">
+    <div class="platform-section-head"><div><span class="section-kicker">THE CORE LOOP</span><h2>One word, three decisions</h2></div></div>
+    <div class="mechanic-demo-flow"><div><small>TARGET</small><strong>minutes</strong></div><b>→</b><div><small>YOU TYPE</small><strong>m</strong></div><b>→</b><div><small>AUTOTYPE GUESSES</small><strong><i>mi</i>ld</strong></div><b>→</b><div><small>SMART ERASE</small><strong>mi ⌫ld</strong></div></div>
+  </section>
+
+  <section class="how-steps">
+    <article><span>1</span><div><h2>Type a clue letter</h2><p>The target might be <strong>minutes</strong>. You type <strong>m</strong>.</p></div></article>
+    <article><span>2</span><div><h2>AutoType commits to a word</h2><p>It might guess <strong>mild</strong>. The <strong>i</strong> already matches the target, while <strong>ld</strong> does not.</p></div></article>
+    <article><span>3</span><div><h2>Erase only the wrong tail</h2><p>You only backspace <strong>ld</strong>. The correct <strong>i</strong> stays, so your usable prefix becomes <strong>mi</strong>. AutoType also tries not to repeat a recent guess when another completion is available.</p></div></article>
+    <article><span>4</span><div><h2>Lock the correct word</h2><p>Keep adding clues and rejecting only incorrect letters. When the visible word exactly matches the target, press <strong>Space</strong> or <strong>Enter</strong>.</p></div></article>
+  </section>
+
+  <div class="divider"></div>
+
+  <div class="grid-2">
+    <section class="panel panel-pad">
+      <h2 class="section-title">Controls</h2>
+      <div class="metric-list">
+        <div><span>A–Z</span><strong>Type clue</strong></div>
+        <div><span>'</span><strong>Apostrophe</strong></div>
+        <div><span>Backspace</span><strong>Erase AI / prefix</strong></div>
+        <div><span>Space / Enter</span><strong>Lock word</strong></div>
+      </div>
+    </section>
+
+    <section class="panel panel-pad">
+      <h2 class="section-title">Scoring</h2>
+      <p class="help how-copy">Using fewer clue letters earns more points. Building a word streak adds a combo bonus. Failed locks reset your streak, while erasing wrong AI letters contributes to achievement progress.</p>
+    </section>
+  </div>
+
+  <div class="divider"></div>
+
+  <section class="panel panel-pad">
+    <h2 class="section-title">Modes</h2>
+    <div class="help-mode-list">
+      <div><strong>Word</strong><span>Only your current prefix influences autocomplete.</span></div>
+      <div><strong>Context</strong><span>The previous completed word affects the ranking.</span></div>
+      <div><strong>Sentence</strong><span>Context mode plus a visible prediction for how the sentence may continue.</span></div>
+      <div><strong>Evil</strong><span>Plausible wrong words and slang are deliberately prioritized.</span></div>
+      <div><strong>Daily Challenge</strong><span>One deterministic sentence for the entire day. Beat your saved best.</span></div>
+      <div><strong>Custom</strong><span>Write your own sentence and choose any predictor behavior.</span></div>
+      <div><strong>Race</strong><span>Friends receive the exact same fixed sentence and compare completion results.</span></div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <span>AutoType · Competitive autocomplete typing</span>
+    <span>Local prototype · Accounts and social data stay on this device</span>
+  </div>
+</footer>
+<div class="toast"></div>
+<script src="core.js"></script>
+
+</body>
+</html>
