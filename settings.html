@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Settings · AutoType</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="">
+
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a class="brand" href="index.html">
+      <span class="brand-logo"><img src="assets/logo.png" alt="AutoType"></span>
+      <span>AutoType</span>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" data-nav="home">Home</a>
+      <a href="play.html" data-nav="play">Play</a>
+      <a href="tournaments.html" data-nav="tournaments">Tournaments</a>
+      <a href="shop.html" data-nav="shop">Shop</a>
+      <a href="friends.html" data-nav="friends">Friends</a>
+      <details class="nav-more">
+        <summary>More</summary>
+        <div class="nav-more-menu">
+          <a href="create.html" data-nav="create">Create</a>
+          <a href="predictions.html" data-nav="predictions">Prediction Lab</a>
+          <a href="achievements.html" data-nav="achievements">Achievements</a>
+          <a href="leaderboard.html" data-nav="leaderboard">Leaderboard</a>
+          <a href="stats.html" data-nav="stats">Stats</a>
+          <a href="how-to.html" data-nav="help">How to Play</a>
+          <a href="settings.html" data-nav="settings">Settings</a>
+        </div>
+      </details>
+    </nav>
+    <div class="nav-spacer"></div>
+    <div class="nav-currency" id="navCurrency" hidden></div>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Open navigation">☰</button>
+    <div class="nav-account">
+      <button class="account-button" id="accountMenuButton"></button>
+      <div class="account-dropdown" id="accountDropdown" hidden></div>
+    </div>
+  </div>
+</header>
+<nav class="mobile-nav" id="mobileNav">
+  <a href="index.html">Home</a>
+  <a href="play.html">Play</a>
+  <a href="tournaments.html">Tournaments</a>
+  <a href="shop.html">Shop</a>
+  <a href="friends.html">Friends</a>
+  <a href="create.html">Create</a>
+  <a href="predictions.html">Prediction Lab</a>
+  <a href="achievements.html">Achievements</a>
+  <a href="leaderboard.html">Leaderboard</a>
+  <a href="stats.html">Stats</a>
+  <a href="how-to.html">How to Play</a>
+  <a href="settings.html">Settings</a>
+</nav>
+
+
+<main class="container page">
+  <div class="settings-page">
+    <header class="platform-page-heading"><div><span class="section-kicker">SETTINGS</span><h1>Make AutoType yours.</h1><p>Appearance, gameplay behavior, and account security—without turning settings into another dashboard.</p></div></header>
+    <nav class="settings-index"><a href="#appearanceSettings">Appearance</a><a href="#gameplaySettings">Gameplay</a><a href="#securitySettings">Account & security</a></nav>
+
+    <section class="platform-section settings-card" id="appearanceSettings">
+      <h2 class="section-title">Appearance</h2>
+      <p class="help" style="margin-bottom:14px">Choose a clean solid background or personalize AutoType with one of your own photos.</p>
+
+      <div class="appearance-preview" id="appearancePreview"></div>
+
+      <div class="form-group" style="margin-top:16px">
+        <label class="label">Background type</label>
+        <div class="background-choice-row">
+          <button class="background-choice" id="solidChoice" type="button">Solid color</button>
+          <button class="background-choice" id="imageChoice" type="button">Photo</button>
+        </div>
+      </div>
+
+      <div id="solidControls">
+        <div class="form-group">
+          <label class="label">Background color</label>
+          <div class="color-line">
+            <input id="backgroundColor" type="color" value="#1f2328">
+            <input class="input" id="backgroundHex" value="#1f2328" maxlength="7">
+          </div>
+        </div>
+      </div>
+
+      <div id="imageControls">
+        <div class="form-group">
+          <label class="label">Background photo</label>
+          <input id="backgroundImageInput" type="file" accept="image/*" hidden>
+          <div class="row-wrap">
+            <button class="button button-secondary" id="uploadBackground" type="button">Choose photo</button>
+            <button class="button button-quiet" id="removeBackground" type="button">Remove photo</button>
+          </div>
+          <div class="help">Images are resized before being saved locally. For best results, use a landscape photo.</div>
+        </div>
+
+        <div class="form-group">
+          <label class="label">Photo darkness</label>
+          <div class="range-line">
+            <input id="backgroundDim" type="range" min="20" max="90" value="64">
+            <span id="backgroundDimValue">64%</span>
+          </div>
+          <div class="help">Keeps navigation and game sections readable over your photo.</div>
+        </div>
+      </div>
+    </section>
+    <div class="divider"></div>
+    <section class="platform-section settings-card" id="gameplaySettings">
+      <div class="platform-section-head"><div><span class="section-kicker">GAMEPLAY</span><h2>Game behavior</h2></div></div><div class="list">
+        <label class="list-row" style="grid-template-columns:1fr auto"><span><strong>Typing animations</strong><span class="help">Animate prediction changes during a round.</span></span><input type="checkbox" id="animations"></label>
+        <label class="list-row" style="grid-template-columns:1fr auto"><span><strong>Reduced motion</strong><span class="help">Reduce nonessential motion.</span></span><input type="checkbox" id="reducedMotion"></label>
+        <label class="list-row" style="grid-template-columns:1fr auto"><span><strong>Sentence predictions</strong><span class="help">Show the continuing prediction in Sentence and Evil modes.</span></span><input type="checkbox" id="sentencePredictions"></label>
+      </div>
+    </section>
+    <div class="divider"></div>
+    <section class="platform-section settings-card" id="securitySettings">
+      <h2 class="section-title">Account & security</h2>
+
+      <div id="signedInSecurity">
+        <div class="security-summary" id="securitySummary"></div>
+
+        <div id="securityQuestionSetup" hidden>
+          <div class="divider"></div>
+          <h3 class="section-title">Set a security question</h3>
+          <p class="help">Older AutoType accounts may not have one yet. Verify your current password before adding it.</p>
+          <div class="form-group"><label class="label">Current password</label><input class="input" id="securitySetupPassword" type="password" autocomplete="current-password"></div>
+          <div class="form-group"><label class="label">Security question</label>
+            <select class="select" id="securitySetupQuestion">
+              <option value="">Choose a question</option>
+              <option>What was the first game you remember loving?</option>
+              <option>What nickname did you use in a game?</option>
+              <option>What fictional place would you most like to visit?</option>
+              <option>What was the name of a favorite childhood toy?</option>
+              <option>What is a memorable word only you would know?</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="label">Security answer</label><input class="input" id="securitySetupAnswer" autocomplete="off"></div>
+          <button class="button button-primary" id="setSecurityQuestionButton">Set security question</button>
+        </div>
+
+        <div id="changePasswordPanel" hidden>
+          <div class="divider"></div>
+          <h3 class="section-title">Change password</h3>
+          <div class="security-question-display" id="securityQuestionDisplay"></div>
+          <div class="form-group"><label class="label">Current password</label><input class="input" id="currentPassword" type="password" autocomplete="current-password"></div>
+          <div class="form-group"><label class="label">Security answer</label><input class="input" id="securityAnswer" autocomplete="off"></div>
+          <div class="form-group">
+            <label class="label">New password</label>
+            <input class="input" id="newPassword" type="password" maxlength="128" autocomplete="new-password">
+            <div class="password-rules" id="changePasswordRules">
+              <span data-rule="length">8+ characters</span>
+              <span data-rule="lower">lowercase</span>
+              <span data-rule="upper">uppercase</span>
+              <span data-rule="number">number</span>
+              <span data-rule="symbol">symbol</span>
+              <span data-rule="spaces">no spaces</span>
+            </div>
+          </div>
+          <div class="form-group"><label class="label">Confirm new password</label><input class="input" id="confirmNewPassword" type="password" autocomplete="new-password"></div>
+          <button class="button button-primary" id="changePasswordButton">Change password</button>
+        </div>
+
+        <div class="divider"></div>
+        <div class="row-wrap">
+          <button class="button button-secondary" id="switchBtn">Switch account</button>
+          <a class="button button-secondary" href="account.html#create">Add account</a>
+        </div>
+
+        <details class="danger-zone">
+          <summary>Delete account</summary>
+          <div class="danger-zone-body">
+            <p class="help">This permanently removes this local account, profile, progress, friend relationships, pending requests, races, and submitted suggestions from this browser.</p>
+            <div class="form-group"><label class="label">Current password</label><input class="input" id="deletePassword" type="password" autocomplete="current-password"></div>
+            <div class="form-group"><label class="label">Type your username to confirm</label><input class="input" id="deleteUsernameConfirm"></div>
+            <button class="button button-danger" id="deleteAccountButton">Delete account permanently</button>
+          </div>
+        </details>
+      </div>
+
+      <div id="guestSecurity" hidden>
+        <p class="help">Sign in to manage passwords, security questions, or account deletion.</p>
+        <a class="button button-primary" href="account.html">Sign in</a>
+      </div>
+    </section>
+  </div>
+</main>
+
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <span>AutoType · Competitive autocomplete typing</span>
+    <span>Local prototype · Accounts and social data stay on this device</span>
+  </div>
+</footer>
+<div class="toast"></div>
+
+<script src="core.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+  let s={...AutoType.currentSettings()};
+  animations.checked=s.animations!==false;
+  reducedMotion.checked=!!s.reducedFx;
+  sentencePredictions.checked=s.showPrediction!==false;
+
+  s.backgroundType=s.backgroundType||"solid";
+  s.backgroundColor=s.backgroundColor||"#1f2328";
+  s.backgroundImage=s.backgroundImage||"";
+  s.backgroundDim=Number(s.backgroundDim??64);
+  s.backgroundLuminance=Number.isFinite(Number(s.backgroundLuminance))?Number(s.backgroundLuminance):null;
+
+  backgroundColor.value=/^#[0-9a-f]{6}$/i.test(s.backgroundColor)?s.backgroundColor:"#1f2328";
+  backgroundHex.value=backgroundColor.value;
+  backgroundDim.value=s.backgroundDim;
+  backgroundDimValue.textContent=`${s.backgroundDim}%`;
+
+  function renderAppearance(){
+    solidChoice.classList.toggle("active",s.backgroundType==="solid");
+    imageChoice.classList.toggle("active",s.backgroundType==="image");
+    solidControls.hidden=s.backgroundType!=="solid";
+    imageControls.hidden=s.backgroundType!=="image";
+
+    appearancePreview.style.setProperty("--preview-color",s.backgroundColor||"#1f2328");
+    appearancePreview.style.setProperty("--preview-dim",String((s.backgroundDim??64)/100));
+    if(s.backgroundType==="image"&&s.backgroundImage){
+      appearancePreview.style.setProperty("--preview-image",`url("${String(s.backgroundImage).replace(/"/g,'\"')}")`);
+    }else{
+      appearancePreview.style.setProperty("--preview-image","none");
+    }
+
+    const sourceLum=s.backgroundType==="image"
+      ? (Number.isFinite(Number(s.backgroundLuminance))?Number(s.backgroundLuminance):.45)
+      : AutoType.relativeLuminanceFromHex(s.backgroundColor);
+    const effectiveLum=s.backgroundType==="image"
+      ? sourceLum*(1-(s.backgroundDim??64)/100)
+      : sourceLum;
+    appearancePreview.classList.toggle("preview-light",effectiveLum>.52);
+  }
+
+  function saveAppearance(){
+    AutoType.patchCurrentSettings({
+      backgroundType:s.backgroundType,
+      backgroundColor:s.backgroundColor,
+      backgroundImage:s.backgroundImage,
+      backgroundDim:s.backgroundDim,
+      backgroundLuminance:s.backgroundLuminance
+    });
+    renderAppearance();
+  }
+
+  solidChoice.addEventListener("click",()=>{s.backgroundType="solid";saveAppearance()});
+  imageChoice.addEventListener("click",()=>{s.backgroundType="image";saveAppearance()});
+
+  backgroundColor.addEventListener("input",()=>{
+    s.backgroundColor=backgroundColor.value;
+    backgroundHex.value=s.backgroundColor;
+    saveAppearance();
+  });
+  backgroundHex.addEventListener("change",()=>{
+    const v=backgroundHex.value.trim();
+    if(!/^#[0-9a-f]{6}$/i.test(v)){AutoType.toast("Use a hex color like #1f2328.");backgroundHex.value=s.backgroundColor;return}
+    s.backgroundColor=v;
+    backgroundColor.value=v;
+    saveAppearance();
+  });
+
+  uploadBackground.addEventListener("click",()=>backgroundImageInput.click());
+  backgroundImageInput.addEventListener("change",async()=>{
+    const file=backgroundImageInput.files?.[0];
+    if(!file)return;
+    uploadBackground.disabled=true;
+    try{
+      const processed=await AutoType.imageFileToBackground(file);
+      s.backgroundImage=processed.dataURL;
+      s.backgroundLuminance=processed.luminance;
+      s.backgroundType="image";
+      saveAppearance();
+      AutoType.toast("Background photo saved.");
+    }catch(e){
+      AutoType.toast(e.message);
+    }finally{
+      uploadBackground.disabled=false;
+      backgroundImageInput.value="";
+    }
+  });
+
+  removeBackground.addEventListener("click",()=>{
+    s.backgroundImage="";
+    s.backgroundLuminance=null;
+    s.backgroundType="solid";
+    saveAppearance();
+    AutoType.toast("Background photo removed.");
+  });
+
+  backgroundDim.addEventListener("input",()=>{
+    s.backgroundDim=Number(backgroundDim.value);
+    backgroundDimValue.textContent=`${s.backgroundDim}%`;
+    appearancePreview.style.setProperty("--preview-dim",String(s.backgroundDim/100));
+  });
+  backgroundDim.addEventListener("change",saveAppearance);
+
+  function saveGameplay(){
+    AutoType.patchCurrentSettings({
+      animations:animations.checked,
+      reducedFx:reducedMotion.checked,
+      showPrediction:sentencePredictions.checked
+    });
+    AutoType.toast("Settings saved.");
+  }
+  [animations,reducedMotion,sentencePredictions].forEach(x=>x.addEventListener("change",saveGameplay));
+  switchBtn?.addEventListener("click",AutoType.openSwitchModal);
+
+  const account=AutoType.currentAccount();
+  signedInSecurity.hidden=!account;
+  guestSecurity.hidden=!!account;
+
+  function renderSecurityState(){
+    if(!account)return;
+    const hasQuestion=!!account.securityQuestion;
+    securitySummary.innerHTML=`<div><strong>${AutoType.escapeHTML(AutoType.accountName(account))}</strong><div class="help">@${AutoType.escapeHTML(account.username)} · ${hasQuestion?"Security question configured":"Security question required"}</div></div>`;
+    securityQuestionSetup.hidden=hasQuestion;
+    changePasswordPanel.hidden=!hasQuestion;
+    if(hasQuestion)securityQuestionDisplay.textContent=account.securityQuestion;
+  }
+
+  function updatePasswordRules(input,rules){
+    const p=input.value;
+    const checks={
+      length:p.length>=8,
+      lower:/[a-z]/.test(p),
+      upper:/[A-Z]/.test(p),
+      number:/[0-9]/.test(p),
+      symbol:/[^A-Za-z0-9\s]/.test(p),
+      spaces:!/\s/.test(p)
+    };
+    rules.querySelectorAll("[data-rule]").forEach(el=>{
+      el.classList.toggle("ok",!!checks[el.dataset.rule]);
+    });
+  }
+
+  if(account){
+    setSecurityQuestionButton?.addEventListener("click",async()=>{
+      setSecurityQuestionButton.disabled=true;
+      try{
+        await AutoType.setSecurityQuestion(
+          securitySetupPassword.value,
+          securitySetupQuestion.value,
+          securitySetupAnswer.value
+        );
+        AutoType.toast("Security question saved.");
+        setTimeout(()=>location.reload(),450);
+      }catch(e){AutoType.toast(e.message)}
+      finally{setSecurityQuestionButton.disabled=false}
+    });
+
+    newPassword?.addEventListener("input",()=>updatePasswordRules(newPassword,changePasswordRules));
+    if(newPassword)updatePasswordRules(newPassword,changePasswordRules);
+
+    changePasswordButton?.addEventListener("click",async()=>{
+      if(newPassword.value!==confirmNewPassword.value){
+        AutoType.toast("New passwords do not match.");
+        return;
+      }
+      const problems=AutoType.passwordProblems(newPassword.value,account.username||account.email);
+      if(problems.length){
+        AutoType.toast(`Password needs ${problems[0]}.`);
+        return;
+      }
+      changePasswordButton.disabled=true;
+      try{
+        await AutoType.changePassword({
+          currentPassword:currentPassword.value,
+          securityAnswer:securityAnswer.value,
+          newPassword:newPassword.value
+        });
+        currentPassword.value="";
+        securityAnswer.value="";
+        newPassword.value="";
+        confirmNewPassword.value="";
+        updatePasswordRules(newPassword,changePasswordRules);
+        AutoType.toast("Password changed.");
+      }catch(e){AutoType.toast(e.message)}
+      finally{changePasswordButton.disabled=false}
+    });
+
+    deleteAccountButton?.addEventListener("click",async()=>{
+      if(!confirm("Delete this AutoType account permanently from this browser?"))return;
+      deleteAccountButton.disabled=true;
+      try{
+        await AutoType.deleteCurrentAccount({
+          currentPassword:deletePassword.value,
+          usernameConfirm:deleteUsernameConfirm.value
+        });
+        location.href="index.html";
+      }catch(e){AutoType.toast(e.message)}
+      finally{deleteAccountButton.disabled=false}
+    });
+  }
+
+  renderSecurityState();
+
+  renderAppearance();
+});
+</script>
+
+</body>
+</html>
