@@ -1,22 +1,52 @@
 # Security
 
-## Prototype security model
+## Authentication and authorization
 
-AutoType currently stores application state in browser `localStorage`. Passwords and security answers are salted and hashed before storage, but the entire account database and authorization state still live on the client.
+AutoType online accounts use Supabase Auth. Browser requests use the publishable key plus the signed-in user's JWT. PostgreSQL Row Level Security limits direct reads/writes, while sensitive actions use authenticated Edge Functions.
 
-This means the current account system is suitable only for local prototyping and playtesting.
+Developer/admin authority is stored in `user_roles` and re-checked server-side for privileged operations.
 
-## Important limitations
+## Server-authoritative systems
 
-- a user can inspect or modify their own browser storage
-- developer/admin privileges are not server-authoritative
-- balances, inventory, tournament results, and leaderboard data are not tamper-resistant
-- local lockouts are not a substitute for server-side rate limiting
-- security questions should not be the primary recovery method in a production service
-- there is no shared identity or session system between devices/browsers
+The backend validates and commits:
 
-## Production direction
+- wallet balance changes
+- item/Collection purchases
+- earned-token crate rewards
+- inventory ownership
+- cosmetic equips
+- round rewards and achievements
+- tournament entry/refunds/prizes
+- friend operations
+- Prediction Lab submissions/votes
+- admin balance, tournament, moderation, and announcement actions
 
-Use a backend identity/session system, server-side authorization, a database, HTTPS, secure recovery, rate limiting, audit logging, and server-verified economy/tournament operations before treating AutoType as a live service.
+Economy/admin actions are also recorded where appropriate in audit/transaction tables.
 
-Do not report vulnerabilities in this local prototype as if it handled real user data. If a production backend is introduced later, add a real vulnerability-reporting contact here.
+## Recovery
+
+Password recovery uses a Supabase email recovery session. AutoType also supports a hashed recovery/security-question answer as an additional UI verification step when configured. Security answers are not stored as plaintext.
+
+Email possession remains the primary recovery credential; a security question should not be treated as a stronger authentication factor than the verified email account.
+
+## Storage
+
+Avatar and background uploads are restricted to the signed-in user's UUID folder. Browser uploads never receive a service-role key.
+
+## Secrets
+
+Never place these in frontend code or GitHub:
+
+- Supabase `service_role` / secret keys
+- database password
+- third-party private API keys
+
+The publishable Supabase key is intentionally browser-visible and relies on RLS/authorization for protection.
+
+## Current limitation
+
+The server records completed rounds and prevents duplicate reward submission by round ID, but it currently accepts bounded client-reported gameplay metrics. This is sufficient for persistence and basic economy integrity, not full competitive anti-cheat. High-stakes rankings/tournaments should eventually use server-issued challenges and stronger result verification.
+
+## Randomized rewards
+
+Crates use earned Crate Tokens. Paid currency must not be used to purchase randomized rewards. Any future payments should grant known/direct items or currency used only for known/direct purchases.
