@@ -44,6 +44,8 @@ Authenticates the caller and deletes that caller's Supabase Auth account with th
 
 `game-api`, `create-checkout-session`, and `delete-account` require valid user JWTs. `stripe-webhook` uses Stripe signature verification instead.
 
+For payment testing, configure `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and keep `STRIPE_LIVE_ENABLED=false`. Live Checkout is blocked unless that flag is explicitly set to `true`.
+
 ## Browser keys
 
 Only the Supabase project URL and publishable key belong in browser code. RLS and server authorization—not secrecy of the publishable key—protect the data.
