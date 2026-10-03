@@ -208,12 +208,21 @@
 
 <script src="backend-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="backend.js?v=20261003-5"></script>
+<script src="backend.js?v=20261003-6"></script>
 <script src="core.js"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded",async()=>{
   await AutoType.ready();
+  const REQUIRED_BACKEND_BUILD="20261003-6";
+  if(AutoTypeBackend.version!==REQUIRED_BACKEND_BUILD){
+    console.error("AutoType build mismatch",{
+      expected:REQUIRED_BACKEND_BUILD,
+      loaded:AutoTypeBackend.version||"unknown"
+    });
+    AutoType.toast("Old AutoType files are loaded. Restart from the latest folder.");
+    return;
+  }
   let s={...AutoType.currentSettings()};
   const account=AutoType.currentAccount();
   const purchaseHistoryList=document.querySelector("#purchaseHistoryList");
