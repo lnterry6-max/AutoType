@@ -14,7 +14,7 @@ Supabase is the source of truth for:
 - equipped cosmetics
 - Shop purchases, Collections, and earned-token crate openings
 - global and Daily leaderboards
-- friends, friend requests, and race rooms/results
+- friends, friend requests, race rooms/results, and level-based Quick Match
 - tournaments, registration, refunds, and winner prizes
 - Prediction Lab mappings and votes
 - announcements
@@ -88,7 +88,9 @@ The `backend-foundation` branch also runs `.github/workflows/backend-audit.yml` 
 
 Online Word, Context, Sentence, Evil, Daily, and Tournament rounds now start from server-issued challenges. The server owns the target sentence, challenge lifetime, tournament association, and whether the challenge has already been consumed. Completion is rejected when mode, word count, score ceiling, key/error counts, timing bounds, or challenge state do not match.
 
-Global and Daily leaderboards use verified results. Tournament attempts are single-use, and winner payouts are restricted to a top verified score.
+Global and Daily leaderboards use verified results. Tournament attempts are single-use, winner payouts are restricted to a top verified score, and closed/running events show standings.
+
+Quick Match uses the same XP-derived level formula as the profile system. Matchmaking begins at ±2 levels, widens to ±5 and ±10, then allows any level after a longer wait. Abandoned searches expire automatically.
 
 This is stronger than trusting arbitrary browser-submitted scores, but it is not full anti-cheat: per-keystroke behavior is still reported by the client rather than streamed/attested by the server.
 
