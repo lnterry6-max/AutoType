@@ -264,19 +264,37 @@ document.addEventListener("DOMContentLoaded",async()=>{
   }
 
   function bindItemActions(container){
-    container.querySelectorAll("[data-buy]").forEach(button=>button.addEventListener("click",()=>{
+    container.querySelectorAll("[data-buy]").forEach(button=>button.addEventListener("click",async()=>{
+      button.disabled=true;
       try{
-        const item=AutoType.purchaseShopItem(button.dataset.buy);
-        AutoType.toast(`${item.name} added to your inventory.`);
+        const id=button.dataset.buy;
+        const item=AutoType.shopCatalog.find(x=>x.id===id);
+        if(account?.online){
+          await AutoTypeBackend.purchaseItem(id);
+          await AutoTypeBackend.hydrateLocalMirror();
+        }else{
+          AutoType.purchaseShopItem(id);
+        }
+        AutoType.toast(`${item?.name||"Item"} added to your inventory.`);
         renderAll();
       }catch(e){AutoType.toast(e.message)}
+      finally{button.disabled=false}
     }));
-    container.querySelectorAll("[data-equip]").forEach(button=>button.addEventListener("click",()=>{
+    container.querySelectorAll("[data-equip]").forEach(button=>button.addEventListener("click",async()=>{
+      button.disabled=true;
       try{
-        const item=AutoType.equipShopItem(button.dataset.equip);
-        AutoType.toast(`${item.name} equipped.`);
+        const id=button.dataset.equip;
+        const item=AutoType.shopCatalog.find(x=>x.id===id);
+        if(account?.online){
+          await AutoTypeBackend.equipItem(id);
+          await AutoTypeBackend.hydrateLocalMirror();
+        }else{
+          AutoType.equipShopItem(id);
+        }
+        AutoType.toast(`${item?.name||"Item"} equipped.`);
         renderAll();
       }catch(e){AutoType.toast(e.message)}
+      finally{button.disabled=false}
     }));
   }
 
@@ -343,19 +361,37 @@ document.addEventListener("DOMContentLoaded",async()=>{
   }
 
   function bindCollectionActions(container){
-    container.querySelectorAll("[data-buy-collection]").forEach(button=>button.addEventListener("click",()=>{
+    container.querySelectorAll("[data-buy-collection]").forEach(button=>button.addEventListener("click",async()=>{
+      button.disabled=true;
       try{
-        const result=AutoType.purchaseCollection(button.dataset.buyCollection);
-        AutoType.toast(`${result.collection.name} unlocked.`);
+        const id=button.dataset.buyCollection;
+        const collection=AutoType.collectionDefs.find(x=>x.id===id);
+        if(account?.online){
+          await AutoTypeBackend.purchaseCollection(id);
+          await AutoTypeBackend.hydrateLocalMirror();
+        }else{
+          AutoType.purchaseCollection(id);
+        }
+        AutoType.toast(`${collection?.name||"Collection"} unlocked.`);
         renderAll();
       }catch(e){AutoType.toast(e.message)}
+      finally{button.disabled=false}
     }));
-    container.querySelectorAll("[data-equip-collection]").forEach(button=>button.addEventListener("click",()=>{
+    container.querySelectorAll("[data-equip-collection]").forEach(button=>button.addEventListener("click",async()=>{
+      button.disabled=true;
       try{
-        const collection=AutoType.equipCollection(button.dataset.equipCollection);
-        AutoType.toast(`${collection.name} equipped.`);
+        const id=button.dataset.equipCollection;
+        const collection=AutoType.collectionDefs.find(x=>x.id===id);
+        if(account?.online){
+          await AutoTypeBackend.equipCollection(id);
+          await AutoTypeBackend.hydrateLocalMirror();
+        }else{
+          AutoType.equipCollection(id);
+        }
+        AutoType.toast(`${collection?.name||"Collection"} equipped.`);
         renderAll();
       }catch(e){AutoType.toast(e.message)}
+      finally{button.disabled=false}
     }));
   }
 
@@ -461,16 +497,29 @@ document.addEventListener("DOMContentLoaded",async()=>{
     },5050);
   }
 
-  function openSelectedCrate(){
+  async function openSelectedCrate(){
     if(opening||!selectedCrateId)return;
     if(!account){location.href="account.html";return}
     try{
-      const result=AutoType.openCrate(selectedCrateId);
       opening=true;
       openCrateButton.disabled=true;
       crateReveal.hidden=true;
+      let result;
+      if(account.online){
+        const raw=await AutoTypeBackend.openCrate(selectedCrateId);
+        await AutoTypeBackend.hydrateLocalMirror();
+        const item=AutoType.shopCatalog.find(x=>x.id===raw.item_id);
+        if(!item)throw new Error("Crate reward is not in the local cosmetic catalog.");
+        result={item,duplicate:!!raw.duplicate,compensation:Number(raw.compensation||0)};
+      }else{
+        result=AutoType.openCrate(selectedCrateId);
+      }
       animateCrateResult(result);
-    }catch(e){AutoType.toast(e.message)}
+    }catch(e){
+      opening=false;
+      openCrateButton.disabled=false;
+      AutoType.toast(e.message);
+    }
   }
 
   function setView(view){
