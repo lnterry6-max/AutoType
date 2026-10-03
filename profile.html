@@ -238,14 +238,19 @@ document.addEventListener("DOMContentLoaded",async()=>{
         </article>`;
       }).join(""):`<div class="empty">No items in this category yet.</div>`;
       inventoryGrid.querySelectorAll("[data-inventory-equip]").forEach(b=>b.addEventListener("click",async()=>{
+        b.disabled=true;
         try{
-          const item=AutoType.equipShopItem(b.dataset.inventoryEquip);
+          const id=b.dataset.inventoryEquip;
           if(a.online){
-            await AutoTypeBackend.setEquipped(item.slot,item.id);
+            await AutoTypeBackend.equipItem(id);
             await AutoTypeBackend.hydrateLocalMirror();
+          }else{
+            AutoType.equipShopItem(id);
           }
-          location.reload();
+          renderInventory();
+          AutoType.toast("Cosmetic equipped.");
         }catch(e){AutoType.toast(e.message)}
+        finally{b.disabled=false}
       }));
     }
     renderInventory();
@@ -256,20 +261,75 @@ document.addEventListener("DOMContentLoaded",async()=>{
       developerTicketAmount.value=wallet.tickets||0;
       developerKeyAmount.value=wallet.crateKeys||0;
 
-      developerApplyBalances.addEventListener("click",()=>{
+      function refreshDeveloperWalletUI(){
+        const w=AutoType.currentWallet();
+        developerCoinAmount.value=w.coins||0;
+        developerTicketAmount.value=w.tickets||0;
+        developerKeyAmount.value=w.crateKeys||0;
+        profileWallet.innerHTML=`<span>◉ ${w.coins||0} coins</span><span>◆ ${w.tickets||0} tickets</span><span>▣ ${w.crateKeys||0} tokens</span><span class="dev-wallet-tag">DEV</span>`;
+        const nav=document.querySelector("#navCurrency");
+        if(nav){
+          nav.hidden=false;
+          nav.innerHTML=`<a href="shop.html" title="Coins"><span>◉</span>${w.coins||0}</a><a href="tournaments.html" title="Tournament Tickets"><span>◆</span>${w.tickets||0}</a><a href="shop.html#crates" title="Crate Tokens"><span>▣</span>${w.crateKeys||0}</a>`;
+        }
+      }
+
+      developerApplyBalances.addEventListener("click",async()=>{
+        developerApplyBalances.disabled=true;
         try{
-          const coins=AutoType.setDeveloperCoins(developerCoinAmount.value);
-          const tickets=AutoType.setDeveloperTickets(developerTicketAmount.value);
-          const keys=AutoType.setDeveloperCrateKeys(developerKeyAmount.value);
-          AutoType.toast(`Developer balances updated: ${coins.toLocaleString()} coins, ${tickets.toLocaleString()} tickets, ${keys.toLocaleString()} tokens.`);
-          setTimeout(()=>location.reload(),450);
+          if(a.online){
+            await AutoTypeBackend.adminSetBalances(
+              a.supabaseUserId,
+              Number(developerCoinAmount.value||0),
+              Number(developerTicketAmount.value||0),
+              Number(developerKeyAmount.value||0)
+            );
+            await AutoTypeBackend.hydrateLocalMirror();
+          }else{
+            AutoType.setDeveloperCoins(developerCoinAmount.value);
+            AutoType.setDeveloperTickets(developerTicketAmount.value);
+            AutoType.setDeveloperCrateKeys(developerKeyAmount.value);
+          }
+          refreshDeveloperWalletUI();
+          AutoType.toast("Developer balances updated.");
         }catch(e){AutoType.toast(e.message)}
+        finally{developerApplyBalances.disabled=false}
       });
-      developerAddCoins.addEventListener("click",()=>{
-        try{AutoType.grantDeveloperCoins(10000);location.reload()}catch(e){AutoType.toast(e.message)}
+
+      developerAddCoins.addEventListener("click",async()=>{
+        developerAddCoins.disabled=true;
+        try{
+          if(a.online){
+            const w=AutoType.currentWallet();
+            await AutoTypeBackend.adminSetBalances(
+              a.supabaseUserId,
+              Number(w.coins||0)+10000,
+              Number(w.tickets||0),
+              Number(w.crateKeys||0)
+            );
+            await AutoTypeBackend.hydrateLocalMirror();
+          }else{
+            AutoType.grantDeveloperCoins(10000);
+          }
+          refreshDeveloperWalletUI();
+          AutoType.toast("10,000 coins added.");
+        }catch(e){AutoType.toast(e.message)}
+        finally{developerAddCoins.disabled=false}
       });
-      developerGrantAll.addEventListener("click",()=>{
-        try{AutoType.grantAllCosmetics();AutoType.toast("All cosmetics granted.");setTimeout(()=>location.reload(),350)}catch(e){AutoType.toast(e.message)}
+
+      developerGrantAll.addEventListener("click",async()=>{
+        developerGrantAll.disabled=true;
+        try{
+          if(a.online){
+            await AutoTypeBackend.adminGrantAll(a.supabaseUserId);
+            await AutoTypeBackend.hydrateLocalMirror();
+          }else{
+            AutoType.grantAllCosmetics();
+          }
+          renderInventory();
+          AutoType.toast("All cosmetics granted.");
+        }catch(e){AutoType.toast(e.message)}
+        finally{developerGrantAll.disabled=false}
       });
     }
 
@@ -295,31 +355,48 @@ document.addEventListener("DOMContentLoaded",async()=>{
 
   bio.addEventListener("input",()=>bioCount.textContent=bio.value.length);
   changeImage.addEventListener("click",()=>imageInput.click());
-  imageInput.addEventListener("change",()=>{
+  imageInput.addEventListener("change",async()=>{
     const file=imageInput.files?.[0];
     if(!file)return;
-    if(!["image/jpeg","image/png","image/webp"].includes(file.type)){
-      AutoType.toast("Use a JPG, PNG, or WebP image.");
+    changeImage.disabled=true;
+    try{
+      if(a?.online){
+        target.avatarImage=await AutoTypeBackend.uploadAvatar(file);
+        await AutoTypeBackend.hydrateLocalMirror();
+        pendingAvatarFile=null;
+        removeAvatarRequested=false;
+        target.avatarImage=AutoType.currentAccount()?.avatarImage||target.avatarImage;
+        renderAvatar();
+        AutoType.toast("Profile picture saved.");
+      }else{
+        pendingAvatarFile=file;
+        removeAvatarRequested=false;
+        const reader=new FileReader();
+        reader.onload=()=>{target.avatarImage=reader.result;renderAvatar()};
+        reader.readAsDataURL(file);
+      }
+    }catch(e){
+      AutoType.toast(e.message);
+    }finally{
+      changeImage.disabled=false;
       imageInput.value="";
-      return;
     }
-    if(file.size>5*1024*1024){
-      AutoType.toast("Avatar must be 5 MB or smaller.");
-      imageInput.value="";
-      return;
-    }
-    pendingAvatarFile=file;
-    removeAvatarRequested=false;
-    const reader=new FileReader();
-    reader.onload=()=>{target.avatarImage=reader.result;renderAvatar()};
-    reader.readAsDataURL(file);
   });
 
-  removeImage.addEventListener("click",()=>{
-    pendingAvatarFile=null;
-    removeAvatarRequested=true;
-    target.avatarImage="";
-    renderAvatar();
+  removeImage.addEventListener("click",async()=>{
+    removeImage.disabled=true;
+    try{
+      if(a?.online){
+        await AutoTypeBackend.removeAvatar();
+        await AutoTypeBackend.hydrateLocalMirror();
+      }
+      pendingAvatarFile=null;
+      removeAvatarRequested=!a?.online;
+      target.avatarImage="";
+      renderAvatar();
+      AutoType.toast("Profile picture removed.");
+    }catch(e){AutoType.toast(e.message)}
+    finally{removeImage.disabled=false}
   });
 
   saveProfile.addEventListener("click",async()=>{
@@ -331,9 +408,6 @@ document.addEventListener("DOMContentLoaded",async()=>{
       const cleanBio=bio.value.trim().slice(0,180);
 
       if(a.online){
-        if(removeAvatarRequested)await AutoTypeBackend.removeAvatar();
-        else if(pendingAvatarFile)await AutoTypeBackend.uploadAvatar(pendingAvatarFile);
-
         await AutoTypeBackend.updateMyProfile({
           display_name:name,
           bio:cleanBio,
