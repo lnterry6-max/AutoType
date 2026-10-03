@@ -101,13 +101,13 @@
 </footer>
 <div class="toast"></div>
 
-<script src="core.js"></script>
 <script src="backend-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="backend.js"></script>
+<script src="core.js"></script>
 
 <script>
-document.addEventListener("DOMContentLoaded",async()=>{
+document.addEventListener("DOMContentLoaded",async()=>{\n  await AutoType.ready();
   const $=selector=>document.querySelector(selector);
 
   function setTab(t){
@@ -142,15 +142,24 @@ document.addEventListener("DOMContentLoaded",async()=>{
     return;
   }
 
-  try{
-    const existing=await AutoTypeBackend.session();
-    if(existing){
-      await AutoTypeBackend.hydrateLocalMirror();
-      location.href="profile.html";
-      return;
+  const switching=new URLSearchParams(location.search).get("switch")==="1";
+  if(switching){
+    try{await AutoTypeBackend.signOut()}catch(error){console.warn("Switch-account sign-out failed",error)}
+    const localStore=AutoType.store();
+    localStore.currentId=null;
+    AutoType.save();
+    history.replaceState({},document.title,"account.html");
+  }else{
+    try{
+      const existing=await AutoTypeBackend.session();
+      if(existing){
+        await AutoTypeBackend.hydrateLocalMirror();
+        location.href="profile.html";
+        return;
+      }
+    }catch(error){
+      console.error("Supabase session check failed",error);
     }
-  }catch(error){
-    console.error("Supabase session check failed",error);
   }
 
   $("#loginButton").addEventListener("click",async()=>{
