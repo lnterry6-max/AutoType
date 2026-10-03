@@ -59,11 +59,11 @@
 
 <main class="container page">
   <div class="page-heading platform-page-heading">
-    <div class="eyebrow">Local ranking</div>
+    <div class="eyebrow">Rankings</div>
     <h1>Leaderboard</h1>
   </div>
 
-  <div class="leaderboard-self" id="leaderboardSelf"><div><span>Your local rank</span><strong id="currentRankMetric">—</strong></div><div><span>Your best</span><strong id="currentBestMetric">0</strong></div><div><span>Level</span><strong id="currentLevelMetric">1</strong></div></div>
+  <div class="leaderboard-self" id="leaderboardSelf"><div><span>Your rank</span><strong id="currentRankMetric">—</strong></div><div><span>Your best</span><strong id="currentBestMetric">0</strong></div><div><span>Level</span><strong id="currentLevelMetric">1</strong></div></div>
 
   <div class="grid-2 leaderboard-columns">
     <section class="panel panel-pad">
@@ -75,7 +75,7 @@
       <div class="section-title-row"><h2 class="section-title">Daily</h2><span class="help" id="dailyDate"></span></div>
       <div class="leaderboard-list" id="dailyBoard"></div>
       <div class="daily-claim" id="dailyClaim" hidden>
-        <span>You currently hold #1 locally.</span>
+        <span>You currently hold #1 today.</span>
         <button class="button button-primary" id="claimDailyReward">Claim 150 ◉</button>
       </div>
     </section>
@@ -90,7 +90,7 @@
 <div class="toast"></div>
 <script src="backend-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="backend.js?v=20261003-7"></script>
+<script src="backend.js?v=20261003-8"></script>
 <script src="core.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded",async()=>{
@@ -102,9 +102,10 @@ document.addEventListener("DOMContentLoaded",async()=>{
   dailyDate.textContent=d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
 
   if(current?.online){
-    const [all,daily]=await Promise.all([
+    const [all,daily,claimStatus]=await Promise.all([
       AutoTypeBackend.leaderboard(100),
-      AutoTypeBackend.dailyLeaderboard(dateKey)
+      AutoTypeBackend.dailyLeaderboard(dateKey),
+      AutoTypeBackend.dailyRewardClaimStatus(dateKey)
     ]);
 
     function onlineAccountFromRow(row){
@@ -144,18 +145,24 @@ document.addEventListener("DOMContentLoaded",async()=>{
 
     if(daily[0]?.user_id===current.supabaseUserId){
       dailyClaim.hidden=false;
-      claimDailyReward.addEventListener("click",async()=>{
+
+      if(claimStatus){
         claimDailyReward.disabled=true;
-        try{
-          await AutoTypeBackend.claimDailyReward(dateKey);
-          await AutoTypeBackend.hydrateLocalMirror();
-          AutoType.toast("150 coins claimed.");
-          claimDailyReward.textContent="Claimed";
-        }catch(e){
-          AutoType.toast(e.message);
-          claimDailyReward.disabled=false;
-        }
-      });
+        claimDailyReward.textContent="Claimed";
+      }else{
+        claimDailyReward.addEventListener("click",async()=>{
+          claimDailyReward.disabled=true;
+          try{
+            await AutoTypeBackend.claimDailyReward(dateKey);
+            await AutoTypeBackend.hydrateLocalMirror();
+            AutoType.toast("150 coins claimed.");
+            claimDailyReward.textContent="Claimed";
+          }catch(e){
+            AutoType.toast(e.message);
+            claimDailyReward.disabled=false;
+          }
+        });
+      }
     }
     return;
   }
