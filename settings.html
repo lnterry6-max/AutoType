@@ -168,13 +168,13 @@
         <div class="divider"></div>
         <div class="row-wrap">
           <button class="button button-secondary" id="switchBtn">Switch account</button>
-          <a class="button button-secondary" href="account.html#create">Add account</a>
+          <a class="button button-secondary" href="account.html?switch=1#create">Add account</a>
         </div>
 
         <details class="danger-zone">
           <summary>Delete account</summary>
           <div class="danger-zone-body">
-            <p class="help">This permanently removes this local account, profile, progress, friend relationships, pending requests, races, and submitted suggestions from this browser.</p>
+            <p class="help">This permanently removes this account and its synced AutoType profile data. This cannot be undone.</p>
             <div class="form-group"><label class="label">Current password</label><input class="input" id="deletePassword" type="password" autocomplete="current-password"></div>
             <div class="form-group"><label class="label">Type your username to confirm</label><input class="input" id="deleteUsernameConfirm"></div>
             <button class="button button-danger" id="deleteAccountButton">Delete account permanently</button>
@@ -194,7 +194,7 @@
 <footer class="footer">
   <div class="container footer-inner">
     <span>AutoType · Competitive autocomplete typing</span>
-    <span>Local prototype · Accounts and social data stay on this device</span>
+    <span>Online account · Preferences sync with Supabase</span>
   </div>
 </footer>
 <div class="toast"></div>
@@ -205,8 +205,25 @@
 <script src="core.js"></script>
 
 <script>
-document.addEventListener("DOMContentLoaded",async()=>{\n  await AutoType.ready();
+document.addEventListener("DOMContentLoaded",async()=>{
+  await AutoType.ready();
   let s={...AutoType.currentSettings()};
+  const account=AutoType.currentAccount();
+  let settingsSyncTimer=null;
+
+  function persistSettings(patch){
+    Object.assign(s,patch);
+    AutoType.patchCurrentSettings(patch);
+    if(account?.online){
+      clearTimeout(settingsSyncTimer);
+      settingsSyncTimer=setTimeout(()=>{
+        AutoTypeBackend.updateMyPreferences({...s}).catch(error=>{
+          console.error("Preference sync failed",error);
+          AutoType.toast("Could not sync settings.");
+        });
+      },250);
+    }
+  }
   animations.checked=s.animations!==false;
   reducedMotion.checked=!!s.reducedFx;
   sentencePredictions.checked=s.showPrediction!==false;
@@ -246,7 +263,7 @@ document.addEventListener("DOMContentLoaded",async()=>{\n  await AutoType.ready(
   }
 
   function saveAppearance(){
-    AutoType.patchCurrentSettings({
+    persistSettings({
       backgroundType:s.backgroundType,
       backgroundColor:s.backgroundColor,
       backgroundImage:s.backgroundImage,
@@ -279,11 +296,13 @@ document.addEventListener("DOMContentLoaded",async()=>{\n  await AutoType.ready(
     uploadBackground.disabled=true;
     try{
       const processed=await AutoType.imageFileToBackground(file);
-      s.backgroundImage=processed.dataURL;
+      s.backgroundImage=account?.online
+        ? await AutoTypeBackend.uploadBackground(processed.dataURL)
+        : processed.dataURL;
       s.backgroundLuminance=processed.luminance;
       s.backgroundType="image";
       saveAppearance();
-      AutoType.toast("Background photo saved.");
+      AutoType.toast(account?.online?"Background uploaded and synced.":"Background photo saved.");
     }catch(e){
       AutoType.toast(e.message);
     }finally{
@@ -292,12 +311,15 @@ document.addEventListener("DOMContentLoaded",async()=>{\n  await AutoType.ready(
     }
   });
 
-  removeBackground.addEventListener("click",()=>{
-    s.backgroundImage="";
-    s.backgroundLuminance=null;
-    s.backgroundType="solid";
-    saveAppearance();
-    AutoType.toast("Background photo removed.");
+  removeBackground.addEventListener("click",async()=>{
+    try{
+      if(account?.online)await AutoTypeBackend.removeBackground();
+      s.backgroundImage="";
+      s.backgroundLuminance=null;
+      s.backgroundType="solid";
+      saveAppearance();
+      AutoType.toast("Background photo removed.");
+    }catch(e){AutoType.toast(e.message)}
   });
 
   backgroundDim.addEventListener("input",()=>{
@@ -308,22 +330,31 @@ document.addEventListener("DOMContentLoaded",async()=>{\n  await AutoType.ready(
   backgroundDim.addEventListener("change",saveAppearance);
 
   function saveGameplay(){
-    AutoType.patchCurrentSettings({
+    persistSettings({
       animations:animations.checked,
       reducedFx:reducedMotion.checked,
       showPrediction:sentencePredictions.checked
     });
-    AutoType.toast("Settings saved.");
+    AutoType.toast(account?.online?"Settings synced.":"Settings saved.");
   }
   [animations,reducedMotion,sentencePredictions].forEach(x=>x.addEventListener("change",saveGameplay));
-  switchBtn?.addEventListener("click",AutoType.openSwitchModal);
-
-  const account=AutoType.currentAccount();
+  switchBtn?.addEventListener("click",()=>{
+    if(account?.online)location.href="account.html?switch=1";
+    else AutoType.openSwitchModal();
+  });
   signedInSecurity.hidden=!account;
   guestSecurity.hidden=!!account;
 
   function renderSecurityState(){
     if(!account)return;
+    if(account.online){
+      securitySummary.innerHTML=`<div><strong>${AutoType.escapeHTML(AutoType.accountName(account))}</strong><div class="help">@${AutoType.escapeHTML(account.username)} · Supabase Auth</div></div>`;
+      securityQuestionSetup.hidden=true;
+      changePasswordPanel.hidden=false;
+      securityQuestionDisplay.textContent="Your password is protected by Supabase Auth.";
+      securityAnswer?.closest(".form-group")?.setAttribute("hidden","");
+      return;
+    }
     const hasQuestion=!!account.securityQuestion;
     securitySummary.innerHTML=`<div><strong>${AutoType.escapeHTML(AutoType.accountName(account))}</strong><div class="help">@${AutoType.escapeHTML(account.username)} · ${hasQuestion?"Security question configured":"Security question required"}</div></div>`;
     securityQuestionSetup.hidden=hasQuestion;
@@ -347,7 +378,7 @@ document.addEventListener("DOMContentLoaded",async()=>{\n  await AutoType.ready(
   }
 
   if(account){
-    setSecurityQuestionButton?.addEventListener("click",async()=>{
+    if(!account.online)setSecurityQuestionButton?.addEventListener("click",async()=>{
       setSecurityQuestionButton.disabled=true;
       try{
         await AutoType.setSecurityQuestion(
@@ -376,13 +407,18 @@ document.addEventListener("DOMContentLoaded",async()=>{\n  await AutoType.ready(
       }
       changePasswordButton.disabled=true;
       try{
-        await AutoType.changePassword({
-          currentPassword:currentPassword.value,
-          securityAnswer:securityAnswer.value,
-          newPassword:newPassword.value
-        });
+        if(account.online){
+          await AutoTypeBackend.reauthenticate(currentPassword.value);
+          await AutoTypeBackend.updatePassword(newPassword.value);
+        }else{
+          await AutoType.changePassword({
+            currentPassword:currentPassword.value,
+            securityAnswer:securityAnswer.value,
+            newPassword:newPassword.value
+          });
+        }
         currentPassword.value="";
-        securityAnswer.value="";
+        if(securityAnswer)securityAnswer.value="";
         newPassword.value="";
         confirmNewPassword.value="";
         updatePasswordRules(newPassword,changePasswordRules);
@@ -392,13 +428,25 @@ document.addEventListener("DOMContentLoaded",async()=>{\n  await AutoType.ready(
     });
 
     deleteAccountButton?.addEventListener("click",async()=>{
-      if(!confirm("Delete this AutoType account permanently from this browser?"))return;
+      if(deleteUsernameConfirm.value.trim().toLowerCase()!==account.username.toLowerCase()){
+        AutoType.toast("Type your exact username to confirm deletion.");
+        return;
+      }
+      if(!confirm("Permanently delete this AutoType account? This cannot be undone."))return;
       deleteAccountButton.disabled=true;
       try{
-        await AutoType.deleteCurrentAccount({
-          currentPassword:deletePassword.value,
-          usernameConfirm:deleteUsernameConfirm.value
-        });
+        if(account.online){
+          await AutoTypeBackend.deleteMyAccount(deletePassword.value);
+          const localStore=AutoType.store();
+          localStore.accounts=localStore.accounts.filter(x=>x.id!==account.id);
+          localStore.currentId=null;
+          AutoType.save();
+        }else{
+          await AutoType.deleteCurrentAccount({
+            currentPassword:deletePassword.value,
+            usernameConfirm:deleteUsernameConfirm.value
+          });
+        }
         location.href="index.html";
       }catch(e){AutoType.toast(e.message)}
       finally{deleteAccountButton.disabled=false}
