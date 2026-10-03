@@ -98,6 +98,72 @@ document.addEventListener("DOMContentLoaded",async()=>{
       return{raw,prefix,word,valid:true};
     })
   }
+  const account=AutoType.currentAccount();
+  if(account?.online){
+    let snapshot={suggestions:[],votes:[]};
+
+    const voteCount=id=>snapshot.votes.filter(v=>v.suggestion_id===id).length;
+    const hasMyVote=id=>snapshot.votes.some(v=>v.suggestion_id===id&&v.user_id===account.supabaseUserId);
+    const authorName=s=>{
+      const p=s.profiles;
+      return p?.display_name||p?.username||"Player";
+    };
+
+    async function loadOnline(){
+      snapshot=await AutoTypeBackend.predictionsSnapshot();
+    }
+
+    function renderOnline(){
+      labMappingCount.textContent=snapshot.suggestions.length;
+      labMineCount.textContent=snapshot.suggestions.filter(s=>s.author_id===account.supabaseUserId).length;
+      labVoteCount.textContent=snapshot.votes.length;
+
+      const list=[...snapshot.suggestions].sort((a,b)=>voteCount(b.id)-voteCount(a.id));
+      suggestionList.innerHTML=list.length?list.map(s=>`<div class="list-row suggestion-row">
+        <div class="mapping"><b>${AutoType.escapeHTML(s.prefix)}</b> → ${AutoType.escapeHTML(s.word)}
+          <div class="help">by ${AutoType.escapeHTML(authorName(s))}</div>
+        </div>
+        <div class="vote"><button class="button ${hasMyVote(s.id)?"button-primary":"button-secondary"}" data-online-vote="${s.id}">▲</button><span>${voteCount(s.id)}</span></div>
+      </div>`).join(""):`<div class="empty">No suggestions yet.</div>`;
+
+      suggestionList.querySelectorAll("[data-online-vote]").forEach(b=>b.addEventListener("click",async()=>{
+        b.disabled=true;
+        try{
+          await AutoTypeBackend.togglePredictionVote(b.dataset.onlineVote);
+          await loadOnline();
+          renderOnline();
+        }catch(e){AutoType.toast(e.message);b.disabled=false}
+      }));
+    }
+
+    submitButton.addEventListener("click",async()=>{
+      const valid=parse(suggestionInput.value).filter(x=>x.valid);
+      if(!valid.length){AutoType.toast("Add at least one valid mapping.");return}
+      submitButton.disabled=true;
+      let added=0;
+      try{
+        for(const x of valid){
+          if(snapshot.suggestions.some(s=>s.prefix===x.prefix&&s.word===x.word))continue;
+          const created=await AutoTypeBackend.submitPrediction(x.prefix,x.word);
+          if(created?.id)await AutoTypeBackend.togglePredictionVote(created.id);
+          added++;
+        }
+        suggestionInput.value="";
+        renderPreview();
+        await loadOnline();
+        renderOnline();
+        AutoType.toast(added?`${added} suggestion${added===1?"":"s"} added.`:"Those mappings already exist.");
+      }catch(e){AutoType.toast(e.message)}
+      finally{submitButton.disabled=false}
+    });
+
+    clearButton.addEventListener("click",()=>{suggestionInput.value="";renderPreview()});
+    suggestionInput.addEventListener("input",renderPreview);
+    renderPreview();
+    try{await loadOnline();renderOnline()}catch(e){AutoType.toast(e.message)}
+    return;
+  }
+
   function owner(s){const a=store.accounts.find(x=>x.id===s.accountId);return a?AutoType.accountName(a):(s.submittedBy||"Guest")}
   function renderPreview(){
     const p=parse(suggestionInput.value);
