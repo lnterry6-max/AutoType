@@ -85,10 +85,13 @@
 </footer>
 <div class="toast"></div>
 
+<script src="backend-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="backend.js"></script>
 <script src="core.js"></script>
 
 <script>
-document.addEventListener("DOMContentLoaded",()=>{
+document.addEventListener("DOMContentLoaded",async()=>{\n  await AutoType.ready();
   const descriptions={classic:"Only the current word prefix influences the prediction.",context:"The previous completed word helps rank the next guess.",sentence:"Context plus a visible prediction for the rest of the sentence.",evil:"Wrong-but-plausible words and slang are deliberately prioritized."};
   const names={classic:"Word mode",context:"Context mode",sentence:"Sentence mode",evil:"Evil mode"};
   function preview(){
