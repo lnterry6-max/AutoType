@@ -101,6 +101,17 @@ def main() -> int:
         if missing:
             fail("Missing AutoType exports: " + ", ".join(missing), issues)
 
+    play_text = (ROOT / "play.html").read_text(encoding="utf-8")
+    backend_text = (ROOT / "backend.js").read_text(encoding="utf-8")
+    game_text = (ROOT / "game.js").read_text(encoding="utf-8")
+    if 'id="quickMatchCard"' not in play_text or 'id="quickMatchButton"' not in play_text:
+        fail("play.html: Quick Match UI is missing", issues)
+    for required in ("matchmakingTick", "leaveMatchmaking", "submitRaceResult"):
+        if required not in backend_text:
+            fail(f"backend.js: missing matchmaking helper {required}", issues)
+    if "Verified Quick Match" not in game_text:
+        fail("game.js: Quick Match server-verification flow is missing", issues)
+
     leftovers = sorted(p.name for p in ROOT.iterdir() if p.is_file() and (".before_" in p.name or "before-home-fix" in p.name))
     if leftovers:
         fail("Historical snapshot files remain in site root: " + ", ".join(leftovers), issues)
