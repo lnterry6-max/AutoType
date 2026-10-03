@@ -583,6 +583,8 @@
   async function purchaseItem(itemId){return api("purchase_item",{itemId})}
   async function purchaseCollection(collectionId){return api("purchase_collection",{collectionId})}
   async function openCrate(crateId){return api("open_crate",{crateId})}
+  async function equipItem(itemId){return api("equip_item",{itemId})}
+  async function equipCollection(collectionId){return api("equip_collection",{collectionId})}
   async function setSecurityQuestion(question,answer){return api("set_security_question",{question,answer})}
   async function verifySecurityAnswer(answer){return api("verify_security_answer",{answer})}
   async function sendFriendRequest(username){return api("send_friend_request",{username})}
@@ -654,6 +656,8 @@
     purchaseItem,
     purchaseCollection,
     openCrate,
+    equipItem,
+    equipCollection,
     setSecurityQuestion,
     verifySecurityAnswer,
     sendFriendRequest,
