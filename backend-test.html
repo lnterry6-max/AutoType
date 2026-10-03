@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Backend Smoke Test · AutoType</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="theme-dark">
+<main class="container page" style="max-width:900px">
+  <section class="panel panel-pad">
+    <div class="eyebrow">BACKEND FOUNDATION</div>
+    <h1>Supabase smoke test</h1>
+    <p class="help">Development-only page for testing real Auth and shared database records before the main account system is migrated.</p>
+    <div id="backendStatus" class="security-note">Checking configuration…</div>
+  </section>
+
+  <section class="platform-section" style="margin-top:12px">
+    <h2>Create online account</h2>
+    <div class="grid-2">
+      <div class="form-group"><label class="label">Username</label><input class="input" id="signupUsername"></div>
+      <div class="form-group"><label class="label">Email</label><input class="input" id="signupEmail" type="email"></div>
+    </div>
+    <div class="form-group"><label class="label">Password</label><input class="input" id="signupPassword" type="password"></div>
+    <button class="button button-primary" id="signupButton">Create Supabase account</button>
+  </section>
+
+  <section class="platform-section" style="margin-top:12px">
+    <h2>Sign in</h2>
+    <div class="grid-2">
+      <div class="form-group"><label class="label">Email</label><input class="input" id="signinEmail" type="email"></div>
+      <div class="form-group"><label class="label">Password</label><input class="input" id="signinPassword" type="password"></div>
+    </div>
+    <div class="row-wrap">
+      <button class="button button-primary" id="signinButton">Sign in</button>
+      <button class="button button-secondary" id="signoutButton">Sign out</button>
+    </div>
+  </section>
+
+  <section class="platform-section" style="margin-top:12px">
+    <div class="section-head"><div><span class="section-kicker">SESSION DATA</span><h2>Shared records</h2></div><button class="button button-secondary" id="refreshButton">Refresh</button></div>
+    <pre id="backendOutput" style="white-space:pre-wrap;overflow:auto;max-height:520px;padding:12px;border:1px solid var(--border);border-radius:8px;background:#171b1f;color:#c9d1d9">No data loaded.</pre>
+  </section>
+
+  <p class="help" style="margin-top:12px"><a href="index.html">← Back to AutoType</a></p>
+</main>
+
+<script src="backend-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="backend.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+  const status=document.querySelector("#backendStatus");
+  const output=document.querySelector("#backendOutput");
+
+  function show(value){
+    output.textContent=typeof value==="string"?value:JSON.stringify(value,null,2);
+  }
+
+  async function refresh(){
+    if(!AutoTypeBackend.configured()){
+      status.textContent="Not configured. Add the Supabase project URL and publishable key to backend-config.js.";
+      status.classList.add("warning");
+      show("Backend is not configured yet.");
+      return;
+    }
+    status.textContent="Supabase client configured.";
+    status.classList.remove("warning");
+
+    try{
+      const [session,profile,wallet,stats,inventory]=await Promise.all([
+        AutoTypeBackend.session(),
+        AutoTypeBackend.myProfile(),
+        AutoTypeBackend.myWallet(),
+        AutoTypeBackend.myStats(),
+        AutoTypeBackend.myInventory()
+      ]);
+      show({
+        session:session?{user_id:session.user.id,email:session.user.email}:null,
+        profile,
+        wallet,
+        stats,
+        inventory
+      });
+    }catch(error){
+      show({error:error.message});
+    }
+  }
+
+  document.querySelector("#signupButton").addEventListener("click",async()=>{
+    try{
+      const data=await AutoTypeBackend.signUp({
+        username:document.querySelector("#signupUsername").value,
+        email:document.querySelector("#signupEmail").value,
+        password:document.querySelector("#signupPassword").value
+      });
+      show(data);
+      await refresh();
+    }catch(error){show({error:error.message})}
+  });
+
+  document.querySelector("#signinButton").addEventListener("click",async()=>{
+    try{
+      await AutoTypeBackend.signIn({
+        email:document.querySelector("#signinEmail").value,
+        password:document.querySelector("#signinPassword").value
+      });
+      await refresh();
+    }catch(error){show({error:error.message})}
+  });
+
+  document.querySelector("#signoutButton").addEventListener("click",async()=>{
+    try{
+      await AutoTypeBackend.signOut();
+      await refresh();
+    }catch(error){show({error:error.message})}
+  });
+
+  document.querySelector("#refreshButton").addEventListener("click",refresh);
+  refresh();
+});
+</script>
+</body>
+</html>
