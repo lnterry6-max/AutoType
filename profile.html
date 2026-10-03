@@ -150,7 +150,7 @@
 <footer class="footer">
   <div class="container footer-inner">
     <span>AutoType · Competitive autocomplete typing</span>
-    <span>Local prototype · Accounts and social data stay on this device</span>
+    <span>Online account · Profile data syncs with Supabase</span>
   </div>
 </footer>
 <div class="toast"></div>
@@ -161,9 +161,12 @@
 <script src="core.js"></script>
 
 <script>
-document.addEventListener("DOMContentLoaded",async()=>{\n  await AutoType.ready();
+document.addEventListener("DOMContentLoaded",async()=>{
+  await AutoType.ready();
   const a=AutoType.currentAccount(),p=AutoType.currentProfile();
   const target=a||{id:"guest",displayName:"Guest",bio:"Local guest profile",favoriteModes:[],avatarImage:""};
+  let pendingAvatarFile=null;
+  let removeAvatarRequested=false;
   profileTitle.textContent=AutoType.accountName(target);displayName.value=target.displayName||"Guest";bio.value=target.bio||"";bioCount.textContent=bio.value.length;
 
   if(a){
@@ -234,8 +237,15 @@ document.addEventListener("DOMContentLoaded",async()=>{\n  await AutoType.ready(
           <button class="button ${equipped?"button-secondary":"button-primary"}" data-inventory-equip="${item.id}" ${equipped?"disabled":""}>${equipped?"Equipped":"Equip"}</button>
         </article>`;
       }).join(""):`<div class="empty">No items in this category yet.</div>`;
-      inventoryGrid.querySelectorAll("[data-inventory-equip]").forEach(b=>b.addEventListener("click",()=>{
-        try{AutoType.equipShopItem(b.dataset.inventoryEquip);location.reload()}catch(e){AutoType.toast(e.message)}
+      inventoryGrid.querySelectorAll("[data-inventory-equip]").forEach(b=>b.addEventListener("click",async()=>{
+        try{
+          const item=AutoType.equipShopItem(b.dataset.inventoryEquip);
+          if(a.online){
+            await AutoTypeBackend.setEquipped(item.slot,item.id);
+            await AutoTypeBackend.hydrateLocalMirror();
+          }
+          location.reload();
+        }catch(e){AutoType.toast(e.message)}
       }));
     }
     renderInventory();
@@ -283,16 +293,69 @@ document.addEventListener("DOMContentLoaded",async()=>{\n  await AutoType.ready(
   xpBar.style.width=`${info.pct}%`;
   xpNext.textContent=`${info.remaining} XP until level ${info.level+1}.`;
 
-  removeImage.addEventListener("click",()=>{target.avatarImage="";renderAvatar()});
-  saveProfile.addEventListener("click",()=>{
+  bio.addEventListener("input",()=>bioCount.textContent=bio.value.length);
+  changeImage.addEventListener("click",()=>imageInput.click());
+  imageInput.addEventListener("change",()=>{
+    const file=imageInput.files?.[0];
+    if(!file)return;
+    if(!["image/jpeg","image/png","image/webp"].includes(file.type)){
+      AutoType.toast("Use a JPG, PNG, or WebP image.");
+      imageInput.value="";
+      return;
+    }
+    if(file.size>5*1024*1024){
+      AutoType.toast("Avatar must be 5 MB or smaller.");
+      imageInput.value="";
+      return;
+    }
+    pendingAvatarFile=file;
+    removeAvatarRequested=false;
+    const reader=new FileReader();
+    reader.onload=()=>{target.avatarImage=reader.result;renderAvatar()};
+    reader.readAsDataURL(file);
+  });
+
+  removeImage.addEventListener("click",()=>{
+    pendingAvatarFile=null;
+    removeAvatarRequested=true;
+    target.avatarImage="";
+    renderAvatar();
+  });
+
+  saveProfile.addEventListener("click",async()=>{
     if(!a)return;
-    AutoType.patchCurrentAccount({
-      displayName:displayName.value.trim()||a.username,
-      bio:bio.value.trim().slice(0,180),
-      avatarImage:target.avatarImage||"",
-      favoriteModes:[...favoriteModes.querySelectorAll(".selected")].map(x=>x.dataset.mode)
-    });
-    AutoType.toast("Profile saved.");setTimeout(()=>location.reload(),450);
+    saveProfile.disabled=true;
+    try{
+      const modes=[...favoriteModes.querySelectorAll(".selected")].map(x=>x.dataset.mode);
+      const name=displayName.value.trim()||a.username;
+      const cleanBio=bio.value.trim().slice(0,180);
+
+      if(a.online){
+        if(removeAvatarRequested)await AutoTypeBackend.removeAvatar();
+        else if(pendingAvatarFile)await AutoTypeBackend.uploadAvatar(pendingAvatarFile);
+
+        await AutoTypeBackend.updateMyProfile({
+          display_name:name,
+          bio:cleanBio,
+          favorite_modes:modes
+        });
+        await AutoTypeBackend.hydrateLocalMirror();
+      }else{
+        AutoType.patchCurrentAccount({
+          displayName:name,
+          bio:cleanBio,
+          avatarImage:target.avatarImage||"",
+          favoriteModes:modes
+        });
+      }
+
+      AutoType.toast("Profile saved.");
+      setTimeout(()=>location.reload(),350);
+    }catch(e){
+      AutoType.toast(e.message);
+    }finally{
+      saveProfile.disabled=false;
+    }
   });
 });
 </script>
