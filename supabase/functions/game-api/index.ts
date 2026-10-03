@@ -160,7 +160,7 @@ Deno.serve(async(req:Request)=>{
           admin.from("race_players")
             .select("race_id,finished_at").eq("race_id",raceId).eq("user_id",user.id).maybeSingle(),
           admin.from("race_rooms")
-            .select("id,status,match_type,winner_id").eq("id",raceId).maybeSingle()
+            .select("id,status,match_type,winner_id,target_text").eq("id",raceId).maybeSingle()
         ]);
         if(partError)throw partError;
         if(roomError)throw roomError;
@@ -173,18 +173,45 @@ Deno.serve(async(req:Request)=>{
         const submittedDuration=Math.max(0,Number(payload.durationMs)||0);
         const submittedErrors=Math.max(0,Number(payload.errors)||0);
         const submittedErased=Math.max(0,Number(payload.erased)||0);
+        let progression:any=null;
 
         if(room.match_type==="matchmaking"){
-          const {data:fullRoom,error:fullRoomError}=await admin.from("race_rooms")
-            .select("target_text").eq("id",raceId).single();
-          if(fullRoomError)throw fullRoomError;
-          const wordCount=String(fullRoom.target_text||"").trim().split(/\s+/).filter(Boolean).length;
+          const wordCount=String(room.target_text||"").trim().split(/\s+/).filter(Boolean).length;
+          const submittedWords=Math.max(0,Number(payload.words)||0);
+          const submittedMaxStreak=Math.max(0,Number(payload.maxStreak)||0);
+          const submittedTotalKeys=Math.max(0,Number(payload.totalKeys)||0);
+          const roundId=String(payload.roundId||"");
+          if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(roundId)){
+            throw new Error("Quick Match round id is invalid.");
+          }
+          if(submittedWords!==wordCount)throw new Error("Quick Match word count is invalid.");
+          if(submittedMaxStreak>wordCount)throw new Error("Quick Match streak is outside the valid range.");
+          if(submittedTotalKeys<wordCount||submittedTotalKeys>20000){
+            throw new Error("Quick Match key count is outside the valid range.");
+          }
           let maxScore=0;
           for(let i=0;i<wordCount;i++)maxScore+=120+Math.min(i*5,30);
           if(submittedScore>maxScore)throw new Error("Quick Match score is outside the valid range.");
           if(submittedDuration<Math.max(250,wordCount*120)||submittedDuration>1800000){
             throw new Error("Quick Match time is outside the valid range.");
           }
+
+          // Progression is recorded only after the Quick Match metrics have been
+          // checked against the server-owned race sentence. This keeps levels,
+          // rewards, and future matchmaking from trusting an unverified race.
+          progression=await rpc("autotype_record_round",{
+            p_user:user.id,
+            p_round:roundId,
+            p_mode:"race",
+            p_score:submittedScore,
+            p_words:submittedWords,
+            p_erased:submittedErased,
+            p_max_streak:submittedMaxStreak,
+            p_total_keys:submittedTotalKeys,
+            p_errors:submittedErrors,
+            p_duration_ms:submittedDuration,
+            p_one_clue:!!payload.oneClue
+          });
         }
 
         const {error:updateError}=await admin.from("race_players").update({
@@ -228,7 +255,7 @@ Deno.serve(async(req:Request)=>{
             started_at:new Date().toISOString()
           }).eq("id",raceId).eq("status","waiting");
         }
-        return json({players,winnerId,finished:done,matchType:room.match_type});
+        return json({players,winnerId,finished:done,matchType:room.match_type,progression});
       }
 
       case "join_tournament":
