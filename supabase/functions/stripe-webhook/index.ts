@@ -59,6 +59,54 @@ Deno.serve(async(req:Request)=>{
         .eq("status","pending");
     }
 
+
+    if(event.type==="refund.created"||event.type==="refund.updated"||event.type==="refund.failed"){
+      const refund=event.data.object as Stripe.Refund;
+      const paymentIntent=typeof refund.payment_intent==="string"
+        ? refund.payment_intent
+        : refund.payment_intent?.id||"";
+      if(paymentIntent){
+        const {error}=await admin.rpc("autotype_apply_stripe_refund",{
+          p_event_id:event.id,
+          p_event_type:event.type,
+          p_refund_id:refund.id,
+          p_payment_intent:paymentIntent,
+          p_amount:Number(refund.amount||0),
+          p_status:String(refund.status||"")
+        });
+        if(error)throw error;
+      }
+    }
+
+    if(event.type==="charge.dispute.created"||event.type==="charge.dispute.updated"||event.type==="charge.dispute.closed"){
+      const dispute=event.data.object as Stripe.Dispute;
+      let paymentIntent=typeof dispute.payment_intent==="string"
+        ? dispute.payment_intent
+        : dispute.payment_intent?.id||"";
+
+      if(!paymentIntent){
+        const chargeId=typeof dispute.charge==="string"?dispute.charge:dispute.charge?.id||"";
+        if(chargeId){
+          const charge=await stripe.charges.retrieve(chargeId,{expand:["payment_intent"]});
+          paymentIntent=typeof charge.payment_intent==="string"
+            ? charge.payment_intent
+            : charge.payment_intent?.id||"";
+        }
+      }
+
+      if(paymentIntent){
+        const {error}=await admin.rpc("autotype_apply_stripe_dispute",{
+          p_event_id:event.id,
+          p_event_type:event.type,
+          p_dispute_id:dispute.id,
+          p_payment_intent:paymentIntent,
+          p_amount:Number(dispute.amount||0),
+          p_status:String(dispute.status||"")
+        });
+        if(error)throw error;
+      }
+    }
+
     return Response.json({received:true});
   }catch(error){
     console.error("Stripe webhook processing failed",error);
