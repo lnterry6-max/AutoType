@@ -299,7 +299,7 @@ Deno.serve(async(req:Request)=>{
       case "admin_snapshot":
         await requireDeveloper();
         {
-          const [profiles,roles,wallets,stats,tournaments,entries,suggestions,votes,announcements]=await Promise.all([
+          const [profiles,roles,wallets,stats,tournaments,entries,suggestions,votes,announcements,payments,paymentAdjustments]=await Promise.all([
             admin.from("profiles").select("id,username,display_name,avatar_url,created_at"),
             admin.from("user_roles").select("*"),
             admin.from("wallets").select("*"),
@@ -308,13 +308,16 @@ Deno.serve(async(req:Request)=>{
             admin.from("tournament_entries").select("*"),
             admin.from("prediction_suggestions").select("*").order("created_at",{ascending:false}),
             admin.from("prediction_votes").select("*"),
-            admin.from("site_announcements").select("*").order("created_at",{ascending:false})
+            admin.from("site_announcements").select("*").order("created_at",{ascending:false}),
+            admin.from("payment_orders").select("*").order("created_at",{ascending:false}).limit(200),
+            admin.from("payment_adjustments").select("*").order("created_at",{ascending:false}).limit(200)
           ]);
-          for(const result of [profiles,roles,wallets,stats,tournaments,entries,suggestions,votes,announcements])if(result.error)throw result.error;
+          for(const result of [profiles,roles,wallets,stats,tournaments,entries,suggestions,votes,announcements,payments,paymentAdjustments])if(result.error)throw result.error;
           return json({
             profiles:profiles.data,roles:roles.data,wallets:wallets.data,stats:stats.data,
             tournaments:tournaments.data,entries:entries.data,suggestions:suggestions.data,
-            votes:votes.data,announcements:announcements.data
+            votes:votes.data,announcements:announcements.data,
+            payments:payments.data,paymentAdjustments:paymentAdjustments.data
           });
         }
 
