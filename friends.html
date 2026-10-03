@@ -102,6 +102,167 @@ document.addEventListener("DOMContentLoaded",async()=>{
     return;
   }
 
+  if(a.online){
+    let social={friends:[],incoming:[],outgoing:[]};
+    let races=[];
+
+    const asPerson=p=>({
+      id:p?.id||"",
+      username:p?.username||"player",
+      displayName:p?.display_name||p?.username||"Player",
+      avatarImage:p?.avatar_url||"",
+      bio:p?.bio||""
+    });
+
+    function onlinePersonRow(profile,actions=""){
+      const x=asPerson(profile);
+      return `<div class="list-row friend-row">
+        <div class="person">${AutoType.avatarMarkup(x,"avatar")}<div class="person-copy"><strong>${AutoType.escapeHTML(AutoType.accountName(x))}</strong><span>${AutoType.escapeHTML(x.bio||`@${x.username}`)}</span></div></div>
+        <div class="friend-actions">${actions}</div>
+      </div>`;
+    }
+
+    async function loadSocial(){
+      [social,races]=await Promise.all([
+        AutoTypeBackend.friendsSnapshot(),
+        AutoTypeBackend.racesSnapshot()
+      ]);
+    }
+
+    async function renderOnlineRequests(){
+      requestCount.textContent=social.incoming.length;
+      let html="";
+      if(social.incoming.length){
+        html+=social.incoming.map(r=>onlinePersonRow(
+          r.profile,
+          `<button class="button button-primary" data-online-accept="${r.id}">Accept</button><button class="button button-quiet" data-online-decline="${r.id}">Decline</button>`
+        )).join("");
+      }
+      if(social.outgoing.length){
+        html+=`<div class="request-subhead">Sent requests</div>`;
+        html+=social.outgoing.map(r=>onlinePersonRow(
+          r.profile,
+          `<button class="button button-quiet" data-online-cancel="${r.id}">Cancel request</button>`
+        )).join("");
+      }
+      requestList.innerHTML=html||`<div class="empty">No pending friend requests.</div>`;
+
+      requestList.querySelectorAll("[data-online-accept]").forEach(b=>b.addEventListener("click",async()=>{
+        b.disabled=true;
+        try{
+          await AutoTypeBackend.respondFriendRequest(b.dataset.onlineAccept,true);
+          AutoType.toast("Friend request accepted.");
+          await refreshOnline();
+        }catch(e){AutoType.toast(e.message)}
+      }));
+      requestList.querySelectorAll("[data-online-decline]").forEach(b=>b.addEventListener("click",async()=>{
+        b.disabled=true;
+        try{await AutoTypeBackend.respondFriendRequest(b.dataset.onlineDecline,false);await refreshOnline()}
+        catch(e){AutoType.toast(e.message)}
+      }));
+      requestList.querySelectorAll("[data-online-cancel]").forEach(b=>b.addEventListener("click",async()=>{
+        b.disabled=true;
+        try{await AutoTypeBackend.cancelFriendRequest(b.dataset.onlineCancel);await refreshOnline()}
+        catch(e){AutoType.toast(e.message)}
+      }));
+    }
+
+    async function renderOnlineSearch(){
+      const q=friendSearch.value.trim();
+      let matches=[];
+      try{matches=await AutoTypeBackend.searchProfiles(q,16)}
+      catch(e){searchList.innerHTML=`<div class="empty">${AutoType.escapeHTML(e.message)}</div>`;return}
+
+      const currentId=a.supabaseUserId;
+      const friendIds=new Set(social.friends.map(x=>x.id));
+      const incomingMap=new Map(social.incoming.map(x=>[x.profile?.id,x]));
+      const outgoingMap=new Map(social.outgoing.map(x=>[x.profile?.id,x]));
+      matches=matches.filter(x=>x.id!==currentId&&!friendIds.has(x.id));
+
+      searchList.innerHTML=matches.length?matches.slice(0,8).map(x=>{
+        if(incomingMap.has(x.id))return onlinePersonRow(x,`<span class="request-state">Sent you a request</span>`);
+        const out=outgoingMap.get(x.id);
+        if(out)return onlinePersonRow(x,`<button class="button button-quiet" data-search-cancel="${out.id}">Requested</button>`);
+        return onlinePersonRow(x,`<button class="button button-secondary" data-search-request="${AutoType.escapeHTML(x.username)}">Send request</button>`);
+      }).join(""):`<div class="empty">No matching accounts.</div>`;
+
+      searchList.querySelectorAll("[data-search-request]").forEach(b=>b.addEventListener("click",async()=>{
+        b.disabled=true;
+        try{
+          await AutoTypeBackend.sendFriendRequest(b.dataset.searchRequest);
+          AutoType.toast("Friend request sent.");
+          await refreshOnline();
+        }catch(e){AutoType.toast(e.message)}
+      }));
+      searchList.querySelectorAll("[data-search-cancel]").forEach(b=>b.addEventListener("click",async()=>{
+        b.disabled=true;
+        try{await AutoTypeBackend.cancelFriendRequest(b.dataset.searchCancel);await refreshOnline()}
+        catch(e){AutoType.toast(e.message)}
+      }));
+    }
+
+    function renderOnlineFriends(){
+      friendCountMetric.textContent=social.friends.length;
+      incomingMetric.textContent=social.incoming.length;
+      raceCountMetric.textContent=races.length;
+
+      friendsList.innerHTML=social.friends.length?social.friends.map(x=>onlinePersonRow(
+        x,
+        `<button class="button button-secondary" data-online-race="${x.id}">Race</button><button class="button button-quiet" data-online-remove="${x.id}">Remove</button>`
+      )).join(""):`<div class="empty">No friends yet.</div>`;
+
+      friendsList.querySelectorAll("[data-online-remove]").forEach(b=>b.addEventListener("click",async()=>{
+        b.disabled=true;
+        try{await AutoTypeBackend.removeFriend(b.dataset.onlineRemove);await refreshOnline()}
+        catch(e){AutoType.toast(e.message)}
+      }));
+      friendsList.querySelectorAll("[data-online-race]").forEach(b=>b.addEventListener("click",async()=>{
+        b.disabled=true;
+        try{
+          const room=await AutoTypeBackend.createRace(b.dataset.onlineRace);
+          location.href=`play.html?race=${encodeURIComponent(room.id)}`;
+        }catch(e){AutoType.toast(e.message);b.disabled=false}
+      }));
+
+      const currentId=a.supabaseUserId;
+      raceList.innerHTML=races.length?races.map(room=>{
+        const mine=room.players.find(p=>p.user_id===currentId);
+        const other=room.players.find(p=>p.user_id!==currentId);
+        const otherName=other?.profile?.display_name||other?.profile?.username||"Friend";
+        const myResult=mine?.finished_at
+          ? `You: ${AutoType.formatTime(Number(mine.duration_ms||0))} · ${mine.errors||0} errors`
+          : "You haven't played yet";
+        const theirResult=other?.finished_at
+          ? ` · Them: ${AutoType.formatTime(Number(other.duration_ms||0))}`
+          : "";
+        return `<div class="list-row friend-row">
+          <div><strong>${AutoType.escapeHTML(otherName)}</strong><div class="help">${myResult}${theirResult}</div></div>
+          <a class="button button-secondary" href="play.html?race=${encodeURIComponent(room.id)}">${mine?.finished_at?"Replay":"Play"}</a>
+        </div>`;
+      }).join(""):`<div class="empty">No race challenges yet.</div>`;
+    }
+
+    async function refreshOnline(){
+      try{
+        await loadSocial();
+        await renderOnlineRequests();
+        renderOnlineFriends();
+        await renderOnlineSearch();
+      }catch(e){
+        AutoType.toast(e.message);
+      }
+    }
+
+    let searchTimer=null;
+    friendSearch.addEventListener("input",()=>{
+      clearTimeout(searchTimer);
+      searchTimer=setTimeout(renderOnlineSearch,180);
+    });
+
+    await refreshOnline();
+    return;
+  }
+
   const accountById=id=>store.accounts.find(x=>x.id===id);
   const friendAccounts=()=>store.accounts.filter(x=>(a.friends||[]).includes(x.id));
   const incoming=()=>store.friendRequests.filter(r=>r.status==="pending"&&r.toId===a.id);
