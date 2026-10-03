@@ -66,6 +66,23 @@
       <a class="button button-secondary" href="how-to.html">How it works</a>
     </header>
 
+    <section class="quick-match-card" id="quickMatchCard">
+      <div class="quick-match-copy">
+        <span class="section-kicker">MATCHMAKING</span>
+        <h2>Quick Match</h2>
+        <p>Race someone near your level.</p>
+      </div>
+      <div class="quick-match-level">
+        <span>Your level</span>
+        <strong id="quickMatchLevel">LV —</strong>
+      </div>
+      <div class="quick-match-action">
+        <button class="button button-primary" id="quickMatchButton">Find match</button>
+        <button class="button button-quiet" id="quickMatchCancel" hidden>Cancel</button>
+        <span id="quickMatchStatus"></span>
+      </div>
+    </section>
+
     <div class="mode-card-grid">
       <a class="mode-tile primary-mode" href="play.html?mode=classic"><span class="mode-number">01</span><div><small>CORE</small><h2>Word</h2><p>Your current prefix is all AutoType knows.</p></div><b>Play →</b></a>
       <a class="mode-tile" href="play.html?mode=context"><span class="mode-number">02</span><div><small>SMARTER</small><h2>Context</h2><p>The previous word influences the next prediction.</p></div><b>Play →</b></a>
@@ -132,6 +149,7 @@
         <div class="result-box"><strong id="resultErased">0</strong><span>AI erased</span></div>
         <div class="result-box reward-result"><strong id="resultCoins">+0</strong><span>Coins earned</span></div>
       </div>
+      <div class="match-result" id="matchResult" hidden></div>
       <div class="achievement-unlocks" id="achievementUnlocks" hidden></div>
       <div class="row-wrap"><button class="button button-primary" id="againBtn">Play again</button><a class="button button-secondary" href="play.html">Modes</a></div>
     </section>
@@ -148,10 +166,103 @@
 
 <script src="backend-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="backend.js?v=20261003-8"></script>
+<script src="backend.js?v=20261003-10"></script>
 <script src="core.js"></script>
 
-<script src="game.js?v=20261003-7"></script>
+<script>
+document.addEventListener("DOMContentLoaded",async()=>{
+  await AutoType.ready();
+  const panel=document.querySelector("#quickMatchCard");
+  if(!panel)return;
+
+  const account=AutoType.currentAccount();
+  const button=document.querySelector("#quickMatchButton");
+  const cancel=document.querySelector("#quickMatchCancel");
+  const status=document.querySelector("#quickMatchStatus");
+  const level=document.querySelector("#quickMatchLevel");
+  const hasGameQuery=new URLSearchParams(location.search).toString().length>0;
+
+  if(hasGameQuery){
+    panel.hidden=true;
+    return;
+  }
+
+  const localLevel=AutoType.levelInfo(AutoType.currentProfile()).level;
+  level.textContent=`LV ${localLevel}`;
+
+  if(!account?.online){
+    status.textContent="Sign in to use matchmaking.";
+    button.textContent="Sign in";
+    button.addEventListener("click",()=>location.href="account.html");
+    return;
+  }
+
+  let searching=false;
+  let timer=null;
+
+  function stopTimer(){
+    if(timer){clearTimeout(timer);timer=null}
+  }
+
+  function rangeLabel(value){
+    return value==null?"Any level":`±${value} levels`;
+  }
+
+  async function tick(){
+    if(!searching)return;
+    try{
+      const result=await AutoTypeBackend.matchmakingTick();
+      level.textContent=`LV ${Number(result.level||localLevel)}`;
+
+      if(result.status==="matched"&&result.race_id){
+        searching=false;
+        stopTimer();
+        status.textContent=`Matched with LV ${Number(result.opponent_level||"?")}`;
+        location.href=`play.html?race=${encodeURIComponent(result.race_id)}&match=1`;
+        return;
+      }
+
+      status.textContent=`Searching · ${rangeLabel(result.range)} · ${Number(result.wait_seconds||0)}s`;
+      timer=setTimeout(tick,1500);
+    }catch(error){
+      searching=false;
+      stopTimer();
+      button.disabled=false;
+      cancel.hidden=true;
+      status.textContent="";
+      AutoType.toast(error.message||"Matchmaking failed.");
+    }
+  }
+
+  button.addEventListener("click",()=>{
+    if(searching)return;
+    searching=true;
+    button.disabled=true;
+    cancel.hidden=false;
+    status.textContent="Searching…";
+    tick();
+  });
+
+  cancel.addEventListener("click",async()=>{
+    searching=false;
+    stopTimer();
+    button.disabled=false;
+    cancel.hidden=true;
+    status.textContent="";
+    try{await AutoTypeBackend.leaveMatchmaking()}catch{}
+  });
+
+  window.addEventListener("pagehide",()=>{
+    if(searching){
+      searching=false;
+      stopTimer();
+      AutoTypeBackend.leaveMatchmaking().catch(()=>{});
+    }
+  });
+});
+</script>
+
+<script src="game.js?v=20261003-10"></script>
 
 </body>
 </html>
