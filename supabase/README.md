@@ -18,6 +18,7 @@ The `backend-foundation` branch uses Supabase as the shared backend for AutoType
 - Prediction Lab and voting
 - developer/admin controls
 - announcements and audit/economy logs
+- Stripe Coin-pack orders and webhook-verified wallet credit
 
 ## Migrations
 
@@ -29,11 +30,19 @@ Migrations under `migrations/` are synced from the live AutoType Supabase projec
 
 Authenticated gateway for server-authoritative gameplay, economy, social, tournament, Prediction Lab, and developer/admin mutations.
 
+### create-checkout-session
+
+Requires a valid user JWT. Creates a Stripe Checkout Session from a server-defined Coin pack and stores a pending payment order.
+
+### stripe-webhook
+
+Public webhook endpoint with JWT verification disabled because Stripe authenticates the request using the `Stripe-Signature` header. The function verifies the signature before crediting Coins.
+
 ### delete-account
 
 Authenticates the caller and deletes that caller's Supabase Auth account with the server-side admin client.
 
-Both functions require a valid JWT.
+`game-api`, `create-checkout-session`, and `delete-account` require valid user JWTs. `stripe-webhook` uses Stripe signature verification instead.
 
 ## Browser keys
 
@@ -43,6 +52,7 @@ Never expose:
 
 - `service_role` / secret keys
 - database passwords
+- Stripe secret/webhook keys
 - private API secrets
 
 ## Development note
