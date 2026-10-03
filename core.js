@@ -313,7 +313,14 @@
       delete a.wallet.equipped.background;
 
       a.wallet.claims=a.wallet.claims||{};
-      a.role=(a.id===s.developerAccountId)?"developer":"user";
+
+      // Legacy local accounts still use the historical developerAccountId.
+      // Supabase-backed mirrors keep the role last verified by backend.js.
+      if(a.online&&a.supabaseUserId){
+        a.role=(a.role==="developer"||a.role==="admin")?"developer":"user";
+      }else{
+        a.role=(a.id===s.developerAccountId)?"developer":"user";
+      }
     });
     localStorage.setItem(STORE_KEY,JSON.stringify(s));
     return s;
@@ -364,7 +371,16 @@
 
 
   function isDeveloper(account=currentAccount()){
-    return !!account && account.id===store.developerAccountId && account.role==="developer";
+    if(!account)return false;
+
+    // Online accounts receive their role from Supabase during hydration.
+    // The local Admin Console is still prototype-only; sensitive backend
+    // operations must independently authorize the server-side role.
+    if(account.online&&account.supabaseUserId){
+      return account.role==="developer";
+    }
+
+    return account.id===store.developerAccountId && account.role==="developer";
   }
 
   function setDeveloperCoins(amount){
