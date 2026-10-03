@@ -20,6 +20,7 @@ The backend validates and commits:
 - friend operations
 - Prediction Lab submissions/votes
 - admin balance, tournament, moderation, and announcement actions
+- Stripe Coin-pack credit after signed webhook verification
 
 Economy/admin actions are also recorded where appropriate in audit/transaction tables.
 
@@ -46,6 +47,14 @@ The publishable Supabase key is intentionally browser-visible and relies on RLS/
 ## Current limitation
 
 The server records completed rounds and prevents duplicate reward submission by round ID, but it currently accepts bounded client-reported gameplay metrics. This is sufficient for persistence and basic economy integrity, not full competitive anti-cheat. High-stakes rankings/tournaments should eventually use server-issued challenges and stronger result verification.
+
+## Payments
+
+The browser never credits itself after returning from Stripe. `create-checkout-session` creates a server-side order from a server-defined Coin pack, and `stripe-webhook` verifies Stripe's signature before crediting the wallet. Webhook event IDs and Checkout Session IDs are used for idempotency.
+
+Keep `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` in Supabase project secrets only. Do not put them in `backend-config.js` or GitHub.
+
+Before live payments, add a full refund/chargeback policy and transaction reconciliation.
 
 ## Randomized rewards
 
