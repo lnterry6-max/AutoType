@@ -100,13 +100,13 @@ document.addEventListener("DOMContentLoaded",async()=>{
   const store=AutoType.store();
   const current=AutoType.currentAccount();
   const d=new Date();
-  const dateKey=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  const dateKey=d.toISOString().slice(0,10);
   dailyDate.textContent=d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
 
   if(current?.online){
     const [all,daily]=await Promise.all([
       AutoTypeBackend.leaderboard(100),
-      AutoTypeBackend.dailyLeaderboard(new Date())
+      AutoTypeBackend.dailyLeaderboard(dateKey)
     ]);
 
     function onlineAccountFromRow(row){
