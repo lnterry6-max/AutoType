@@ -99,7 +99,7 @@
 <div class="toast"></div>
 <script src="backend-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="backend.js?v=20261003-8"></script>
+<script src="backend.js?v=20261003-10"></script>
 <script src="core.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded",async()=>{
@@ -135,6 +135,20 @@ document.addEventListener("DOMContentLoaded",async()=>{
         const entryText=t.entry_type==="free"?"Free entry":`${t.entry_cost} ◆`;
         const full=entrants>=t.max_players;
         const key=tournamentKey(t);
+        const profileMap=Object.fromEntries((snapshot.profiles||[]).map(p=>[p.id,p]));
+        const scored=snapshot.entries
+          .filter(e=>e.tournament_id===t.id&&e.score!=null&&!["withdrawn","disqualified"].includes(e.status))
+          .sort((a,b)=>Number(b.score)-Number(a.score)||new Date(a.finished_at||0)-new Date(b.finished_at||0));
+        const winnerProfile=t.winner_id?profileMap[t.winner_id]:null;
+        const standings=scored.length?`<div class="tournament-standings">
+          ${winnerProfile?`<div class="tournament-winner"><span>Winner</span><strong>${AutoType.escapeHTML(winnerProfile.display_name||winnerProfile.username)}</strong></div>`:""}
+          <div class="tournament-standings-list">
+            ${scored.slice(0,3).map((row,index)=>{
+              const p=profileMap[row.user_id];
+              return `<div><span>#${index+1}</span><strong>${AutoType.escapeHTML(p?.display_name||p?.username||"Player")}</strong><b>${Number(row.score).toLocaleString()}</b></div>`;
+            }).join("")}
+          </div>
+        </div>`:"";
         let action;
 
         if(entry){
@@ -168,6 +182,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
           </div>
           ${t.reward_title?`<div class="tournament-title-prize">Winner title · ${AutoType.escapeHTML(t.reward_title)}</div>`:""}
           <div class="tournament-card-action">${action}</div>
+          ${(t.status==="running"||t.status==="closed")?standings:""}
         </article>`;
       }).join(""):`<div class="empty tournament-empty">No tournaments are currently configured.</div>`;
 
