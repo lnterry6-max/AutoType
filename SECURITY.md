@@ -50,6 +50,8 @@ Competitive online rounds use server-issued challenges stored in `round_challeng
 
 Global/Daily boards use verified results. Tournament attempts are tied to a registered player and tournament, are single-use, and winner payouts require a top verified score.
 
+Quick Match sentences are server-selected and impossible score/time ranges are rejected before a result can determine the winner. Each matchmaking result is single-use.
+
 Remaining limitation: the browser still reports detailed gameplay metrics. A determined user controlling the client can fabricate plausible in-range events. Stronger anti-cheat would require server-observed event streams, signed telemetry, or another trusted execution boundary.
 
 ## Payments
