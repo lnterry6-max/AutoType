@@ -55,7 +55,7 @@ Point the Stripe webhook endpoint at:
 https://<project-ref>.supabase.co/functions/v1/stripe-webhook
 ```
 
-Subscribe at minimum to `checkout.session.completed`, `checkout.session.async_payment_succeeded`, and `checkout.session.expired`.
+Subscribe to Checkout completion/expiration plus the refund and dispute events handled by `stripe-webhook`: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired`, `refund.created`, `refund.updated`, `refund.failed`, `charge.dispute.created`, `charge.dispute.updated`, and `charge.dispute.closed`.
 
 Keep `STRIPE_LIVE_ENABLED=false` while testing. Even if a live secret key is accidentally configured, AutoType will reject live checkout until this flag is deliberately changed to `true`.
 
@@ -73,11 +73,11 @@ and require the backend-foundation GitHub Actions audit to pass before merging/d
 
 The backend now persists accounts, economy, inventory, social data, tournaments, and admin actions. Remaining production-hardening work includes:
 
-- server-issued/verified competitive round challenges for stronger anti-cheat
+- per-keystroke/server-observed telemetry if stronger anti-cheat is required
 - abuse/rate limits tuned from real traffic
 - moderation/reporting workflows
 - backup/restore operations and monitoring
 - production email branding/deliverability
 - enabling Supabase leaked-password protection
-- refund/chargeback handling before live monetization
+- refund/chargeback operations and support policy
 - tax/receipt/business compliance review before live monetization
