@@ -753,7 +753,7 @@
   }
 
   window.AutoTypeBackend={
-    version:"20261003-5",
+    version:"20261003-6",
     configured,
     getClient,
     api,
