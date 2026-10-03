@@ -227,16 +227,25 @@ document.addEventListener("DOMContentLoaded",async()=>{
       raceList.innerHTML=races.length?races.map(room=>{
         const mine=room.players.find(p=>p.user_id===currentId);
         const other=room.players.find(p=>p.user_id!==currentId);
-        const otherName=other?.profile?.display_name||other?.profile?.username||"Friend";
+        const otherName=other?.profile?.display_name||other?.profile?.username||(room.match_type==="matchmaking"?"Opponent":"Friend");
+        const quick=room.match_type==="matchmaking";
         const myResult=mine?.finished_at
-          ? `You: ${AutoType.formatTime(Number(mine.duration_ms||0))} · ${mine.errors||0} errors`
+          ? `You: ${AutoType.formatTime(Number(mine.duration_ms||0))} · ${Number(mine.score||0).toLocaleString()} pts`
           : "You haven't played yet";
         const theirResult=other?.finished_at
-          ? ` · Them: ${AutoType.formatTime(Number(other.duration_ms||0))}`
+          ? ` · Them: ${AutoType.formatTime(Number(other.duration_ms||0))} · ${Number(other.score||0).toLocaleString()} pts`
           : "";
+        const verdict=room.status==="finished"
+          ? (!room.winner_id?"Draw":room.winner_id===currentId?"Win":"Loss")
+          : mine?.finished_at?"Waiting":"";
+        const action=quick
+          ? (mine?.finished_at
+              ? `<span class="status-pill">${verdict||"Waiting"}</span>`
+              : `<a class="button button-secondary" href="play.html?race=${encodeURIComponent(room.id)}&match=1">Play</a>`)
+          : `<a class="button button-secondary" href="play.html?race=${encodeURIComponent(room.id)}">${mine?.finished_at?"Replay":"Play"}</a>`;
         return `<div class="list-row friend-row">
-          <div><strong>${AutoType.escapeHTML(otherName)}</strong><div class="help">${myResult}${theirResult}</div></div>
-          <a class="button button-secondary" href="play.html?race=${encodeURIComponent(room.id)}">${mine?.finished_at?"Replay":"Play"}</a>
+          <div><strong>${quick?"Quick Match · ":""}${AutoType.escapeHTML(otherName)}</strong><div class="help">${myResult}${theirResult}</div></div>
+          ${action}
         </div>`;
       }).join(""):`<div class="empty">No race challenges yet.</div>`;
     }
