@@ -54,7 +54,7 @@ The browser never credits itself after returning from Stripe. `create-checkout-s
 
 Keep `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` in Supabase project secrets only. Do not put them in `backend-config.js` or GitHub.
 
-Before live payments, add a full refund/chargeback policy and transaction reconciliation.
+Before live payments, add a full refund/chargeback policy and transaction reconciliation. AutoType currently requires an explicit server-side `STRIPE_LIVE_ENABLED=true` flag before live Checkout can run.
 
 ## Randomized rewards
 
