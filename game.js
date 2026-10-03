@@ -135,7 +135,7 @@ AutoType.ready().then(async()=>{
   $("modePicker").hidden=true;$("gameArea").hidden=false;
 
   function sanitize(s){return String(s||"").toLowerCase().replace(/[^a-z0-9' ]+/g," ").replace(/\s+/g," ").trim()}
-  function dateKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+  function dateKey(){return new Date().toISOString().slice(0,10)}
   function dailySentence(){let hash=0;for(const c of dateKey())hash=((hash<<5)-hash)+c.charCodeAt(0);return sentences[Math.abs(hash)%sentences.length]}
   function pick(){
     const pool=predictorMode==="evil"?[...sentences,...evilSentences,...evilSentences]:sentences;
