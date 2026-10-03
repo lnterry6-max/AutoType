@@ -78,6 +78,6 @@ The backend now persists accounts, economy, inventory, social data, tournaments,
 - moderation/reporting workflows
 - backup/restore operations and monitoring
 - production email branding/deliverability
-- enabling Supabase leaked-password protection
+- enabling Supabase leaked-password protection in Auth password settings (available on supported Supabase plans)
 - refund/chargeback operations and support policy
 - tax/receipt/business compliance review before live monetization
