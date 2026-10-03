@@ -90,9 +90,12 @@
   </div>
 </footer>
 <div class="toast"></div>
+<script src="backend-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="backend.js"></script>
 <script src="core.js"></script>
 <script>
-document.addEventListener("DOMContentLoaded",()=>{
+document.addEventListener("DOMContentLoaded",async()=>{\n  await AutoType.ready();
   const store=AutoType.store();
   const current=AutoType.currentAccount();
   const d=new Date();
