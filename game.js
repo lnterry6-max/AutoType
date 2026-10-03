@@ -120,6 +120,7 @@ AutoType.ready().then(()=>{
   if(!sentence)sentence=pick();
 
   let words=[],index=0,prefix="",visible="",score=0,streak=0,maxStreak=0,keyCount=0,erased=0,errors=0,clueCounts=[];
+  let roundId=crypto.randomUUID();
   let cluesThisWord=0,recentGuesses=[],justKeptAI=0;
   let started=false,startTime=0,timer=null;
 
@@ -255,6 +256,7 @@ AutoType.ready().then(()=>{
     if(started)return;started=true;startTime=Date.now();timer=setInterval(()=>$("time").textContent=fmt(elapsed()),250)
   }
   function reset(newSentence=sentence){
+    roundId=crypto.randomUUID();
     if(timer)clearInterval(timer);started=false;startTime=0;
     sentence=newSentence;words=sentence.split(" ");index=0;prefix="";visible="";score=0;streak=0;maxStreak=0;keyCount=0;erased=0;errors=0;clueCounts=[];
     cluesThisWord=0;recentGuesses=[];justKeptAI=0;
@@ -362,54 +364,82 @@ AutoType.ready().then(()=>{
     unlock("comboKing",p.bestStreak>=10);
     return newly;
   }
-  function finish(){
+  async function finish(){
     if(timer)clearInterval(timer);
-    const ms=elapsed();$("time").textContent=fmt(ms);
-    const p=AutoType.currentProfile();
-    p.rounds++;p.words+=words.length;p.erased+=erased;p.bestErasedRound=Math.max(p.bestErasedRound||0,erased);
-    p.totalKeys=(p.totalKeys||0)+keyCount;
-    p.totalErrors=(p.totalErrors||0)+errors;
-    p.totalScore=(p.totalScore||0)+score;
-    p.bestScore=Math.max(p.bestScore||0,score);p.bestStreak=Math.max(p.bestStreak||0,maxStreak);
-    p.fastest=!p.fastest||ms<p.fastest?ms:p.fastest;if(errors===0)p.perfectRounds=(p.perfectRounds||0)+1;
-    if(clueCounts.some(n=>n===1))p.mindReaderCount=(p.mindReaderCount||0)+1;
-    if(mode==="daily")p.daily[dateKey()]=Math.max(p.daily[dateKey()]||0,score);
-    const newlyUnlocked=unlocks(p);AutoType.patchCurrentProfile(p);
+    const ms=elapsed();
+    $("time").textContent=fmt(ms);
 
     let coinsEarned=0;
+    let newlyUnlocked=[];
     const activeAccount=AutoType.currentAccount();
-    if(activeAccount){
-      // Prestige titles are earned, not sold. Mind Reader is awarded with
-      // the matching achievement and then appears in Profile inventory.
-      if(newlyUnlocked.includes("mindReader")&&!activeAccount.wallet.owned.includes("title_mindreader")){
-        activeAccount.wallet.owned.push("title_mindreader");
-        AutoType.save();
+
+    if(activeAccount?.online){
+      $("resultCoins").textContent="Saving…";
+      try{
+        const result=await AutoTypeBackend.recordRound({
+          roundId,
+          mode,
+          score,
+          words:words.length,
+          erased,
+          maxStreak,
+          totalKeys:keyCount,
+          errors,
+          durationMs:Math.max(250,Math.round(ms)),
+          oneClue:clueCounts.some(n=>n===1)
+        });
+        coinsEarned=Number(result?.coins_earned||0);
+        newlyUnlocked=Array.isArray(result?.new_achievements)?result.new_achievements:[];
+        await AutoTypeBackend.hydrateLocalMirror();
+      }catch(error){
+        console.error("Round save failed",error);
+        AutoType.toast("Round finished, but the backend could not save it.");
       }
+    }else{
+      const p=AutoType.currentProfile();
+      p.rounds++;
+      p.words+=words.length;
+      p.erased+=erased;
+      p.bestErasedRound=Math.max(p.bestErasedRound||0,erased);
+      p.totalKeys=(p.totalKeys||0)+keyCount;
+      p.totalErrors=(p.totalErrors||0)+errors;
+      p.totalScore=(p.totalScore||0)+score;
+      p.bestScore=Math.max(p.bestScore||0,score);
+      p.bestStreak=Math.max(p.bestStreak||0,maxStreak);
+      p.fastest=!p.fastest||ms<p.fastest?ms:p.fastest;
+      if(errors===0)p.perfectRounds=(p.perfectRounds||0)+1;
+      if(clueCounts.some(n=>n===1))p.mindReaderCount=(p.mindReaderCount||0)+1;
+      if(mode==="daily")p.daily[dateKey()]=Math.max(p.daily[dateKey()]||0,score);
+      newlyUnlocked=unlocks(p);
+      AutoType.patchCurrentProfile(p);
 
-      coinsEarned+=20;
-      if(errors===0)coinsEarned+=10;
-      if(maxStreak>=5)coinsEarned+=5;
-      if(mode==="daily")coinsEarned+=15;
-      coinsEarned+=newlyUnlocked.length*75;
-      AutoType.addCoins(coinsEarned,"Round reward");
-
-      // Tournament Tickets are earned through play. Crate Tokens are reserved
-      // for tournament/event rewards so random crates stay separate from paid currency.
-      if(p.rounds>0&&p.rounds%10===0){
-        AutoType.addTickets(1,"10-round milestone");
+      if(activeAccount){
+        if(newlyUnlocked.includes("mindReader")&&!activeAccount.wallet.owned.includes("title_mindreader")){
+          activeAccount.wallet.owned.push("title_mindreader");
+          AutoType.save();
+        }
+        coinsEarned+=20;
+        if(errors===0)coinsEarned+=10;
+        if(maxStreak>=5)coinsEarned+=5;
+        if(mode==="daily")coinsEarned+=15;
+        coinsEarned+=newlyUnlocked.length*75;
+        AutoType.addCoins(coinsEarned,"Round reward");
+        if(p.rounds>0&&p.rounds%10===0)AutoType.addTickets(1,"10-round milestone");
       }
     }
 
-    if(race&&AutoType.currentAccount()){
+    if(race&&activeAccount&&!activeAccount.online){
       race.results=race.results||{};
-      race.results[AutoType.currentAccount().id]={time:ms,errors,erased,score};AutoType.save();
+      race.results[activeAccount.id]={time:ms,errors,erased,score};
+      AutoType.save();
     }
+
     $("resultScore").textContent=score;
     $("resultTime").textContent=fmt(ms);
     $("resultKeys").textContent=keyCount;
     $("resultErrors").textContent=errors;
     $("resultErased").textContent=erased;
-    $("resultCoins").textContent=AutoType.currentAccount()?`+${coinsEarned}`:"Sign in";
+    $("resultCoins").textContent=activeAccount?`+${coinsEarned}`:"Sign in";
 
     const unlockBox=$("achievementUnlocks");
     if(newlyUnlocked.length){
