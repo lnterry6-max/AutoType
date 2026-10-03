@@ -91,6 +91,21 @@ AutoType.ready().then(async()=>{
   const $=id=>document.getElementById(id);
   const params=new URLSearchParams(location.search);
   const settings=AutoType.currentSettings();
+  let sharedSuggestions=AutoType.store().suggestions||[];
+  if(AutoType.currentAccount()?.online){
+    try{
+      const predictionData=await AutoTypeBackend.predictionsSnapshot();
+      sharedSuggestions=(predictionData.suggestions||[]).map(s=>({
+        id:s.id,
+        prefix:s.prefix,
+        word:s.word,
+        voters:(predictionData.votes||[]).filter(v=>v.suggestion_id===s.id).map(v=>v.user_id)
+      }));
+    }catch(error){
+      console.warn("Could not load shared prediction mappings",error);
+      sharedSuggestions=[];
+    }
+  }
   let mode=params.get("mode");
   let predictorMode=mode;
   let race=null;
@@ -142,13 +157,13 @@ AutoType.ready().then(async()=>{
   function elapsed(){return started?Date.now()-startTime:0}
   function fmt(ms){return AutoType.formatTime(ms)}
   function suggestionsFor(pref){
-    return AutoType.store().suggestions.filter(s=>s.prefix===pref)
+    return sharedSuggestions.filter(s=>s.prefix===pref)
       .sort((a,b)=>(b.voters?.length||0)-(a.voters?.length||0)).map(s=>s.word)
   }
   function candidates(pref){
     if(!pref)return[];
     const prev=index?words[index-1]:null;
-    let base=[...suggestionsFor(pref),...extended,...sentenceVocabulary,...contractions,...AutoType.store().suggestions.map(s=>s.word)];
+    let base=[...suggestionsFor(pref),...extended,...sentenceVocabulary,...contractions,...sharedSuggestions.map(s=>s.word)];
     if(["context","sentence","evil"].includes(predictorMode)&&prev&&nextWord[prev]){
       base=[...suggestionsFor(pref),...nextWord[prev],...base];
     }
