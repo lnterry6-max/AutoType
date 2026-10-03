@@ -528,13 +528,24 @@
 
   async function tournamentsSnapshot(){
     const db=getClient();
-    if(!db)return {tournaments:[],entries:[]};
+    if(!db)return {tournaments:[],entries:[],profiles:[]};
     const [{data:tournaments,error:tError},{data:entries,error:eError}]=await Promise.all([
       db.from("tournaments").select("*").order("created_at",{ascending:true}),
       db.from("tournament_entries").select("*")
     ]);
     if(tError)throw tError;if(eError)throw eError;
-    return {tournaments:tournaments||[],entries:entries||[]};
+
+    const userIds=[...new Set((entries||[]).map(e=>e.user_id).filter(Boolean))];
+    let profiles=[];
+    if(userIds.length){
+      const {data,error}=await db.from("profiles")
+        .select("id,username,display_name,avatar_url")
+        .in("id",userIds);
+      if(error)throw error;
+      profiles=data||[];
+    }
+
+    return {tournaments:tournaments||[],entries:entries||[],profiles};
   }
 
   async function predictionsSnapshot(){
@@ -770,7 +781,7 @@
   }
 
   window.AutoTypeBackend={
-    version:"20261003-8",
+    version:"20261003-9",
     configured,
     getClient,
     api,
