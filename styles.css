@@ -2422,3 +2422,127 @@ body.theme-light .coin-store-grid article{
   .coin-store-grid{grid-template-columns:1fr}
   .coin-store-grid article{min-height:160px}
 }
+
+/* ==========================================================
+   Equipped strip + payment cleanup
+   ========================================================== */
+.equipped-strip{
+  margin:0 0 16px;
+  padding:13px 14px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--surface);
+}
+.equipped-strip-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  margin-bottom:10px;
+}
+.equipped-strip-head strong{
+  font-size:12px;
+  letter-spacing:-.01em;
+}
+.equipped-strip-head a{
+  color:#83ceff;
+  font-size:10px;
+  font-weight:800;
+}
+.equipped-strip-grid{
+  display:grid;
+  grid-template-columns:repeat(8,minmax(0,1fr));
+  gap:6px;
+}
+.equipped-slot{
+  min-width:0;
+  padding:8px 9px;
+  border:1px solid var(--border-soft);
+  border-radius:7px;
+  background:var(--surface-2);
+}
+.equipped-slot span{
+  display:block;
+  color:var(--muted);
+  font-size:7px;
+  font-weight:850;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.equipped-slot strong{
+  display:block;
+  overflow:hidden;
+  margin-top:3px;
+  font-size:10px;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+
+.profile-top-loadout{
+  margin:-10px 0 18px;
+}
+.profile-top-loadout .cosmetic-loadout{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:0 14px;
+}
+.profile-top-loadout .profile-loadout-live{
+  grid-column:1/-1;
+  margin:0 0 8px;
+}
+.profile-top-loadout .cosmetic-loadout>div:not(.profile-loadout-live){
+  padding:8px 0;
+}
+.profile-top-loadout .profile-loadout-live div{
+  border-bottom:0;
+  padding:0;
+}
+.profile-top-loadout .loadout-name{
+  min-width:0;
+}
+.profile-top-loadout .loadout-name strong{
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+
+.payment-mode-badge{
+  width:max-content;
+  margin:0 0 10px auto;
+  padding:4px 7px;
+  border:1px solid rgba(227,185,78,.35);
+  border-radius:999px;
+  color:#e3b94e;
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.06em;
+}
+.payment-status-line{
+  min-height:18px;
+  margin-top:10px;
+  color:var(--muted);
+  font-size:10px;
+  text-align:center;
+}
+.coin-store-rule{
+  margin:5px 0 0;
+  color:var(--muted);
+  font-size:9px;
+  text-align:center;
+}
+.coin-store-grid .empty{
+  grid-column:1/-1;
+}
+body.theme-light .equipped-strip{
+  background:#fff;
+}
+body.theme-light .equipped-slot{
+  background:#f2f4f6;
+}
+
+@media(max-width:1000px){
+  .equipped-strip-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media(max-width:700px){
+  .equipped-strip-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .profile-top-loadout .cosmetic-loadout{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
