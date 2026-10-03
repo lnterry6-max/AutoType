@@ -474,32 +474,34 @@ AutoType.ready().then(async()=>{
 
     if(activeAccount?.online){
       $("resultCoins").textContent="Saving…";
-      try{
-        const result=await AutoTypeBackend.recordRound({
-          roundId,
-          challengeId:serverChallenge?.challenge_id||null,
-          mode,
-          score,
-          words:words.length,
-          erased,
-          maxStreak,
-          totalKeys:keyCount,
-          errors,
-          durationMs:Math.max(250,Math.round(ms)),
-          oneClue:clueCounts.some(n=>n===1)
-        });
-        coinsEarned=Number(result?.coins_earned||0);
-        newlyUnlocked=Array.isArray(result?.new_achievements)?result.new_achievements:[];
-        const verifiedBadge=$("verifiedResult");
-        if(verifiedBadge){
-          verifiedBadge.hidden=!result?.verified;
-          verifiedBadge.textContent=result?.verified?"Verified round":"";
+      if(!quickMatch){
+        try{
+          const result=await AutoTypeBackend.recordRound({
+            roundId,
+            challengeId:serverChallenge?.challenge_id||null,
+            mode,
+            score,
+            words:words.length,
+            erased,
+            maxStreak,
+            totalKeys:keyCount,
+            errors,
+            durationMs:Math.max(250,Math.round(ms)),
+            oneClue:clueCounts.some(n=>n===1)
+          });
+          coinsEarned=Number(result?.coins_earned||0);
+          newlyUnlocked=Array.isArray(result?.new_achievements)?result.new_achievements:[];
+          const verifiedBadge=$("verifiedResult");
+          if(verifiedBadge){
+            verifiedBadge.hidden=!result?.verified;
+            verifiedBadge.textContent=result?.verified?"Verified round":"";
+          }
+          await AutoTypeBackend.hydrateLocalMirror();
+        }catch(error){
+          console.error("Round save failed",error);
+          if($("verifiedResult"))$("verifiedResult").hidden=true;
+          AutoType.toast(error.message||"Round finished, but the backend could not save it.");
         }
-        await AutoTypeBackend.hydrateLocalMirror();
-      }catch(error){
-        console.error("Round save failed",error);
-        if($("verifiedResult"))$("verifiedResult").hidden=true;
-        AutoType.toast(error.message||"Round finished, but the backend could not save it.");
       }
     }else{
       const p=AutoType.currentProfile();
@@ -537,11 +539,33 @@ AutoType.ready().then(async()=>{
     if(race&&activeAccount){
       if(activeAccount.online){
         try{
-          await AutoTypeBackend.submitRaceResult(race.id,{score,durationMs:ms,errors,erased});
-          if(quickMatch)await pollQuickMatchResult();
+          const raceResult=await AutoTypeBackend.submitRaceResult(race.id,{
+            roundId,
+            score,
+            words:words.length,
+            durationMs:Math.max(250,Math.round(ms)),
+            errors,
+            erased,
+            maxStreak,
+            totalKeys:keyCount,
+            oneClue:clueCounts.some(n=>n===1)
+          });
+          if(quickMatch){
+            const progression=raceResult?.progression||null;
+            coinsEarned=Number(progression?.coins_earned||0);
+            newlyUnlocked=Array.isArray(progression?.new_achievements)?progression.new_achievements:[];
+            const verifiedBadge=$("verifiedResult");
+            if(verifiedBadge){
+              verifiedBadge.hidden=false;
+              verifiedBadge.textContent="Verified Quick Match";
+            }
+            await AutoTypeBackend.hydrateLocalMirror();
+            await pollQuickMatchResult();
+          }
         }catch(error){
           console.error("Race result save failed",error);
-          AutoType.toast(error.message||"Round saved, but the race result could not sync.");
+          if(quickMatch&&$("verifiedResult"))$("verifiedResult").hidden=true;
+          AutoType.toast(error.message||(quickMatch?"Quick Match result could not be verified.":"Round saved, but the race result could not sync."));
         }
       }else{
         race.results=race.results||{};
