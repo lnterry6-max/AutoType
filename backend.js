@@ -651,6 +651,29 @@
   async function adminResetPlayer(userId){return api("admin_reset_player",{userId})}
   async function adminSnapshot(){return api("admin_snapshot",{})}
 
+  async function dailyLeaderboard(day=new Date()){
+    const db=getClient();
+    if(!db)return [];
+    const start=new Date(day);start.setHours(0,0,0,0);
+    const end=new Date(start);end.setDate(end.getDate()+1);
+    const {data,error}=await db.from("round_results")
+      .select("user_id,score,created_at,profiles!inner(username,display_name,avatar_url)")
+      .eq("mode","daily")
+      .gte("created_at",start.toISOString())
+      .lt("created_at",end.toISOString())
+      .order("score",{ascending:false});
+    if(error)throw error;
+    const best=new Map();
+    for(const row of data||[]){
+      if(!best.has(row.user_id)||row.score>best.get(row.user_id).score)best.set(row.user_id,row);
+    }
+    return [...best.values()].sort((a,b)=>Number(b.score)-Number(a.score));
+  }
+
+  async function claimDailyReward(day){
+    return api("claim_daily_reward",{day});
+  }
+
   async function leaderboard(limit=50){
     const db=getClient();
     if(!db)return [];
@@ -728,6 +751,8 @@
     adminDeleteTournament,
     adminResetPlayer,
     adminSnapshot,
+    dailyLeaderboard,
+    claimDailyReward,
     leaderboard
   };
 })();
