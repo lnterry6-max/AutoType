@@ -359,7 +359,7 @@
     const achievementMap={};
     for(const item of achievements||[])achievementMap[item.achievement_id]=true;
 
-    const localProfile={
+    const serverProfile={
       bestScore:Number(stats?.best_score||0),
       rounds:Number(stats?.rounds||0),
       words:Number(stats?.words||0),
@@ -374,27 +374,43 @@
       totalScore:Number(stats?.total_score||0),
       tournamentWins:Number(stats?.tournament_wins||0),
       achievements:achievementMap,
-      daily:mirror?.profile?.daily||{}
+      daily:{}
     };
 
-    const owned=(inventory||[]).map(x=>x.item_id);
-    const localWallet={
-      coins:Number(wallet?.coins||0),
-      tickets:Number(wallet?.tournament_tickets||0),
-      crateKeys:Number(wallet?.crate_tokens||0),
-      owned,
-      equipped:{
-        title:equipped?.title_id||"title_none",
-        banner:equipped?.banner_id||"banner_default",
-        frame:equipped?.frame_id||"frame_default",
-        arena:equipped?.arena_id||"arena_default",
-        trail:equipped?.trail_id||"trail_default",
-        cursor:equipped?.cursor_id||"cursor_default",
-        predictor:equipped?.predictor_id||"predictor_default",
-        result:equipped?.victory_fx_id||"result_default"
-      },
-      claims:mirror?.wallet?.claims||{}
+    const serverOwned=(inventory||[]).map(x=>x.item_id);
+    const serverEquipped={
+      title:equipped?.title_id||"title_none",
+      banner:equipped?.banner_id||"banner_default",
+      frame:equipped?.frame_id||"frame_default",
+      arena:equipped?.arena_id||"arena_default",
+      trail:equipped?.trail_id||"trail_default",
+      cursor:equipped?.cursor_id||"cursor_default",
+      predictor:equipped?.predictor_id||"predictor_default",
+      result:equipped?.victory_fx_id||"result_default"
     };
+
+    // During the backend migration, do not overwrite local gameplay/economy
+    // changes until those systems have server-authoritative write endpoints.
+    // New devices start from the database records; existing mirrors keep their
+    // current progress and balances while identity/profile/settings stay online.
+    const localProfile=mirror?.profile
+      ? {...mirror.profile,achievements:{...(mirror.profile.achievements||{}),...achievementMap}}
+      : serverProfile;
+
+    const localWallet=mirror?.wallet
+      ? {
+          ...mirror.wallet,
+          owned:[...new Set([...(mirror.wallet.owned||[]),...serverOwned])],
+          equipped:{...(mirror.wallet.equipped||{}),...serverEquipped}
+        }
+      : {
+          coins:Number(wallet?.coins||0),
+          tickets:Number(wallet?.tournament_tickets||0),
+          crateKeys:Number(wallet?.crate_tokens||0),
+          owned:serverOwned,
+          equipped:serverEquipped,
+          claims:{}
+        };
 
     const patch={
       id:localId,
