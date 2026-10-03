@@ -1,35 +1,50 @@
 # AutoType Supabase backend
 
-This folder is the first backend migration phase.
+The `backend-foundation` branch uses Supabase as the shared backend for AutoType.
 
-## Current migration strategy
+## What is backed by Supabase
 
-The existing `main` branch remains a fully usable local prototype. The `backend-foundation` branch adds Supabase alongside it, then each localStorage subsystem will be migrated separately.
+- Auth/session identity
+- profiles and preferences
+- Storage-backed avatars/backgrounds
+- hashed recovery/security questions
+- player stats and achievements
+- wallet/inventory/equipped cosmetics
+- Shop/Collection/crate transactions
+- leaderboards and Daily rewards
+- friends and requests
+- race rooms/results
+- tournaments and prizes
+- Prediction Lab and voting
+- developer/admin controls
+- announcements and audit/economy logs
 
-Order:
+## Migrations
 
-1. Auth + profiles
-2. stats + wallet + inventory
-3. global leaderboard
-4. friends / requests
-5. tournaments
-6. Prediction Lab
-7. realtime races
-8. admin / economy Edge Functions
-9. storage-backed avatars
-10. payments for known/direct cosmetics only
+Migrations under `migrations/` are synced from the live AutoType Supabase project and should be applied in filename/version order for a fresh project.
+
+## Edge Functions
+
+### game-api
+
+Authenticated gateway for server-authoritative gameplay, economy, social, tournament, Prediction Lab, and developer/admin mutations.
+
+### delete-account
+
+Authenticates the caller and deletes that caller's Supabase Auth account with the server-side admin client.
+
+Both functions require a valid JWT.
 
 ## Browser keys
 
-Only the Supabase **publishable/anon** key belongs in frontend code. It is not a secret; Row Level Security is the security boundary.
+Only the Supabase project URL and publishable key belong in browser code. RLS and server authorization—not secrecy of the publishable key—protect the data.
 
-Never commit or expose:
-- `service_role` keys
+Never expose:
+
+- `service_role` / secret keys
 - database passwords
-- private third-party API secrets
+- private API secrets
 
-## First migration
+## Development note
 
-`migrations/202610030001_backend_foundation.sql` creates the shared data model, starter-profile trigger, and RLS policies.
-
-Wallets, inventory rewards, player stats, tournament mutation, admin roles, and payout operations intentionally have **no direct client write policy**. Those systems will be mutated through trusted server/Edge Function code.
+`localStorage` still contains a compatibility mirror used by the older UI API. For Supabase-backed accounts it is not the authoritative source for persistent profile, progression, wallet, inventory, role, or social state.
