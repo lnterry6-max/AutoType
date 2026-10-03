@@ -284,14 +284,18 @@ document.addEventListener("DOMContentLoaded",async()=>{
       const m=maps();
       adminTournamentList.innerHTML=snapshot.tournaments.map(t=>{
         const entrants=snapshot.entries.filter(e=>e.tournament_id===t.id&&!["withdrawn","disqualified"].includes(e.status));
+        const completedScores=entrants.map(e=>e.score).filter(x=>x!=null).map(Number);
+        const topScore=completedScores.length?Math.max(...completedScores):null;
         const entrantsHtml=entrants.length?`<div class="admin-entrant-list">${entrants.map(e=>{
           const p=m.profiles[e.user_id];
           if(!p)return "";
           const a=adminAccount(p);
           const score=e.score==null?"—":Number(e.score).toLocaleString();
+          const isLeader=e.score!=null&&Number(e.score)===topScore;
+          const canAward=!t.winner_id&&isLeader;
           return `<div>
-            <span>${AutoType.avatarMarkup(a,"avatar")}<strong>${AutoType.escapeHTML(AutoType.accountName(a))}</strong><small>${e.status} · ${score}</small></span>
-            <button class="button button-secondary" data-online-award="${tournamentKey(t)}" data-online-player="${p.id}" ${t.winner_id||e.score==null?"disabled":""}>${e.status==="winner"?"Winner awarded":t.winner_id?"Prize already awarded":"Award winner"}</button>
+            <span>${AutoType.avatarMarkup(a,"avatar")}<strong>${AutoType.escapeHTML(AutoType.accountName(a))}</strong><small>${e.status} · ${score}${isLeader?" · leader":""}</small></span>
+            <button class="button button-secondary" data-online-award="${tournamentKey(t)}" data-online-player="${p.id}" ${canAward?"":"disabled"}>${e.status==="winner"?"Winner awarded":t.winner_id?"Prize already awarded":isLeader?"Award winner":"Top score required"}</button>
           </div>`;
         }).join("")}</div>`:"";
 
