@@ -8,13 +8,13 @@ The `backend-foundation` branch uses Supabase as the shared backend for AutoType
 - profiles and preferences
 - Storage-backed avatars/backgrounds
 - hashed recovery/security questions
-- player stats and achievements
+- player stats, achievements, and server-issued verified round challenges
 - wallet/inventory/equipped cosmetics
 - Shop/Collection/crate transactions
 - leaderboards and Daily rewards
 - friends and requests
 - race rooms/results
-- tournaments and prizes
+- tournaments, verified attempts, and top-score prize validation
 - Prediction Lab and voting
 - developer/admin controls
 - announcements and audit/economy logs
