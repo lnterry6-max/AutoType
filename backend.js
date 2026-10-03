@@ -740,6 +740,19 @@
     return [...best.values()].sort((a,b)=>Number(b.score)-Number(a.score));
   }
 
+  async function dailyRewardClaimStatus(day){
+    const db=getClient();
+    const current=await user();
+    if(!db||!current||!day)return null;
+    const {data,error}=await db.from("daily_reward_claims")
+      .select("score_date,reward_coins,claimed_at")
+      .eq("user_id",current.id)
+      .eq("score_date",String(day))
+      .maybeSingle();
+    if(error)throw error;
+    return data||null;
+  }
+
   async function claimDailyReward(day){
     return api("claim_daily_reward",{day});
   }
@@ -757,7 +770,7 @@
   }
 
   window.AutoTypeBackend={
-    version:"20261003-7",
+    version:"20261003-8",
     configured,
     getClient,
     api,
@@ -830,6 +843,7 @@
     purchaseHistory,
     adminRefundPayment,
     dailyLeaderboard,
+    dailyRewardClaimStatus,
     claimDailyReward,
     leaderboard
   };
