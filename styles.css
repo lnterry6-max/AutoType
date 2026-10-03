@@ -2546,3 +2546,116 @@ body.theme-light .equipped-slot{
   .equipped-strip-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .profile-top-loadout .cosmetic-loadout{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+
+/* ==========================================================
+   Purchase history + payment admin
+   ========================================================== */
+.purchase-history-list,
+.admin-payment-list{
+  display:grid;
+  gap:8px;
+}
+.purchase-history-row,
+.admin-payment-row{
+  display:grid;
+  align-items:center;
+  gap:14px;
+  padding:12px 13px;
+  border:1px solid var(--border-soft);
+  border-radius:9px;
+  background:var(--surface-2);
+}
+.purchase-history-row{
+  grid-template-columns:minmax(0,1fr) auto;
+}
+.purchase-history-main,
+.purchase-history-meta,
+.admin-payment-main,
+.admin-payment-state{
+  display:grid;
+  gap:3px;
+}
+.purchase-history-main strong,
+.admin-payment-main strong{
+  font-size:11px;
+}
+.purchase-history-main span,
+.admin-payment-main span,
+.admin-payment-main small,
+.purchase-history-meta small,
+.admin-payment-state small{
+  color:var(--muted);
+  font-size:9px;
+}
+.purchase-history-meta,
+.admin-payment-state{
+  justify-items:end;
+  text-align:right;
+}
+.purchase-status{
+  width:max-content;
+  padding:4px 7px;
+  border:1px solid var(--border);
+  border-radius:999px;
+  color:var(--muted);
+  font-size:8px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+.purchase-status.status-paid,
+.purchase-status.status-dispute_won{
+  border-color:rgba(85,185,130,.35);
+  color:#55b982;
+}
+.purchase-status.status-partially_refunded{
+  border-color:rgba(227,185,78,.35);
+  color:#e3b94e;
+}
+.purchase-status.status-refunded{
+  border-color:rgba(74,169,255,.35);
+  color:#4aa9ff;
+}
+.purchase-status.status-disputed,
+.purchase-status.status-dispute_lost,
+.purchase-status.status-failed{
+  border-color:rgba(210,92,92,.38);
+  color:#dc7373;
+}
+.payment-debt-notice{
+  margin:0 0 10px;
+  padding:9px 11px;
+  border:1px solid rgba(227,185,78,.3);
+  border-radius:8px;
+  color:#e3b94e;
+  background:rgba(227,185,78,.06);
+  font-size:9px;
+  font-weight:800;
+}
+.admin-payment-row{
+  grid-template-columns:minmax(0,1.5fr) minmax(150px,.7fr) auto;
+}
+.admin-payment-main{
+  min-width:0;
+}
+.admin-payment-state{
+  justify-items:start;
+  text-align:left;
+}
+body.theme-light .purchase-history-row,
+body.theme-light .admin-payment-row{
+  background:#f4f6f8;
+}
+
+@media(max-width:760px){
+  .purchase-history-row,
+  .admin-payment-row{
+    grid-template-columns:1fr;
+  }
+  .purchase-history-meta,
+  .admin-payment-state{
+    justify-items:start;
+    text-align:left;
+  }
+}
