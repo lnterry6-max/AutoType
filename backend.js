@@ -532,15 +532,12 @@
   async function tournamentsSnapshot(){
     const db=getClient();
     if(!db)return {tournaments:[],entries:[]};
-    const current=await user();
-    const {data:tournaments,error:tError}=await db.from("tournaments").select("*").order("created_at",{ascending:true});
-    if(tError)throw tError;
-    let entries=[];
-    if(current){
-      const {data,error}=await db.from("tournament_entries").select("*").eq("user_id",current.id);
-      if(error)throw error;entries=data||[];
-    }
-    return {tournaments:tournaments||[],entries};
+    const [{data:tournaments,error:tError},{data:entries,error:eError}]=await Promise.all([
+      db.from("tournaments").select("*").order("created_at",{ascending:true}),
+      db.from("tournament_entries").select("*")
+    ]);
+    if(tError)throw tError;if(eError)throw eError;
+    return {tournaments:tournaments||[],entries:entries||[]};
   }
 
   async function predictionsSnapshot(){
