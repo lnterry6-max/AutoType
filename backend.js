@@ -546,17 +546,14 @@
   async function predictionsSnapshot(){
     const db=getClient();
     if(!db)return {suggestions:[],votes:[]};
-    const current=await user();
-    const {data:suggestions,error:sError}=await db.from("prediction_suggestions")
-      .select("id,author_id,prefix,word,status,created_at,profiles!prediction_suggestions_author_id_fkey(username,display_name)")
-      .eq("status","approved").order("created_at",{ascending:false});
-    if(sError)throw sError;
-    let votes=[];
-    if(current){
-      const {data,error}=await db.from("prediction_votes").select("suggestion_id,user_id").eq("user_id",current.id);
-      if(error)throw error;votes=data||[];
-    }
-    return {suggestions:suggestions||[],votes};
+    const [{data:suggestions,error:sError},{data:votes,error:vError}]=await Promise.all([
+      db.from("prediction_suggestions")
+        .select("id,author_id,prefix,word,status,created_at,profiles!prediction_suggestions_author_id_fkey(username,display_name)")
+        .eq("status","approved").order("created_at",{ascending:false}),
+      db.from("prediction_votes").select("suggestion_id,user_id")
+    ]);
+    if(sError)throw sError;if(vError)throw vError;
+    return {suggestions:suggestions||[],votes:votes||[]};
   }
 
   async function activeAnnouncement(){
