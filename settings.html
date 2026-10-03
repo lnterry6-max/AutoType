@@ -345,13 +345,23 @@ document.addEventListener("DOMContentLoaded",async()=>{
   signedInSecurity.hidden=!account;
   guestSecurity.hidden=!!account;
 
-  function renderSecurityState(){
+  async function renderSecurityState(){
     if(!account)return;
     if(account.online){
-      securitySummary.innerHTML=`<div><strong>${AutoType.escapeHTML(AutoType.accountName(account))}</strong><div class="help">@${AutoType.escapeHTML(account.username)} · Supabase Auth</div></div>`;
-      securityQuestionSetup.hidden=true;
+      let question=null;
+      try{question=await AutoTypeBackend.securityQuestion()}catch(error){console.warn(error)}
+      const hasQuestion=!!question?.question;
+      securitySummary.innerHTML=`<div><strong>${AutoType.escapeHTML(AutoType.accountName(account))}</strong><div class="help">@${AutoType.escapeHTML(account.username)} · Supabase Auth · ${hasQuestion?"Recovery question configured":"No recovery question yet"}</div></div>`;
+      securityQuestionSetup.hidden=false;
+      setSecurityQuestionButton.textContent=hasQuestion?"Change security question":"Set security question";
+      if(hasQuestion){
+        const option=[...securitySetupQuestion.options].find(o=>o.value===question.question||o.textContent===question.question);
+        if(option)securitySetupQuestion.value=option.value;
+      }
       changePasswordPanel.hidden=false;
-      securityQuestionDisplay.textContent="Your password is protected by Supabase Auth.";
+      securityQuestionDisplay.textContent=hasQuestion
+        ? `Recovery question: ${question.question}`
+        : "Password recovery currently relies on your verified email.";
       securityAnswer?.closest(".form-group")?.setAttribute("hidden","");
       return;
     }
@@ -378,16 +388,28 @@ document.addEventListener("DOMContentLoaded",async()=>{
   }
 
   if(account){
-    if(!account.online)setSecurityQuestionButton?.addEventListener("click",async()=>{
+    setSecurityQuestionButton?.addEventListener("click",async()=>{
       setSecurityQuestionButton.disabled=true;
       try{
-        await AutoType.setSecurityQuestion(
-          securitySetupPassword.value,
-          securitySetupQuestion.value,
-          securitySetupAnswer.value
-        );
-        AutoType.toast("Security question saved.");
-        setTimeout(()=>location.reload(),450);
+        if(account.online){
+          await AutoTypeBackend.reauthenticate(securitySetupPassword.value);
+          await AutoTypeBackend.setSecurityQuestion(
+            securitySetupQuestion.value,
+            securitySetupAnswer.value
+          );
+          securitySetupPassword.value="";
+          securitySetupAnswer.value="";
+          AutoType.toast("Recovery question saved.");
+          await renderSecurityState();
+        }else{
+          await AutoType.setSecurityQuestion(
+            securitySetupPassword.value,
+            securitySetupQuestion.value,
+            securitySetupAnswer.value
+          );
+          AutoType.toast("Security question saved.");
+          setTimeout(()=>location.reload(),450);
+        }
       }catch(e){AutoType.toast(e.message)}
       finally{setSecurityQuestionButton.disabled=false}
     });
@@ -453,7 +475,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
     });
   }
 
-  renderSecurityState();
+  await renderSecurityState();
 
   renderAppearance();
 });
