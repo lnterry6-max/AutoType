@@ -2659,3 +2659,46 @@ body.theme-light .admin-payment-row{
     text-align:left;
   }
 }
+
+
+/* ==========================================================
+   Verified competitive results
+   ========================================================== */
+.result-heading{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  margin-bottom:6px;
+}
+.result-heading h2{
+  margin:0;
+}
+.verified-result{
+  padding:4px 8px;
+  border:1px solid rgba(85,185,130,.38);
+  border-radius:999px;
+  color:#55b982;
+  background:rgba(85,185,130,.07);
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+.tournament-score{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:8px 10px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  color:var(--muted);
+  font-size:9px;
+}
+.tournament-score strong{
+  color:var(--text);
+  font-size:11px;
+}
+.admin-entrant-list small{
+  text-transform:capitalize;
+}
