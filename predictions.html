@@ -84,7 +84,8 @@
 <script src="core.js"></script>
 
 <script>
-document.addEventListener("DOMContentLoaded",async()=>{\n  await AutoType.ready();
+document.addEventListener("DOMContentLoaded",async()=>{
+  await AutoType.ready();
   const store=AutoType.store();
   function parse(raw){
     return raw.split(/[,\n]+/).map(x=>x.trim()).filter(Boolean).map(raw=>{
