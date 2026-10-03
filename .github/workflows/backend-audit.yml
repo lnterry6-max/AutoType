@@ -2,7 +2,7 @@ name: Audit backend foundation
 
 on:
   push:
-    branches: ["backend-foundation"]
+    branches: ["backend-foundation", "release-hardening"]
   pull_request:
     branches: ["main"]
   workflow_dispatch:
