@@ -22,6 +22,8 @@ Deno.serve(async(req:Request)=>{
     const anon=Deno.env.get("SUPABASE_ANON_KEY")!;
     const service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const stripeKey=Deno.env.get("STRIPE_SECRET_KEY")||"";
+    const liveEnabled=(Deno.env.get("STRIPE_LIVE_ENABLED")||"").toLowerCase()==="true";
+    const stripeMode=stripeKey.startsWith("sk_test_")?"test":stripeKey.startsWith("sk_live_")?"live":"off";
 
     const userClient=createClient(url,anon,{global:{headers:{Authorization:auth}}});
     const token=auth.replace("Bearer ","");
@@ -30,9 +32,14 @@ Deno.serve(async(req:Request)=>{
 
     const body=await req.json().catch(()=>({}));
     if(body.action==="status"){
-      return json({configured:!!stripeKey,mode:stripeKey.startsWith("sk_test_")?"test":stripeKey?"live":"off"});
+      const configured=!!stripeKey&&(stripeMode==="test"||(stripeMode==="live"&&liveEnabled));
+      return json({configured,mode:stripeMode,liveEnabled});
     }
     if(!stripeKey)return json({error:"Stripe test payments are not configured yet."},503);
+    if(stripeMode==="live"&&!liveEnabled){
+      return json({error:"Live Stripe payments are locked until STRIPE_LIVE_ENABLED=true is set on the server."},503);
+    }
+    if(stripeMode==="off")return json({error:"Stripe secret key format is not recognized."},503);
 
     const packId=String(body.packId||"");
     const returnBase=String(body.returnBase||"");
