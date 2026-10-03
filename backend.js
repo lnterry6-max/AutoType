@@ -247,6 +247,30 @@
     return true;
   }
 
+  async function uploadBackground(dataUrl){
+    const db=getClient();
+    const current=await user();
+    if(!db||!current)throw new Error("Sign in first.");
+    if(!String(dataUrl||"").startsWith("data:image/"))throw new Error("Invalid background image.");
+    const blob=await (await fetch(dataUrl)).blob();
+    if(blob.size>8*1024*1024)throw new Error("Background image must be 8 MB or smaller.");
+    const path=`${current.id}/background`;
+    const {error:uploadError}=await db.storage
+      .from("backgrounds")
+      .upload(path,blob,{upsert:true,contentType:blob.type||"image/jpeg",cacheControl:"3600"});
+    if(uploadError)throw uploadError;
+    const {data:publicData}=db.storage.from("backgrounds").getPublicUrl(path);
+    return `${publicData.publicUrl}?v=${Date.now()}`;
+  }
+
+  async function removeBackground(){
+    const db=getClient();
+    const current=await user();
+    if(!db||!current)throw new Error("Sign in first.");
+    await db.storage.from("backgrounds").remove([`${current.id}/background`]);
+    return true;
+  }
+
   async function updatePassword(newPassword){
     const db=getClient();
     if(!db)throw new Error("Supabase is not configured yet.");
@@ -464,6 +488,8 @@
     updateMyPreferences,
     uploadAvatar,
     removeAvatar,
+    uploadBackground,
+    removeBackground,
     updatePassword,
     reauthenticate,
     deleteMyAccount,
