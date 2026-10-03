@@ -493,8 +493,24 @@ document.addEventListener("DOMContentLoaded",async()=>{
     }
 
     try{
+      const historyPromise=typeof AutoTypeBackend.purchaseHistory==="function"
+        ? AutoTypeBackend.purchaseHistory(40)
+        : (async()=>{
+            const db=AutoTypeBackend.getClient();
+            const current=await AutoTypeBackend.user();
+            if(!db||!current)return [];
+            const {data,error}=await db.from("payment_orders")
+              .select("id,pack_id,coins,amount_cents,currency,status,created_at,completed_at,refunded_amount_cents,coins_reversed,dispute_amount_cents")
+              .eq("user_id",current.id)
+              .in("status",["paid","partially_refunded","refunded","disputed","dispute_won","dispute_lost"])
+              .order("created_at",{ascending:false})
+              .limit(40);
+            if(error)throw error;
+            return data||[];
+          })();
+
       const [history,wallet]=await Promise.all([
-        AutoTypeBackend.purchaseHistory(40),
+        historyPromise,
         AutoTypeBackend.myWallet()
       ]);
 
