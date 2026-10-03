@@ -632,6 +632,54 @@
   async function adminResetPlayer(userId){return api("admin_reset_player",{userId})}
   async function adminSnapshot(){return api("admin_snapshot",{})}
 
+  async function coinPacks(){
+    const db=getClient();
+    if(!db)return [];
+    const {data,error}=await db.from("coin_packs")
+      .select("id,name,coins,amount_cents,currency,sort_order")
+      .eq("active",true)
+      .order("sort_order",{ascending:true});
+    if(error)throw error;
+    return data||[];
+  }
+
+  async function paymentConfig(){
+    const db=getClient();
+    if(!db)return {configured:false,mode:"off"};
+    const {data,error}=await db.functions.invoke("create-checkout-session",{body:{action:"status"}});
+    if(error)return {configured:false,mode:"off"};
+    return data||{configured:false,mode:"off"};
+  }
+
+  async function startCoinCheckout(packId){
+    const db=getClient();
+    if(!db)throw new Error("Supabase is not configured yet.");
+    const returnBase=new URL("./",location.href).href;
+    const {data,error}=await db.functions.invoke("create-checkout-session",{
+      body:{packId,returnBase}
+    });
+    if(error){
+      const message=error?.context?.body?.error||error?.message||"Could not start checkout.";
+      throw new Error(message);
+    }
+    if(data?.error)throw new Error(data.error);
+    if(!data?.url)throw new Error("Checkout URL was not returned.");
+    return data;
+  }
+
+  async function paymentOrder(sessionId){
+    const db=getClient();
+    const current=await user();
+    if(!db||!current||!sessionId)return null;
+    const {data,error}=await db.from("payment_orders")
+      .select("id,pack_id,coins,amount_cents,currency,status,provider_session_id,created_at,completed_at")
+      .eq("user_id",current.id)
+      .eq("provider_session_id",sessionId)
+      .maybeSingle();
+    if(error)throw error;
+    return data||null;
+  }
+
   async function dailyLeaderboard(dayKey=new Date().toISOString().slice(0,10)){
     const db=getClient();
     if(!db)return [];
@@ -732,6 +780,10 @@
     adminRestoreTournaments,
     adminResetPlayer,
     adminSnapshot,
+    coinPacks,
+    paymentConfig,
+    startCoinCheckout,
+    paymentOrder,
     dailyLeaderboard,
     claimDailyReward,
     leaderboard
