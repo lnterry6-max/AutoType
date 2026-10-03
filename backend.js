@@ -657,8 +657,8 @@
   async function matchmakingTick(){return api("matchmaking_tick",{})}
   async function leaveMatchmaking(){return api("leave_matchmaking",{})}
   async function createRace(friendId){return api("create_race",{friendId})}
-  async function submitRaceResult(raceId,{score=0,durationMs=0,errors=0,erased=0}={}){
-    return api("submit_race_result",{raceId,score,durationMs,errors,erased});
+  async function submitRaceResult(raceId,{roundId=null,score=0,words=0,durationMs=0,errors=0,erased=0,maxStreak=0,totalKeys=0,oneClue=false}={}){
+    return api("submit_race_result",{raceId,roundId,score,words,durationMs,errors,erased,maxStreak,totalKeys,oneClue});
   }
   async function respondFriendRequest(requestId,accept){return api("respond_friend_request",{requestId,accept})}
   async function cancelFriendRequest(requestId){return api("cancel_friend_request",{requestId})}
