@@ -64,10 +64,18 @@
     <div>
       <span class="profile-equipped-title" id="profileEquippedTitle"></span>
       <h1 id="profileTitle">Guest</h1>
-      <p>Customize how you appear and review your progression.</p>
     </div>
     <div class="profile-wallet" id="profileWallet" hidden></div>
   </section>
+
+  <section class="platform-section profile-top-loadout">
+    <div class="section-title-row">
+      <h2 class="section-title">Equipped</h2>
+      <a class="text-link" href="shop.html">Shop →</a>
+    </div>
+    <div class="cosmetic-loadout" id="cosmeticLoadout"></div>
+  </section>
+
   <div class="profile-layout">
     <aside class="profile-side">
       <div class="profile-avatar-large" id="profileAvatar">G</div>
@@ -98,17 +106,9 @@
       </section>
 
       <div class="divider"></div>
-      <section class="platform-section">
-        <div class="section-title-row"><h2 class="section-title">Cosmetic loadout</h2><a class="text-link" href="shop.html">Open shop →</a></div>
-        <div class="cosmetic-loadout" id="cosmeticLoadout"></div>
-      </section>
-
-
-
-      <div class="divider"></div>
       <section class="platform-section" id="inventory">
         <div class="section-title-row">
-          <div><h2 class="section-title">Inventory</h2><p class="help">Everything you own. Equip cosmetics directly from your profile.</p></div>
+          <div><h2 class="section-title">Inventory</h2></div>
           <a class="text-link" href="shop.html">Shop →</a>
         </div>
         <div class="inventory-tabs" id="inventoryTabs"></div>
@@ -116,7 +116,6 @@
       </section>
 
       <details class="platform-section developer-panel" id="developerPanel" hidden><summary><span>Developer tools</span><span class="developer-badge">Developer</span></summary><div class="developer-body">
-        <p class="help">Local prototype controls for the bound developer account only.</p>
         <div class="developer-controls">
           <div class="developer-balance-grid">
             <div class="form-group"><label class="label">Coins</label><input class="input" id="developerCoinAmount" type="number" min="0" max="999999999" step="1"></div>
@@ -150,7 +149,6 @@
 <footer class="footer">
   <div class="container footer-inner">
     <span>AutoType · Competitive autocomplete typing</span>
-    <span>Online account · Profile data syncs with Supabase</span>
   </div>
 </footer>
 <div class="toast"></div>
@@ -228,7 +226,14 @@ document.addEventListener("DOMContentLoaded",async()=>{
       inventoryTabs.innerHTML=categories.map(cat=>`<button class="${cat===inventoryCategory?"active":""}" data-inv-cat="${cat}">${cat}</button>`).join("");
       inventoryTabs.querySelectorAll("[data-inv-cat]").forEach(b=>b.addEventListener("click",()=>{inventoryCategory=b.dataset.invCat;renderInventory()}));
 
-      const owned=AutoType.shopCatalog.filter(item=>wallet.owned.includes(item.id)&&(inventoryCategory==="All"||familyForItem(item)===inventoryCategory));
+      const owned=AutoType.shopCatalog
+        .filter(item=>wallet.owned.includes(item.id)&&(inventoryCategory==="All"||familyForItem(item)===inventoryCategory))
+        .sort((x,y)=>{
+          const xe=wallet.equipped[x.slot]===x.id?1:0;
+          const ye=wallet.equipped[y.slot]===y.id?1:0;
+          if(xe!==ye)return ye-xe;
+          return x.name.localeCompare(y.name);
+        });
       inventoryGrid.innerHTML=owned.length?owned.map(item=>{
         const equipped=wallet.equipped[item.slot]===item.id;
         return `<article class="inventory-item ${equipped?"equipped":""}" style="--rarity:${rarityColors[item.rarity]||rarityColors.Default}">
