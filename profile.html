@@ -170,7 +170,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
   profileTitle.textContent=AutoType.accountName(target);displayName.value=target.displayName||"Guest";bio.value=target.bio||"";bioCount.textContent=bio.value.length;
 
   if(a){
-    const wallet=AutoType.currentWallet();
+    let wallet=AutoType.currentWallet();
     const banner=AutoType.equippedItem("banner",a);
     const title=AutoType.equippedItem("title",a);
     profileBannerDisplay.style.background=banner?.css||"var(--surface)";
@@ -244,6 +244,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
           if(a.online){
             await AutoTypeBackend.equipItem(id);
             await AutoTypeBackend.hydrateLocalMirror();
+            wallet=AutoType.currentWallet();
           }else{
             AutoType.equipShopItem(id);
           }
@@ -285,6 +286,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
               Number(developerKeyAmount.value||0)
             );
             await AutoTypeBackend.hydrateLocalMirror();
+            wallet=AutoType.currentWallet();
           }else{
             AutoType.setDeveloperCoins(developerCoinAmount.value);
             AutoType.setDeveloperTickets(developerTicketAmount.value);
@@ -308,6 +310,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
               Number(w.crateKeys||0)
             );
             await AutoTypeBackend.hydrateLocalMirror();
+            wallet=AutoType.currentWallet();
           }else{
             AutoType.grantDeveloperCoins(10000);
           }
@@ -323,6 +326,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
           if(a.online){
             await AutoTypeBackend.adminGrantAll(a.supabaseUserId);
             await AutoTypeBackend.hydrateLocalMirror();
+            wallet=AutoType.currentWallet();
           }else{
             AutoType.grantAllCosmetics();
           }
