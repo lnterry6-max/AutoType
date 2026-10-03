@@ -679,7 +679,7 @@
     if(!db)return [];
     const {data,error}=await db
       .from("player_stats")
-      .select("user_id,best_score,best_streak,total_score,rounds,profiles!inner(username,display_name,avatar_url)")
+      .select("user_id,best_score,best_streak,total_score,rounds,words,profiles!inner(username,display_name,avatar_url)")
       .order("best_score",{ascending:false})
       .limit(Math.max(1,Math.min(100,Number(limit)||50)));
     if(error)throw error;
