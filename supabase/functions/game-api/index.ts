@@ -121,6 +121,12 @@ Deno.serve(async(req:Request)=>{
       case "remove_friend":
         return json({ok:await rpc("autotype_remove_friend",{p_user:user.id,p_other:payload.userId})});
 
+      case "matchmaking_tick":
+        return json(await rpc("autotype_matchmaking_tick",{p_user:user.id}));
+
+      case "leave_matchmaking":
+        return json({ok:await rpc("autotype_leave_matchmaking",{p_user:user.id})});
+
       case "create_race": {
         const friendId=String(payload.friendId||"");
         const {data:friendship,error:friendError}=await admin.from("friendships")
@@ -150,28 +156,79 @@ Deno.serve(async(req:Request)=>{
 
       case "submit_race_result": {
         const raceId=String(payload.raceId||"");
-        const {data:participant,error:partError}=await admin.from("race_players")
-          .select("race_id").eq("race_id",raceId).eq("user_id",user.id).maybeSingle();
+        const [{data:participant,error:partError},{data:room,error:roomError}]=await Promise.all([
+          admin.from("race_players")
+            .select("race_id,finished_at").eq("race_id",raceId).eq("user_id",user.id).maybeSingle(),
+          admin.from("race_rooms")
+            .select("id,status,match_type,winner_id").eq("id",raceId).maybeSingle()
+        ]);
         if(partError)throw partError;
-        if(!participant)throw new Error("You are not in this race.");
+        if(roomError)throw roomError;
+        if(!participant||!room)throw new Error("You are not in this race.");
+        if(room.match_type==="matchmaking"&&participant.finished_at){
+          throw new Error("Your Quick Match result is already submitted.");
+        }
+
+        const submittedScore=Math.max(0,Number(payload.score)||0);
+        const submittedDuration=Math.max(0,Number(payload.durationMs)||0);
+        const submittedErrors=Math.max(0,Number(payload.errors)||0);
+        const submittedErased=Math.max(0,Number(payload.erased)||0);
+
+        if(room.match_type==="matchmaking"){
+          const {data:fullRoom,error:fullRoomError}=await admin.from("race_rooms")
+            .select("target_text").eq("id",raceId).single();
+          if(fullRoomError)throw fullRoomError;
+          const wordCount=String(fullRoom.target_text||"").trim().split(/\s+/).filter(Boolean).length;
+          let maxScore=0;
+          for(let i=0;i<wordCount;i++)maxScore+=120+Math.min(i*5,30);
+          if(submittedScore>maxScore)throw new Error("Quick Match score is outside the valid range.");
+          if(submittedDuration<Math.max(250,wordCount*120)||submittedDuration>1800000){
+            throw new Error("Quick Match time is outside the valid range.");
+          }
+        }
+
         const {error:updateError}=await admin.from("race_players").update({
           progress:1,
-          score:Math.max(0,Number(payload.score)||0),
-          duration_ms:Math.max(0,Number(payload.durationMs)||0),
-          errors:Math.max(0,Number(payload.errors)||0),
-          erased:Math.max(0,Number(payload.erased)||0),
+          score:submittedScore,
+          duration_ms:submittedDuration,
+          errors:submittedErrors,
+          erased:submittedErased,
           finished_at:new Date().toISOString()
         }).eq("race_id",raceId).eq("user_id",user.id);
         if(updateError)throw updateError;
+
         const {data:players,error:playersError}=await admin.from("race_players")
-          .select("user_id,progress,score,finished_at").eq("race_id",raceId);
+          .select("user_id,progress,score,duration_ms,errors,erased,finished_at,level_at_match")
+          .eq("race_id",raceId);
         if(playersError)throw playersError;
-        if((players||[]).length>1&&(players||[]).every((p:any)=>p.finished_at)){
-          await admin.from("race_rooms").update({status:"finished",finished_at:new Date().toISOString()}).eq("id",raceId);
+
+        let winnerId=room.winner_id||null;
+        const done=(players||[]).length>1&&(players||[]).every((p:any)=>p.finished_at);
+        if(done){
+          const ranked=[...(players||[])].sort((a:any,b:any)=>
+            Number(b.score||0)-Number(a.score||0)
+            || Number(a.duration_ms||0)-Number(b.duration_ms||0)
+            || Number(a.errors||0)-Number(b.errors||0)
+          );
+          if(ranked.length>1){
+            const a=ranked[0],b=ranked[1];
+            const exactTie=Number(a.score||0)===Number(b.score||0)
+              && Number(a.duration_ms||0)===Number(b.duration_ms||0)
+              && Number(a.errors||0)===Number(b.errors||0);
+            winnerId=exactTie?null:a.user_id;
+          }
+          await admin.from("race_rooms").update({
+            status:"finished",
+            finished_at:new Date().toISOString(),
+            winner_id:winnerId
+          }).eq("id",raceId);
         }else{
-          await admin.from("race_rooms").update({status:"running",started_at:new Date().toISOString()}).eq("id",raceId).eq("status","waiting");
+          await admin.from("race_rooms").update({
+            status:"running",
+            started_at:new Date().toISOString()
+          }).eq("id",raceId).eq("status","waiting");
         }
-        return json({players});
+        return json({players,winnerId,finished:done,matchType:room.match_type});
       }
 
       case "join_tournament":
