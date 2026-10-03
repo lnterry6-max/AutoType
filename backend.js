@@ -567,6 +567,54 @@
     return data||null;
   }
 
+  async function searchProfiles(query,limit=12){
+    const db=getClient();
+    if(!db)return [];
+    const q=String(query||"").trim();
+    let request=db.from("profiles").select("id,username,display_name,bio,avatar_url,created_at").limit(Math.max(1,Math.min(30,Number(limit)||12)));
+    if(q)request=request.or(`username.ilike.%${q}%,display_name.ilike.%${q}%`);
+    const {data,error}=await request.order("username",{ascending:true});
+    if(error)throw error;
+    return data||[];
+  }
+
+  async function racesSnapshot(){
+    const db=getClient();
+    const current=await user();
+    if(!db||!current)return [];
+    const {data:mine,error:mineError}=await db.from("race_players").select("race_id").eq("user_id",current.id);
+    if(mineError)throw mineError;
+    const ids=[...new Set((mine||[]).map(x=>x.race_id))];
+    if(!ids.length)return [];
+    const [{data:rooms,error:roomError},{data:players,error:playerError}]=await Promise.all([
+      db.from("race_rooms").select("*").in("id",ids).order("created_at",{ascending:false}),
+      db.from("race_players").select("*").in("race_id",ids)
+    ]);
+    if(roomError)throw roomError;if(playerError)throw playerError;
+    const userIds=[...new Set((players||[]).map(x=>x.user_id))];
+    let profiles=[];
+    if(userIds.length){
+      const {data,error}=await db.from("profiles").select("id,username,display_name,avatar_url").in("id",userIds);
+      if(error)throw error;profiles=data||[];
+    }
+    const byUser=Object.fromEntries(profiles.map(p=>[p.id,p]));
+    return (rooms||[]).map(room=>({
+      ...room,
+      players:(players||[]).filter(p=>p.race_id===room.id).map(p=>({...p,profile:byUser[p.user_id]||null}))
+    }));
+  }
+
+  async function raceById(id){
+    const db=getClient();
+    if(!db)return null;
+    const {data:room,error}=await db.from("race_rooms").select("*").eq("id",id).maybeSingle();
+    if(error)throw error;
+    if(!room)return null;
+    const {data:players,error:pError}=await db.from("race_players").select("*").eq("race_id",id);
+    if(pError)throw pError;
+    return {...room,players:players||[]};
+  }
+
   async function publicProfileByUsername(username){
     const db=getClient();
     if(!db)return null;
@@ -588,6 +636,8 @@
   async function setSecurityQuestion(question,answer){return api("set_security_question",{question,answer})}
   async function verifySecurityAnswer(answer){return api("verify_security_answer",{answer})}
   async function sendFriendRequest(username){return api("send_friend_request",{username})}
+  async function createRace(friendId){return api("create_race",{friendId})}
+  async function submitRaceResult(raceId,score){return api("submit_race_result",{raceId,score})}
   async function respondFriendRequest(requestId,accept){return api("respond_friend_request",{requestId,accept})}
   async function cancelFriendRequest(requestId){return api("cancel_friend_request",{requestId})}
   async function removeFriend(userId){return api("remove_friend",{userId})}
@@ -648,6 +698,9 @@
     myInventory,
     hydrateLocalMirror,
     friendsSnapshot,
+    searchProfiles,
+    racesSnapshot,
+    raceById,
     tournamentsSnapshot,
     predictionsSnapshot,
     activeAnnouncement,
@@ -661,6 +714,8 @@
     setSecurityQuestion,
     verifySecurityAnswer,
     sendFriendRequest,
+    createRace,
+    submitRaceResult,
     respondFriendRequest,
     cancelFriendRequest,
     removeFriend,
