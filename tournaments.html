@@ -111,6 +111,95 @@ document.addEventListener("DOMContentLoaded",async()=>{
 
   if(account&&AutoType.isDeveloper(account))manageTournamentsLink.hidden=false;
 
+  if(account?.online){
+    let snapshot={tournaments:[],entries:[]};
+
+    const tournamentKey=t=>t.slug||t.id;
+    const statusLabelOnline=t=>{
+      if(t.status==="open")return "Registration open";
+      if(t.status==="scheduled")return "Coming soon";
+      if(t.status==="running")return "In progress";
+      return "Closed";
+    };
+
+    async function loadOnline(){
+      snapshot=await AutoTypeBackend.tournamentsSnapshot();
+    }
+
+    function renderOnline(){
+      const wallet=AutoType.currentWallet();
+      ticketBalance.textContent=wallet?.tickets||0;
+      const currentId=account.supabaseUserId;
+
+      tournamentGrid.innerHTML=snapshot.tournaments.length?snapshot.tournaments.map(t=>{
+        const entry=snapshot.entries.find(e=>e.tournament_id===t.id&&e.user_id===currentId&&e.status!=="withdrawn");
+        const entrants=snapshot.entries.filter(e=>e.tournament_id===t.id&&!["withdrawn","disqualified"].includes(e.status)).length;
+        const entryText=t.entry_type==="free"?"Free entry":`${t.entry_cost} ◆`;
+        const full=entrants>=t.max_players;
+        const key=tournamentKey(t);
+        let action;
+
+        if(entry){
+          action=`<button class="button button-quiet" data-online-leave="${key}" ${["closed","running"].includes(t.status)?"disabled":""}>${t.status==="closed"?"Tournament closed":t.status==="running"?"Tournament started":"Leave tournament"}</button>`;
+        }else if(t.status!=="open"){
+          action=`<button class="button button-secondary" disabled>${t.status==="scheduled"?"Registration not open":t.status==="running"?"Tournament started":"Registration closed"}</button>`;
+        }else if(full){
+          action=`<button class="button button-secondary" disabled>Tournament full</button>`;
+        }else{
+          action=`<button class="button button-primary" data-online-join="${key}">Register · ${entryText}</button>`;
+        }
+
+        return `<article class="tournament-card ${entry?"registered":""} status-${t.status}">
+          <div class="tournament-card-top">
+            <span>${AutoType.escapeHTML(t.schedule_label||"TBA")}</span>
+            <span class="tournament-status">${statusLabelOnline(t)}</span>
+          </div>
+          <h2>${AutoType.escapeHTML(t.name)}</h2>
+          <p>${AutoType.escapeHTML(t.description||"")}</p>
+          <div class="tournament-prizes">
+            <div><span>Entry</span><strong>${entryText}</strong></div>
+            <div><span>Players</span><strong>${entrants}/${t.max_players}</strong></div>
+            <div><span>Coins</span><strong>${Number(t.reward_coins||0).toLocaleString()} ◉</strong></div>
+            <div><span>Crate tokens</span><strong>${Number(t.reward_crate_tokens||0)} ▣</strong></div>
+          </div>
+          ${t.reward_title?`<div class="tournament-title-prize">Winner title · ${AutoType.escapeHTML(t.reward_title)}</div>`:""}
+          <div class="tournament-card-action">${action}</div>
+        </article>`;
+      }).join(""):`<div class="empty tournament-empty">No tournaments are currently configured.</div>`;
+
+      tournamentGrid.querySelectorAll("[data-online-join]").forEach(b=>b.addEventListener("click",async()=>{
+        b.disabled=true;
+        try{
+          await AutoTypeBackend.joinTournament(b.dataset.onlineJoin);
+          await Promise.all([AutoTypeBackend.hydrateLocalMirror(),loadOnline()]);
+          AutoType.toast("Tournament registration confirmed.");
+          renderOnline();
+        }catch(e){AutoType.toast(e.message);b.disabled=false}
+      }));
+      tournamentGrid.querySelectorAll("[data-online-leave]").forEach(b=>b.addEventListener("click",async()=>{
+        b.disabled=true;
+        try{
+          const result=await AutoTypeBackend.leaveTournament(b.dataset.onlineLeave);
+          await Promise.all([AutoTypeBackend.hydrateLocalMirror(),loadOnline()]);
+          AutoType.toast(result?.refund?"Registration cancelled and ticket refunded.":"Registration cancelled.");
+          renderOnline();
+        }catch(e){AutoType.toast(e.message);b.disabled=false}
+      }));
+
+      const mine=snapshot.entries.filter(e=>e.user_id===currentId&&e.status!=="withdrawn");
+      registrationList.innerHTML=mine.length?mine.map(e=>{
+        const t=snapshot.tournaments.find(x=>x.id===e.tournament_id);
+        return `<div class="tournament-registration">
+          <div><strong>${AutoType.escapeHTML(t?.name||"Tournament")}</strong><span>${AutoType.escapeHTML(t?.schedule_label||"")} · ${new Date(e.joined_at).toLocaleDateString()}</span></div>
+          <span class="status-pill">${e.status==="winner"?"Winner":e.status==="finished"?"Finished":"Registered"}</span>
+        </div>`;
+      }).join(""):`<div class="empty">You are not registered for any tournaments.</div>`;
+    }
+
+    try{await loadOnline();renderOnline()}catch(e){AutoType.toast(e.message)}
+    return;
+  }
+
   function statusLabel(t){
     return t.status==="open"?"Registration open":t.status==="scheduled"?"Coming soon":"Closed";
   }
