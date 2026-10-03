@@ -103,6 +103,65 @@ document.addEventListener("DOMContentLoaded",async()=>{
   const dateKey=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   dailyDate.textContent=d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
 
+  if(current?.online){
+    const [all,daily]=await Promise.all([
+      AutoTypeBackend.leaderboard(100),
+      AutoTypeBackend.dailyLeaderboard(new Date())
+    ]);
+
+    function onlineAccountFromRow(row){
+      const p=row.profiles||{};
+      return {
+        id:"sb_"+row.user_id,
+        supabaseUserId:row.user_id,
+        username:p.username||"player",
+        displayName:p.display_name||p.username||"Player",
+        avatarImage:p.avatar_url||"",
+        profile:{
+          bestScore:Number(row.best_score||0),
+          bestStreak:Number(row.best_streak||0),
+          rounds:Number(row.rounds||0),
+          words:Number(row.words||0),
+          achievements:{}
+        }
+      };
+    }
+
+    function onlineRow(row,score,rank){
+      const a=onlineAccountFromRow(row);
+      const level=AutoType.levelInfo(a.profile).level;
+      return `<div class="leaderboard-row ${current.supabaseUserId===row.user_id?"me":""}">
+        <span class="rank">${rank}</span>
+        <span class="leader-person">${AutoType.avatarMarkup(a,"avatar")}<span><strong>${AutoType.escapeHTML(AutoType.accountName(a))}</strong><small>LV ${level}</small></span></span>
+        <strong class="leader-score">${Number(score||0).toLocaleString()}</strong>
+      </div>`;
+    }
+
+    const myIndex=all.findIndex(x=>x.user_id===current.supabaseUserId);
+    currentRankMetric.textContent=myIndex>=0?`#${myIndex+1}`:"—";
+    currentBestMetric.textContent=current.profile?.bestScore||0;
+    currentLevelMetric.textContent=AutoType.levelInfo(current.profile).level;
+    allTimeBoard.innerHTML=all.length?all.map((x,i)=>onlineRow(x,x.best_score,i+1)).join(""):`<div class="empty">No ranked scores yet.</div>`;
+    dailyBoard.innerHTML=daily.length?daily.map((x,i)=>onlineRow({...x,words:0,rounds:0,best_streak:0,best_score:x.score},x.score,i+1)).join(""):`<div class="empty">No Daily Challenge scores yet today.</div>`;
+
+    if(daily[0]?.user_id===current.supabaseUserId){
+      dailyClaim.hidden=false;
+      claimDailyReward.addEventListener("click",async()=>{
+        claimDailyReward.disabled=true;
+        try{
+          await AutoTypeBackend.claimDailyReward(dateKey);
+          await AutoTypeBackend.hydrateLocalMirror();
+          AutoType.toast("150 coins claimed.");
+          claimDailyReward.textContent="Claimed";
+        }catch(e){
+          AutoType.toast(e.message);
+          claimDailyReward.disabled=false;
+        }
+      });
+    }
+    return;
+  }
+
   function row(a,score,rank){
     const level=AutoType.levelInfo(a.profile).level;
     return `<div class="leaderboard-row ${current?.id===a.id?"me":""}">
