@@ -46,6 +46,7 @@ For Stripe, configure these Supabase project secrets:
 ```text
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_LIVE_ENABLED=false
 ```
 
 Point the Stripe webhook endpoint at:
@@ -54,7 +55,9 @@ Point the Stripe webhook endpoint at:
 https://<project-ref>.supabase.co/functions/v1/stripe-webhook
 ```
 
-Subscribe at minimum to `checkout.session.completed`, `checkout.session.async_payment_succeeded`, and `checkout.session.expired`. Start in Stripe test mode before enabling live payments.
+Subscribe at minimum to `checkout.session.completed`, `checkout.session.async_payment_succeeded`, and `checkout.session.expired`.
+
+Keep `STRIPE_LIVE_ENABLED=false` while testing. Even if a live secret key is accidentally configured, AutoType will reject live checkout until this flag is deliberately changed to `true`.
 
 ## Release checks
 
