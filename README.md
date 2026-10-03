@@ -84,9 +84,13 @@ python3 scripts/audit.py
 
 The `backend-foundation` branch also runs `.github/workflows/backend-audit.yml` on GitHub.
 
-## Current hardening boundary
+## Competitive verification
 
-Persistent account/economy mutations are server-authoritative, but completed typing rounds currently submit bounded client-reported metrics to the server. A future competitive-hardening phase should use server-issued round challenges and stronger result verification before treating high-stakes tournament scores as cheat-resistant.
+Online Word, Context, Sentence, Evil, Daily, and Tournament rounds now start from server-issued challenges. The server owns the target sentence, challenge lifetime, tournament association, and whether the challenge has already been consumed. Completion is rejected when mode, word count, score ceiling, key/error counts, timing bounds, or challenge state do not match.
+
+Global and Daily leaderboards use verified results. Tournament attempts are single-use, and winner payouts are restricted to a top verified score.
+
+This is stronger than trusting arbitrary browser-submitted scores, but it is not full anti-cheat: per-keystroke behavior is still reported by the client rather than streamed/attested by the server.
 
 Stripe Checkout support is wired for the three Coin packs. Wallet credit only occurs after a signed Stripe webhook is verified by Supabase. Configure `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` in Supabase secrets before checkout becomes available.
 
