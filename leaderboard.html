@@ -137,7 +137,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
 
     const myIndex=all.findIndex(x=>x.user_id===current.supabaseUserId);
     currentRankMetric.textContent=myIndex>=0?`#${myIndex+1}`:"—";
-    currentBestMetric.textContent=current.profile?.bestScore||0;
+    currentBestMetric.textContent=myIndex>=0?Number(all[myIndex].best_score||0):0;
     currentLevelMetric.textContent=AutoType.levelInfo(current.profile).level;
     allTimeBoard.innerHTML=all.length?all.map((x,i)=>onlineRow(x,x.best_score,i+1)).join(""):`<div class="empty">No ranked scores yet.</div>`;
     dailyBoard.innerHTML=daily.length?daily.map((x,i)=>onlineRow({...x,words:0,rounds:0,best_streak:0,best_score:x.score},x.score,i+1)).join(""):`<div class="empty">No Daily Challenge scores yet today.</div>`;
