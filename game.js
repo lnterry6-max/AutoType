@@ -110,10 +110,14 @@ AutoType.ready().then(async()=>{
   let predictorMode=mode;
   let race=null;
   let fixed=false;
+  const account=AutoType.currentAccount();
+  const tournamentId=params.get("tournament");
+  const competitiveModes=new Set(["classic","context","sentence","evil","daily","tournament"]);
+  let serverChallenge=null;
 
   if(params.get("race")){
     const raceId=params.get("race");
-    if(AutoType.currentAccount()?.online){
+    if(account?.online){
       try{
         const room=await AutoTypeBackend.raceById(raceId);
         if(room)race={id:room.id,sentence:room.target_text,mode:room.mode||"context",room};
@@ -125,7 +129,12 @@ AutoType.ready().then(async()=>{
       race=AutoType.store().races.find(r=>r.id===raceId);
     }
     if(race){mode="race";predictorMode=race.mode||"context";fixed=true}
+  }else if(tournamentId){
+    mode="tournament";
+    predictorMode="context";
+    fixed=true;
   }
+
   if(mode==="custom"){predictorMode=params.get("predictor")||"classic";fixed=true}
   if(mode==="daily"){predictorMode="context";fixed=true}
 
@@ -142,7 +151,27 @@ AutoType.ready().then(async()=>{
     return pool[Math.floor(Math.random()*pool.length)]
   }
 
-  let sentence = race?.sentence || (mode==="daily"?dailySentence() : mode==="custom"?sanitize(params.get("sentence")) : pick());
+  async function issueServerChallenge(){
+    if(!account?.online||!competitiveModes.has(mode))return null;
+    const challenge=await AutoTypeBackend.startRound(mode,mode==="tournament"?tournamentId:null);
+    serverChallenge=challenge;
+    return challenge;
+  }
+
+  let sentence;
+  if(account?.online&&competitiveModes.has(mode)){
+    try{
+      const challenge=await issueServerChallenge();
+      sentence=challenge?.target_text||"";
+    }catch(error){
+      console.error("Could not start verified round",error);
+      AutoType.toast(error.message||"Could not start this round.");
+      $("gameArea").hidden=true;
+      return;
+    }
+  }else{
+    sentence=race?.sentence||(mode==="daily"?dailySentence():mode==="custom"?sanitize(params.get("sentence")):pick());
+  }
   if(!sentence)sentence=pick();
 
   let words=[],index=0,prefix="",visible="",score=0,streak=0,maxStreak=0,keyCount=0,erased=0,errors=0,clueCounts=[];
@@ -150,9 +179,10 @@ AutoType.ready().then(async()=>{
   let cluesThisWord=0,recentGuesses=[],justKeptAI=0;
   let started=false,startTime=0,timer=null;
 
-  const names={classic:"Word",context:"Context",sentence:"Sentence",evil:"Evil",daily:"Daily Challenge",custom:"Custom",race:"Friend Race"};
+  const names={classic:"Word",context:"Context",sentence:"Sentence",evil:"Evil",daily:"Daily Challenge",custom:"Custom",race:"Friend Race",tournament:"Tournament"};
   $("modeName").textContent=names[mode]||"Word";
   $("newBtn").disabled=fixed;
+  if(mode==="tournament")$("againBtn").hidden=true;
 
   function elapsed(){return started?Date.now()-startTime:0}
   function fmt(ms){return AutoType.formatTime(ms)}
@@ -404,6 +434,7 @@ AutoType.ready().then(async()=>{
       try{
         const result=await AutoTypeBackend.recordRound({
           roundId,
+          challengeId:serverChallenge?.challenge_id||null,
           mode,
           score,
           words:words.length,
@@ -416,6 +447,11 @@ AutoType.ready().then(async()=>{
         });
         coinsEarned=Number(result?.coins_earned||0);
         newlyUnlocked=Array.isArray(result?.new_achievements)?result.new_achievements:[];
+        const verifiedBadge=$("verifiedResult");
+        if(verifiedBadge){
+          verifiedBadge.hidden=!result?.verified;
+          verifiedBadge.textContent=result?.verified?"Verified round":"";
+        }
         await AutoTypeBackend.hydrateLocalMirror();
       }catch(error){
         console.error("Round save failed",error);
@@ -501,8 +537,31 @@ AutoType.ready().then(async()=>{
     else if(e.key==="Backspace"){e.preventDefault();backspace()}
     else if(e.key===" "||e.key==="Enter"){e.preventDefault();lock()}
   });
-  $("restartBtn").addEventListener("click",()=>reset());
-  $("newBtn").addEventListener("click",()=>{if(!fixed)reset(pick())});
-  $("againBtn").addEventListener("click",()=>reset());
+  async function resetVerifiedRound(){
+    try{
+      const challenge=await issueServerChallenge();
+      if(challenge?.target_text){
+        sentence=challenge.target_text;
+        reset(sentence);
+      }
+    }catch(error){
+      AutoType.toast(error.message||"Could not start a new round.");
+    }
+  }
+
+  $("restartBtn").addEventListener("click",async()=>{
+    if(account?.online&&competitiveModes.has(mode))await resetVerifiedRound();
+    else reset();
+  });
+  $("newBtn").addEventListener("click",async()=>{
+    if(fixed)return;
+    if(account?.online&&competitiveModes.has(mode))await resetVerifiedRound();
+    else reset(pick());
+  });
+  $("againBtn").addEventListener("click",async()=>{
+    if(mode==="tournament")return;
+    if(account?.online&&competitiveModes.has(mode))await resetVerifiedRound();
+    else reset();
+  });
   reset();
-});;
+});
