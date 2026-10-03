@@ -44,9 +44,13 @@ Never place these in frontend code or GitHub:
 
 The publishable Supabase key is intentionally browser-visible and relies on RLS/authorization for protection.
 
-## Current limitation
+## Competitive integrity
 
-The server records completed rounds and prevents duplicate reward submission by round ID, but it currently accepts bounded client-reported gameplay metrics. This is sufficient for persistence and basic economy integrity, not full competitive anti-cheat. High-stakes rankings/tournaments should eventually use server-issued challenges and stronger result verification.
+Competitive online rounds use server-issued challenges stored in `round_challenges`. A verified result must match the issued mode and word count, remain within the scoring/key/error/timing bounds, and consume an unexpired challenge exactly once.
+
+Global/Daily boards use verified results. Tournament attempts are tied to a registered player and tournament, are single-use, and winner payouts require a top verified score.
+
+Remaining limitation: the browser still reports detailed gameplay metrics. A determined user controlling the client can fabricate plausible in-range events. Stronger anti-cheat would require server-observed event streams, signed telemetry, or another trusted execution boundary.
 
 ## Payments
 
@@ -54,7 +58,7 @@ The browser never credits itself after returning from Stripe. `create-checkout-s
 
 Keep `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` in Supabase project secrets only. Do not put them in `backend-config.js` or GitHub.
 
-Before live payments, add a full refund/chargeback policy and transaction reconciliation. AutoType currently requires an explicit server-side `STRIPE_LIVE_ENABLED=true` flag before live Checkout can run.
+Refunds and disputes are reconciled server-side, including Coin reversal/debt when purchased Coins were already spent. AutoType still requires an explicit server-side `STRIPE_LIVE_ENABLED=true` flag before live Checkout can run. Before launch, document the refund/chargeback policy and operational process.
 
 ## Randomized rewards
 
