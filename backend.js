@@ -652,11 +652,11 @@
   async function adminResetPlayer(userId){return api("admin_reset_player",{userId})}
   async function adminSnapshot(){return api("admin_snapshot",{})}
 
-  async function dailyLeaderboard(day=new Date()){
+  async function dailyLeaderboard(dayKey=new Date().toISOString().slice(0,10)){
     const db=getClient();
     if(!db)return [];
-    const start=new Date(day);start.setHours(0,0,0,0);
-    const end=new Date(start);end.setDate(end.getDate()+1);
+    const start=new Date(`${dayKey}T00:00:00.000Z`);
+    const end=new Date(start);end.setUTCDate(end.getUTCDate()+1);
     const {data,error}=await db.from("round_results")
       .select("user_id,score,created_at,profiles!inner(username,display_name,avatar_url)")
       .eq("mode","daily")
