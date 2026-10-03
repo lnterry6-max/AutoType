@@ -55,9 +55,13 @@ Point the Stripe webhook endpoint at:
 https://<project-ref>.supabase.co/functions/v1/stripe-webhook
 ```
 
-Subscribe to Checkout completion/expiration plus the refund and dispute events handled by `stripe-webhook`: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired`, `refund.created`, `refund.updated`, `refund.failed`, `charge.dispute.created`, `charge.dispute.updated`, and `charge.dispute.closed`.
+Subscribe to Checkout completion/expiration plus the refund and dispute events handled by `stripe-webhook`: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`, `refund.created`, `refund.updated`, `refund.failed`, `charge.dispute.created`, `charge.dispute.updated`, and `charge.dispute.closed`.
 
 Keep `STRIPE_LIVE_ENABLED=false` while testing. Even if a live secret key is accidentally configured, AutoType will reject live checkout until this flag is deliberately changed to `true`.
+
+## Quick Match release requirement
+
+Quick Match must use the server-owned level calculation, the matchmaking queue RPC, and the server-validated race result path. Do not reintroduce client-only progression for matchmaking races. The matchmaking search band expands gradually but remains capped so a long wait does not turn skill-based matchmaking into unrestricted matching.
 
 ## Release checks
 
