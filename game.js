@@ -316,7 +316,9 @@ AutoType.ready().then(async()=>{
     if(timer)clearInterval(timer);started=false;startTime=0;
     sentence=newSentence;words=sentence.split(" ");index=0;prefix="";visible="";score=0;streak=0;maxStreak=0;keyCount=0;erased=0;errors=0;clueCounts=[];
     cluesThisWord=0;recentGuesses=[];justKeptAI=0;
-    $("time").textContent="0:00";$("results").hidden=true;render()
+    $("time").textContent="0:00";$("results").hidden=true;
+    if($("verifiedResult"))$("verifiedResult").hidden=true;
+    render()
   }
 
   function spawnTypingTrail(){
@@ -455,7 +457,8 @@ AutoType.ready().then(async()=>{
         await AutoTypeBackend.hydrateLocalMirror();
       }catch(error){
         console.error("Round save failed",error);
-        AutoType.toast("Round finished, but the backend could not save it.");
+        if($("verifiedResult"))$("verifiedResult").hidden=true;
+        AutoType.toast(error.message||"Round finished, but the backend could not save it.");
       }
     }else{
       const p=AutoType.currentProfile();
