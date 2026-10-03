@@ -19,6 +19,7 @@ Supabase is the source of truth for:
 - Prediction Lab mappings and votes
 - announcements
 - developer/admin operations and audit records
+- Stripe Checkout coin purchases with webhook-verified wallet credit
 
 The browser still keeps a compatibility mirror so the existing UI can render with the original `AutoType.*` interface, but online-account persistence is backed by Supabase.
 
@@ -65,6 +66,10 @@ supabase/
 └── functions/
     ├── game-api/
     │   └── index.ts
+    ├── create-checkout-session/
+    │   └── index.ts
+    ├── stripe-webhook/
+    │   └── index.ts
     └── delete-account/
         └── index.ts
 ```
@@ -83,6 +88,8 @@ The `backend-foundation` branch also runs `.github/workflows/backend-audit.yml` 
 
 Persistent account/economy mutations are server-authoritative, but completed typing rounds currently submit bounded client-reported metrics to the server. A future competitive-hardening phase should use server-issued round challenges and stronger result verification before treating high-stakes tournament scores as cheat-resistant.
 
-Payments are not connected. Randomized crates use earned Crate Tokens only; they are not funded by purchased currency.
+Stripe Checkout support is wired for the three Coin packs. Wallet credit only occurs after a signed Stripe webhook is verified by Supabase. Configure `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` in Supabase secrets before checkout becomes available.
+
+Randomized crates use earned Crate Tokens only; purchased Coins cannot open crates.
 
 Earlier development notes live in `docs/DEVELOPMENT_NOTES.md`.
