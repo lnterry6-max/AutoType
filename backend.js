@@ -119,6 +119,44 @@
     return data;
   }
 
+  async function myRole(){
+    const db=getClient();
+    const current=await user();
+    if(!db||!current)return null;
+    const {data,error}=await db
+      .from("user_roles")
+      .select("role")
+      .eq("user_id",current.id)
+      .single();
+    if(error)throw error;
+    return data?.role||"player";
+  }
+
+  async function myEquipped(){
+    const db=getClient();
+    const current=await user();
+    if(!db||!current)return null;
+    const {data,error}=await db
+      .from("equipped_cosmetics")
+      .select("*")
+      .eq("user_id",current.id)
+      .single();
+    if(error)throw error;
+    return data;
+  }
+
+  async function myAchievements(){
+    const db=getClient();
+    const current=await user();
+    if(!db||!current)return [];
+    const {data,error}=await db
+      .from("user_achievements")
+      .select("achievement_id,unlocked_at")
+      .eq("user_id",current.id);
+    if(error)throw error;
+    return data||[];
+  }
+
   async function myWallet(){
     const db=getClient();
     const current=await user();
@@ -158,6 +196,97 @@
     return data||[];
   }
 
+  async function hydrateLocalMirror(){
+    if(!window.AutoType)throw new Error("AutoType core is not loaded.");
+    const current=await user();
+    if(!current){
+      const localStore=AutoType.store();
+      if(String(localStore.currentId||"").startsWith("sb_")){
+        localStore.currentId=null;
+        AutoType.save();
+      }
+      return null;
+    }
+
+    const [profile,wallet,stats,inventory,equipped,achievements,role]=await Promise.all([
+      myProfile(),myWallet(),myStats(),myInventory(),myEquipped(),myAchievements(),myRole()
+    ]);
+
+    const localStore=AutoType.store();
+    const localId="sb_"+current.id;
+    let mirror=localStore.accounts.find(a=>a.id===localId);
+
+    const achievementMap={};
+    for(const item of achievements||[])achievementMap[item.achievement_id]=true;
+
+    const localProfile={
+      bestScore:Number(stats?.best_score||0),
+      rounds:Number(stats?.rounds||0),
+      words:Number(stats?.words||0),
+      erased:Number(stats?.erased||0),
+      bestStreak:Number(stats?.best_streak||0),
+      fastest:stats?.fastest_seconds==null?null:Number(stats.fastest_seconds),
+      bestErasedRound:Number(stats?.best_erased_round||0),
+      mindReaderCount:Number(stats?.mind_reader_count||0),
+      perfectRounds:Number(stats?.perfect_rounds||0),
+      totalKeys:Number(stats?.total_keys||0),
+      totalErrors:Number(stats?.total_errors||0),
+      totalScore:Number(stats?.total_score||0),
+      tournamentWins:Number(stats?.tournament_wins||0),
+      achievements:achievementMap,
+      daily:mirror?.profile?.daily||{}
+    };
+
+    const owned=(inventory||[]).map(x=>x.item_id);
+    const localWallet={
+      coins:Number(wallet?.coins||0),
+      tickets:Number(wallet?.tournament_tickets||0),
+      crateKeys:Number(wallet?.crate_tokens||0),
+      owned,
+      equipped:{
+        title:equipped?.title_id||"title_none",
+        banner:equipped?.banner_id||"banner_default",
+        frame:equipped?.frame_id||"frame_default",
+        arena:equipped?.arena_id||"arena_default",
+        trail:equipped?.trail_id||"trail_default",
+        cursor:equipped?.cursor_id||"cursor_default",
+        predictor:equipped?.predictor_id||"predictor_default",
+        result:equipped?.victory_fx_id||"result_default"
+      },
+      claims:mirror?.wallet?.claims||{}
+    };
+
+    const patch={
+      id:localId,
+      supabaseUserId:current.id,
+      online:true,
+      username:profile.username,
+      email:current.email||"",
+      displayName:profile.display_name||profile.username,
+      bio:profile.bio||"",
+      avatarImage:profile.avatar_url||"",
+      favoriteModes:mirror?.favoriteModes||[],
+      friends:mirror?.friends||[],
+      profile:localProfile,
+      settings:mirror?.settings||{
+        animations:true,reducedFx:false,showPrediction:true,
+        backgroundType:"solid",backgroundColor:"#1f2328",
+        backgroundImage:"",backgroundDim:64,backgroundLuminance:null
+      },
+      wallet:localWallet,
+      role:role==="developer"||role==="admin"?"developer":"user"
+    };
+
+    if(mirror)Object.assign(mirror,patch);
+    else{
+      mirror=patch;
+      localStore.accounts.push(mirror);
+    }
+    localStore.currentId=localId;
+    AutoType.save();
+    return mirror;
+  }
+
   async function publicProfileByUsername(username){
     const db=getClient();
     if(!db)return null;
@@ -192,9 +321,13 @@
     signOut,
     myProfile,
     updateMyProfile,
+    myRole,
+    myEquipped,
+    myAchievements,
     myWallet,
     myStats,
     myInventory,
+    hydrateLocalMirror,
     publicProfileByUsername,
     leaderboard
   };
