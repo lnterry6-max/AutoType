@@ -2702,3 +2702,153 @@ body.theme-light .admin-payment-row{
 .admin-entrant-list small{
   text-transform:capitalize;
 }
+
+
+/* ==========================================================
+   Level matchmaking + tournament standings
+   ========================================================== */
+.quick-match-card{
+  display:grid;
+  grid-template-columns:minmax(0,1.4fr) auto minmax(220px,.9fr);
+  align-items:center;
+  gap:18px;
+  margin-bottom:14px;
+  padding:16px 18px;
+  border:1px solid rgba(74,169,255,.28);
+  border-radius:12px;
+  background:
+    linear-gradient(135deg,rgba(74,169,255,.08),transparent 55%),
+    var(--surface);
+}
+.quick-match-copy h2{
+  margin:2px 0 4px;
+  font-size:20px;
+}
+.quick-match-copy p{
+  margin:0;
+  color:var(--muted);
+  font-size:10px;
+}
+.quick-match-level{
+  display:grid;
+  gap:3px;
+  min-width:90px;
+  text-align:center;
+}
+.quick-match-level span{
+  color:var(--muted);
+  font-size:8px;
+  font-weight:850;
+  text-transform:uppercase;
+}
+.quick-match-level strong{
+  font-size:18px;
+}
+.quick-match-action{
+  display:grid;
+  grid-template-columns:auto auto;
+  align-items:center;
+  justify-content:end;
+  gap:7px;
+}
+.quick-match-action>span{
+  grid-column:1/-1;
+  min-height:14px;
+  color:var(--muted);
+  font-size:9px;
+  text-align:right;
+}
+.match-result{
+  margin:12px 0;
+  padding:12px 14px;
+  border:1px solid var(--border);
+  border-radius:9px;
+  background:var(--surface-2);
+  text-align:center;
+}
+.match-result strong{
+  display:block;
+  font-size:15px;
+}
+.match-result span{
+  display:block;
+  margin-top:3px;
+  color:var(--muted);
+  font-size:9px;
+}
+.tournament-standings{
+  display:grid;
+  gap:8px;
+  margin-top:12px;
+  padding-top:12px;
+  border-top:1px solid var(--border-soft);
+}
+.tournament-winner{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:9px 10px;
+  border:1px solid rgba(227,185,78,.28);
+  border-radius:8px;
+  background:rgba(227,185,78,.05);
+}
+.tournament-winner span{
+  color:#e3b94e;
+  font-size:8px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+.tournament-winner strong{
+  font-size:11px;
+}
+.tournament-standings-list{
+  display:grid;
+  gap:5px;
+}
+.tournament-standings-list>div{
+  display:grid;
+  grid-template-columns:28px minmax(0,1fr) auto;
+  align-items:center;
+  gap:8px;
+  padding:7px 8px;
+  border-radius:7px;
+  background:var(--surface-2);
+}
+.tournament-standings-list span{
+  color:var(--muted);
+  font-size:8px;
+  font-weight:900;
+}
+.tournament-standings-list strong,
+.tournament-standings-list b{
+  font-size:9px;
+}
+body.theme-light .quick-match-card,
+body.theme-light .match-result{
+  background:#fff;
+}
+body.theme-light .tournament-standings-list>div{
+  background:#f3f5f7;
+}
+@media(max-width:800px){
+  .quick-match-card{
+    grid-template-columns:1fr auto;
+  }
+  .quick-match-action{
+    grid-column:1/-1;
+    justify-content:start;
+  }
+  .quick-match-action>span{
+    text-align:left;
+  }
+}
+@media(max-width:520px){
+  .quick-match-card{
+    grid-template-columns:1fr;
+  }
+  .quick-match-level{
+    text-align:left;
+  }
+}
