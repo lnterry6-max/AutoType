@@ -106,7 +106,7 @@
     const current=await user();
     if(!db||!current)throw new Error("Sign in first.");
     const allowed={};
-    for(const key of ["username","display_name","bio","avatar_url"]){
+    for(const key of ["username","display_name","bio","avatar_url","favorite_modes"]){
       if(key in patch)allowed[key]=patch[key];
     }
     const {data,error}=await db
@@ -155,6 +155,102 @@
       .eq("user_id",current.id);
     if(error)throw error;
     return data||[];
+  }
+
+  async function myPreferences(){
+    const db=getClient();
+    const current=await user();
+    if(!db||!current)return null;
+    const {data,error}=await db
+      .from("user_preferences")
+      .select("*")
+      .eq("user_id",current.id)
+      .single();
+    if(error)throw error;
+    return data;
+  }
+
+  async function updateMyPreferences(patch){
+    const db=getClient();
+    const current=await user();
+    if(!db||!current)throw new Error("Sign in first.");
+    const allowed={};
+    const map={
+      animations:"animations",
+      reducedFx:"reduced_fx",
+      showPrediction:"show_prediction",
+      backgroundType:"background_type",
+      backgroundColor:"background_color",
+      backgroundImage:"background_image_url",
+      backgroundDim:"background_dim",
+      backgroundLuminance:"background_luminance"
+    };
+    for(const [front,back] of Object.entries(map)){
+      if(front in patch)allowed[back]=patch[front];
+    }
+    const {data,error}=await db
+      .from("user_preferences")
+      .update(allowed)
+      .eq("user_id",current.id)
+      .select()
+      .single();
+    if(error)throw error;
+    return data;
+  }
+
+  async function uploadAvatar(file){
+    const db=getClient();
+    const current=await user();
+    if(!db||!current)throw new Error("Sign in first.");
+    if(!file)throw new Error("Choose an image first.");
+    if(!["image/jpeg","image/png","image/webp"].includes(file.type))throw new Error("Use a JPG, PNG, or WebP image.");
+    if(file.size>5*1024*1024)throw new Error("Avatar must be 5 MB or smaller.");
+
+    const path=`${current.id}/avatar`;
+    const {error:uploadError}=await db.storage
+      .from("avatars")
+      .upload(path,file,{upsert:true,contentType:file.type,cacheControl:"3600"});
+    if(uploadError)throw uploadError;
+
+    const {data:publicData}=db.storage.from("avatars").getPublicUrl(path);
+    const url=`${publicData.publicUrl}?v=${Date.now()}`;
+    await updateMyProfile({avatar_url:url});
+    return url;
+  }
+
+  async function removeAvatar(){
+    const db=getClient();
+    const current=await user();
+    if(!db||!current)throw new Error("Sign in first.");
+    await db.storage.from("avatars").remove([`${current.id}/avatar`]);
+    await updateMyProfile({avatar_url:null});
+    return true;
+  }
+
+  async function updatePassword(newPassword){
+    const db=getClient();
+    if(!db)throw new Error("Supabase is not configured yet.");
+    const {data,error}=await db.auth.updateUser({password:newPassword});
+    if(error)throw error;
+    return data;
+  }
+
+  async function reauthenticate(password){
+    const db=getClient();
+    const current=await user();
+    if(!db||!current?.email)throw new Error("Sign in first.");
+    const {data,error}=await db.auth.signInWithPassword({email:current.email,password});
+    if(error)throw new Error("Current password is incorrect.");
+    return data;
+  }
+
+  async function deleteMyAccount(password){
+    const db=getClient();
+    if(!db)throw new Error("Supabase is not configured yet.");
+    await reauthenticate(password);
+    const {data,error}=await db.functions.invoke("delete-account",{body:{}});
+    if(error)throw error;
+    return data;
   }
 
   async function myWallet(){
@@ -208,8 +304,8 @@
       return null;
     }
 
-    const [profile,wallet,stats,inventory,equipped,achievements,role]=await Promise.all([
-      myProfile(),myWallet(),myStats(),myInventory(),myEquipped(),myAchievements(),myRole()
+    const [profile,wallet,stats,inventory,equipped,achievements,role,preferences]=await Promise.all([
+      myProfile(),myWallet(),myStats(),myInventory(),myEquipped(),myAchievements(),myRole(),myPreferences()
     ]);
 
     const localStore=AutoType.store();
@@ -265,14 +361,23 @@
       displayName:profile.display_name||profile.username,
       bio:profile.bio||"",
       avatarImage:profile.avatar_url||"",
-      favoriteModes:mirror?.favoriteModes||[],
+      favoriteModes:Array.isArray(profile.favorite_modes)?profile.favorite_modes:(mirror?.favoriteModes||[]),
       friends:mirror?.friends||[],
       profile:localProfile,
-      settings:mirror?.settings||{
+      settings:preferences?{
+        animations:preferences.animations!==false,
+        reducedFx:!!preferences.reduced_fx,
+        showPrediction:preferences.show_prediction!==false,
+        backgroundType:preferences.background_type||"solid",
+        backgroundColor:preferences.background_color||"#1f2328",
+        backgroundImage:preferences.background_image_url||"",
+        backgroundDim:Number(preferences.background_dim??64),
+        backgroundLuminance:preferences.background_luminance==null?null:Number(preferences.background_luminance)
+      }:(mirror?.settings||{
         animations:true,reducedFx:false,showPrediction:true,
         backgroundType:"solid",backgroundColor:"#1f2328",
         backgroundImage:"",backgroundDim:64,backgroundLuminance:null
-      },
+      }),
       wallet:localWallet,
       role:role==="developer"||role==="admin"?"developer":"user"
     };
@@ -334,6 +439,13 @@
     myRole,
     myEquipped,
     myAchievements,
+    myPreferences,
+    updateMyPreferences,
+    uploadAvatar,
+    removeAvatar,
+    updatePassword,
+    reauthenticate,
+    deleteMyAccount,
     myWallet,
     myStats,
     myInventory,
