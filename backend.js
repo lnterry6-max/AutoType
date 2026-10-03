@@ -34,14 +34,30 @@
     return client;
   }
 
+  async function functionErrorMessage(error,fallback="Backend request failed."){
+    let message=error?.message||fallback;
+    const response=error?.context;
+    if(response&&typeof response.clone==="function"){
+      try{
+        const payload=await response.clone().json();
+        if(payload?.error)message=payload.error;
+      }catch{
+        try{
+          const raw=await response.clone().text();
+          if(raw)message=raw;
+        }catch{}
+      }
+    }else if(error?.context?.body?.error){
+      message=error.context.body.error;
+    }
+    return message;
+  }
+
   async function api(action,payload={}){
     const db=getClient();
     if(!db)throw new Error("Supabase is not configured yet.");
     const {data,error}=await db.functions.invoke("game-api",{body:{action,payload}});
-    if(error){
-      const message=error?.context?.body?.error||error?.message||"Backend request failed.";
-      throw new Error(message);
-    }
+    if(error)throw new Error(await functionErrorMessage(error));
     if(data?.error)throw new Error(data.error);
     return data;
   }
@@ -337,7 +353,7 @@
     if(!db||!current)return null;
     const {data,error}=await db
       .from("wallets")
-      .select("coins,tournament_tickets,crate_tokens,updated_at")
+      .select("coins,tournament_tickets,crate_tokens,coin_debt,updated_at")
       .eq("user_id",current.id)
       .single();
     if(error)throw error;
@@ -428,6 +444,7 @@
       coins:Number(wallet?.coins||0),
       tickets:Number(wallet?.tournament_tickets||0),
       crateKeys:Number(wallet?.crate_tokens||0),
+      coinDebt:Number(wallet?.coin_debt||0),
       owned:serverOwned,
       equipped:serverEquipped,
       claims:{}
@@ -658,10 +675,7 @@
     const {data,error}=await db.functions.invoke("create-checkout-session",{
       body:{packId,returnBase}
     });
-    if(error){
-      const message=error?.context?.body?.error||error?.message||"Could not start checkout.";
-      throw new Error(message);
-    }
+    if(error)throw new Error(await functionErrorMessage(error,"Could not start checkout."));
     if(data?.error)throw new Error(data.error);
     if(!data?.url)throw new Error("Checkout URL was not returned.");
     return data;
@@ -672,12 +686,35 @@
     const current=await user();
     if(!db||!current||!sessionId)return null;
     const {data,error}=await db.from("payment_orders")
-      .select("id,pack_id,coins,amount_cents,currency,status,provider_session_id,created_at,completed_at")
+      .select("id,pack_id,coins,amount_cents,currency,status,provider_session_id,created_at,completed_at,refunded_amount_cents,coins_reversed,dispute_amount_cents")
       .eq("user_id",current.id)
       .eq("provider_session_id",sessionId)
       .maybeSingle();
     if(error)throw error;
     return data||null;
+  }
+
+  async function purchaseHistory(limit=30){
+    const db=getClient();
+    const current=await user();
+    if(!db||!current)return [];
+    const {data,error}=await db.from("payment_orders")
+      .select("id,pack_id,coins,amount_cents,currency,status,created_at,completed_at,refunded_amount_cents,coins_reversed,dispute_amount_cents")
+      .eq("user_id",current.id)
+      .in("status",["paid","partially_refunded","refunded","disputed","dispute_won","dispute_lost"])
+      .order("created_at",{ascending:false})
+      .limit(Math.max(1,Math.min(100,Number(limit)||30)));
+    if(error)throw error;
+    return data||[];
+  }
+
+  async function adminRefundPayment(orderId){
+    const db=getClient();
+    if(!db)throw new Error("Supabase is not configured yet.");
+    const {data,error}=await db.functions.invoke("refund-payment",{body:{orderId}});
+    if(error)throw new Error(await functionErrorMessage(error,"Refund failed."));
+    if(data?.error)throw new Error(data.error);
+    return data;
   }
 
   async function dailyLeaderboard(dayKey=new Date().toISOString().slice(0,10)){
@@ -784,6 +821,8 @@
     paymentConfig,
     startCoinCheckout,
     paymentOrder,
+    purchaseHistory,
+    adminRefundPayment,
     dailyLeaderboard,
     claimDailyReward,
     leaderboard
