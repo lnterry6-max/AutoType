@@ -441,7 +441,24 @@ document.addEventListener("DOMContentLoaded",async()=>{
         if(!confirm(`Refund the remaining payment for ${name}? AutoType Coins will be reconciled automatically.`))return;
         button.disabled=true;
         try{
-          const result=await AutoTypeBackend.adminRefundPayment(order.id);
+          let result;
+          if(typeof AutoTypeBackend.adminRefundPayment==="function"){
+            result=await AutoTypeBackend.adminRefundPayment(order.id);
+          }else{
+            const db=AutoTypeBackend.getClient();
+            if(!db)throw new Error("Supabase is not configured.");
+            const {data,error}=await db.functions.invoke("refund-payment",{body:{orderId:order.id}});
+            if(error){
+              let message=error.message||"Refund failed.";
+              try{
+                const payload=await error.context?.clone?.().json();
+                if(payload?.error)message=payload.error;
+              }catch{}
+              throw new Error(message);
+            }
+            if(data?.error)throw new Error(data.error);
+            result=data;
+          }
           if(order.user_id===account.supabaseUserId)await AutoTypeBackend.hydrateLocalMirror();
           AutoType.toast(result?.status==="succeeded"?"Refund completed.":"Refund started.");
           await refreshOnlineAdmin();
