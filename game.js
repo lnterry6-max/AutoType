@@ -180,9 +180,10 @@ AutoType.ready().then(async()=>{
   let started=false,startTime=0,timer=null;
 
   const names={classic:"Word",context:"Context",sentence:"Sentence",evil:"Evil",daily:"Daily Challenge",custom:"Custom",race:"Friend Race",tournament:"Tournament"};
-  $("modeName").textContent=names[mode]||"Word";
+  const quickMatch=mode==="race"&&race?.room?.match_type==="matchmaking";
+  $("modeName").textContent=quickMatch?"Quick Match":(names[mode]||"Word");
   $("newBtn").disabled=fixed;
-  if(mode==="tournament")$("againBtn").hidden=true;
+  if(mode==="tournament"||quickMatch)$("againBtn").hidden=true;
 
   function elapsed(){return started?Date.now()-startTime:0}
   function fmt(ms){return AutoType.formatTime(ms)}
@@ -422,6 +423,46 @@ AutoType.ready().then(async()=>{
     unlock("comboKing",p.bestStreak>=10);
     return newly;
   }
+  function quickMatchOpponent(room){
+    const currentId=account?.supabaseUserId;
+    return (room?.players||[]).find(p=>p.user_id!==currentId)||null;
+  }
+
+  function renderQuickMatchResult(room){
+    const box=$("matchResult");
+    if(!box||!quickMatch)return;
+    box.hidden=false;
+    const currentId=account?.supabaseUserId;
+    const mine=(room?.players||[]).find(p=>p.user_id===currentId);
+    const opponent=quickMatchOpponent(room);
+    const opponentName=opponent?.profile?.display_name||opponent?.profile?.username||"Opponent";
+    const levels=mine?.level_at_match&&opponent?.level_at_match
+      ? `LV ${mine.level_at_match} vs LV ${opponent.level_at_match}`
+      : "";
+
+    if(room?.status==="finished"){
+      const verdict=!room.winner_id?"Draw":room.winner_id===currentId?"Victory":"Defeat";
+      box.innerHTML=`<strong>${verdict}</strong><span>${AutoType.escapeHTML(opponentName)}${levels?` · ${levels}`:""}</span>`;
+    }else{
+      box.innerHTML=`<strong>Result submitted</strong><span>Waiting for ${AutoType.escapeHTML(opponentName)}${levels?` · ${levels}`:""}</span>`;
+    }
+  }
+
+  async function pollQuickMatchResult(attempt=0){
+    if(!quickMatch||!race?.id)return;
+    try{
+      const room=await AutoTypeBackend.raceById(race.id);
+      if(!room)return;
+      race.room=room;
+      renderQuickMatchResult(room);
+      if(room.status!=="finished"&&attempt<20){
+        setTimeout(()=>pollQuickMatchResult(attempt+1),1500);
+      }
+    }catch(error){
+      console.warn("Could not refresh Quick Match result",error);
+    }
+  }
+
   async function finish(){
     if(timer)clearInterval(timer);
     const ms=elapsed();
@@ -497,9 +538,10 @@ AutoType.ready().then(async()=>{
       if(activeAccount.online){
         try{
           await AutoTypeBackend.submitRaceResult(race.id,{score,durationMs:ms,errors,erased});
+          if(quickMatch)await pollQuickMatchResult();
         }catch(error){
           console.error("Race result save failed",error);
-          AutoType.toast("Round saved, but the race result could not sync.");
+          AutoType.toast(error.message||"Round saved, but the race result could not sync.");
         }
       }else{
         race.results=race.results||{};
