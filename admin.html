@@ -94,7 +94,7 @@
         </div>
         <div class="form-group"><label class="label">Description</label><textarea class="textarea" id="tDescription" maxlength="240"></textarea></div>
         <div class="admin-form-grid">
-          <div class="form-group"><label class="label">Status</label><select class="select" id="tStatus"><option value="open">Open</option><option value="scheduled">Scheduled</option><option value="closed">Closed</option></select></div>
+          <div class="form-group"><label class="label">Status</label><select class="select" id="tStatus"><option value="open">Open</option><option value="scheduled">Scheduled</option><option value="running">Running</option><option value="closed">Closed</option></select></div>
           <div class="form-group"><label class="label">Entry</label><select class="select" id="tEntryType"><option value="free">Free</option><option value="ticket">Tickets</option></select></div>
           <div class="form-group"><label class="label">Ticket cost</label><input class="input" id="tEntryCost" type="number" min="1" max="99" value="1"></div>
           <div class="form-group"><label class="label">Max players</label><input class="input" id="tMaxPlayers" type="number" min="2" max="512" value="16"></div>
@@ -151,12 +151,12 @@
 <div class="toast"></div>
 <script src="backend-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="backend.js?v=20261003-6"></script>
+<script src="backend.js?v=20261003-7"></script>
 <script src="core.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded",async()=>{
   await AutoType.ready();
-  const REQUIRED_BACKEND_BUILD="20261003-6";
+  const REQUIRED_BACKEND_BUILD="20261003-7";
   if(AutoTypeBackend.version!==REQUIRED_BACKEND_BUILD){
     console.error("AutoType build mismatch",{
       expected:REQUIRED_BACKEND_BUILD,
@@ -237,7 +237,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
       tName.value=t?.name||"";
       tSchedule.value=t?.schedule_label||"";
       tDescription.value=t?.description||"";
-      tStatus.value=["open","scheduled","closed"].includes(t?.status)?t.status:"open";
+      tStatus.value=["open","scheduled","running","closed"].includes(t?.status)?t.status:"open";
       tEntryType.value=t?.entry_type||"free";
       tEntryCost.value=t?.entry_cost||1;
       tMaxPlayers.value=t?.max_players||16;
@@ -288,9 +288,10 @@ document.addEventListener("DOMContentLoaded",async()=>{
           const p=m.profiles[e.user_id];
           if(!p)return "";
           const a=adminAccount(p);
+          const score=e.score==null?"—":Number(e.score).toLocaleString();
           return `<div>
-            <span>${AutoType.avatarMarkup(a,"avatar")}<strong>${AutoType.escapeHTML(AutoType.accountName(a))}</strong><small>${e.status}</small></span>
-            <button class="button button-secondary" data-online-award="${tournamentKey(t)}" data-online-player="${p.id}" ${t.winner_id?"disabled":""}>${e.status==="winner"?"Winner awarded":t.winner_id?"Prize already awarded":"Award winner"}</button>
+            <span>${AutoType.avatarMarkup(a,"avatar")}<strong>${AutoType.escapeHTML(AutoType.accountName(a))}</strong><small>${e.status} · ${score}</small></span>
+            <button class="button button-secondary" data-online-award="${tournamentKey(t)}" data-online-player="${p.id}" ${t.winner_id||e.score==null?"disabled":""}>${e.status==="winner"?"Winner awarded":t.winner_id?"Prize already awarded":"Award winner"}</button>
           </div>`;
         }).join("")}</div>`:"";
 
