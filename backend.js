@@ -282,6 +282,16 @@
       mirror=patch;
       localStore.accounts.push(mirror);
     }
+
+    // Compatibility bridge for the existing frontend shell.
+    // The old UI requires both role==="developer" and developerAccountId===account.id.
+    // The role itself is still sourced from Supabase user_roles.
+    if(role==="developer"||role==="admin"){
+      localStore.developerAccountId=localId;
+    }else if(localStore.developerAccountId===localId){
+      localStore.developerAccountId=null;
+    }
+
     localStore.currentId=localId;
     AutoType.save();
     return mirror;
