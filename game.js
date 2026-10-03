@@ -1,5 +1,5 @@
 
-AutoType.ready().then(()=>{
+AutoType.ready().then(async()=>{
   const sentences=[
     "the moon looked bright over the quiet city","we found a tiny note under the old table",
     "my friend brought fresh coffee before class today","the rain made every street shine at night",
@@ -97,7 +97,18 @@ AutoType.ready().then(()=>{
   let fixed=false;
 
   if(params.get("race")){
-    race=AutoType.store().races.find(r=>r.id===params.get("race"));
+    const raceId=params.get("race");
+    if(AutoType.currentAccount()?.online){
+      try{
+        const room=await AutoTypeBackend.raceById(raceId);
+        if(room)race={id:room.id,sentence:room.target_text,mode:room.mode||"context",room};
+      }catch(error){
+        console.error("Could not load online race",error);
+        AutoType.toast("Could not load that race.");
+      }
+    }else{
+      race=AutoType.store().races.find(r=>r.id===raceId);
+    }
     if(race){mode="race";predictorMode=race.mode||"context";fixed=true}
   }
   if(mode==="custom"){predictorMode=params.get("predictor")||"classic";fixed=true}
@@ -428,10 +439,19 @@ AutoType.ready().then(()=>{
       }
     }
 
-    if(race&&activeAccount&&!activeAccount.online){
-      race.results=race.results||{};
-      race.results[activeAccount.id]={time:ms,errors,erased,score};
-      AutoType.save();
+    if(race&&activeAccount){
+      if(activeAccount.online){
+        try{
+          await AutoTypeBackend.submitRaceResult(race.id,{score,durationMs:ms,errors,erased});
+        }catch(error){
+          console.error("Race result save failed",error);
+          AutoType.toast("Round saved, but the race result could not sync.");
+        }
+      }else{
+        race.results=race.results||{};
+        race.results[activeAccount.id]={time:ms,errors,erased,score};
+        AutoType.save();
+      }
     }
 
     $("resultScore").textContent=score;
