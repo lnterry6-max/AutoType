@@ -614,7 +614,20 @@
     if(!room)return null;
     const {data:players,error:pError}=await db.from("race_players").select("*").eq("race_id",id);
     if(pError)throw pError;
-    return {...room,players:players||[]};
+    const userIds=[...new Set((players||[]).map(p=>p.user_id).filter(Boolean))];
+    let profiles=[];
+    if(userIds.length){
+      const {data,error}=await db.from("profiles")
+        .select("id,username,display_name,avatar_url")
+        .in("id",userIds);
+      if(error)throw error;
+      profiles=data||[];
+    }
+    const byId=Object.fromEntries(profiles.map(p=>[p.id,p]));
+    return {
+      ...room,
+      players:(players||[]).map(p=>({...p,profile:byId[p.user_id]||null}))
+    };
   }
 
   async function publicProfileByUsername(username){
@@ -641,6 +654,8 @@
   async function setSecurityQuestion(question,answer){return api("set_security_question",{question,answer})}
   async function verifySecurityAnswer(answer){return api("verify_security_answer",{answer})}
   async function sendFriendRequest(username){return api("send_friend_request",{username})}
+  async function matchmakingTick(){return api("matchmaking_tick",{})}
+  async function leaveMatchmaking(){return api("leave_matchmaking",{})}
   async function createRace(friendId){return api("create_race",{friendId})}
   async function submitRaceResult(raceId,{score=0,durationMs=0,errors=0,erased=0}={}){
     return api("submit_race_result",{raceId,score,durationMs,errors,erased});
@@ -781,7 +796,7 @@
   }
 
   window.AutoTypeBackend={
-    version:"20261003-9",
+    version:"20261003-10",
     configured,
     getClient,
     api,
@@ -828,6 +843,8 @@
     setSecurityQuestion,
     verifySecurityAnswer,
     sendFriendRequest,
+    matchmakingTick,
+    leaveMatchmaking,
     createRace,
     submitRaceResult,
     respondFriendRequest,
