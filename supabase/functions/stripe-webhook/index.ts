@@ -59,6 +59,14 @@ Deno.serve(async(req:Request)=>{
         .eq("status","pending");
     }
 
+    if(event.type==="checkout.session.async_payment_failed"){
+      const session=event.data.object as Stripe.Checkout.Session;
+      await admin.from("payment_orders")
+        .update({status:"failed"})
+        .eq("provider_session_id",session.id)
+        .eq("status","pending");
+    }
+
 
     if(event.type==="refund.created"||event.type==="refund.updated"||event.type==="refund.failed"){
       const refund=event.data.object as Stripe.Refund;
