@@ -1,7 +1,7 @@
 // AutoType browser-safe Supabase configuration.
-// The publishable key is safe to expose in frontend code because RLS is the
-// authorization boundary. NEVER place the service_role key here.
+// This publishable key is intended for frontend use and is protected by RLS.
+// NEVER place a service_role/secret key in browser code.
 window.AUTOTYPE_SUPABASE={
-  url:"",
-  publishableKey:""
+  url:"https://nukgycwyvzzxvsewhcqi.supabase.co",
+  publishableKey:"sb_publishable_4LAIhGxKftOwtD5tnWExQw_YXrnBrB9"
 };
