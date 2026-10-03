@@ -216,6 +216,8 @@ document.addEventListener("DOMContentLoaded",async()=>{
   await AutoType.ready();
   let s={...AutoType.currentSettings()};
   const account=AutoType.currentAccount();
+  const purchaseHistoryList=document.querySelector("#purchaseHistoryList");
+  const purchaseDebtNotice=document.querySelector("#purchaseDebtNotice");
   let settingsSyncTimer=null;
 
   function persistSettings(patch){
