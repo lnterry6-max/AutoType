@@ -618,6 +618,9 @@
     return data||null;
   }
 
+  async function startRound(mode,tournamentId=null){
+    return api("start_round",{mode,tournamentId});
+  }
   async function recordRound(payload){return api("round_complete",payload)}
   async function purchaseItem(itemId){return api("purchase_item",{itemId})}
   async function purchaseCollection(collectionId){return api("purchase_collection",{collectionId})}
@@ -725,6 +728,7 @@
     const {data,error}=await db.from("round_results")
       .select("user_id,score,created_at,profiles!inner(username,display_name,avatar_url)")
       .eq("mode","daily")
+      .eq("verified",true)
       .gte("created_at",start.toISOString())
       .lt("created_at",end.toISOString())
       .order("score",{ascending:false});
@@ -745,15 +749,15 @@
     if(!db)return [];
     const {data,error}=await db
       .from("player_stats")
-      .select("user_id,best_score,best_streak,total_score,rounds,words,profiles!inner(username,display_name,avatar_url)")
-      .order("best_score",{ascending:false})
+      .select("user_id,verified_best_score,best_streak,total_score,rounds,words,profiles!inner(username,display_name,avatar_url)")
+      .order("verified_best_score",{ascending:false})
       .limit(Math.max(1,Math.min(100,Number(limit)||50)));
     if(error)throw error;
-    return data||[];
+    return (data||[]).map(row=>({...row,best_score:Number(row.verified_best_score||0)}));
   }
 
   window.AutoTypeBackend={
-    version:"20261003-6",
+    version:"20261003-7",
     configured,
     getClient,
     api,
@@ -790,6 +794,7 @@
     predictionsSnapshot,
     activeAnnouncement,
     publicProfileByUsername,
+    startRound,
     recordRound,
     purchaseItem,
     purchaseCollection,
