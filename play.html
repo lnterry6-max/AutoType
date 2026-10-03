@@ -114,7 +114,6 @@
     </div>
 
     <div class="game-actions">
-      <p id="roundInfo">Use as few clue letters and backspaces as possible.</p>
       <div class="row"><button class="button button-quiet" id="restartBtn">Restart</button><button class="button button-secondary" id="newBtn">New sentence</button></div>
     </div>
 
@@ -124,7 +123,7 @@
     </details>
 
     <section class="results" id="results" hidden>
-      <h2>Round complete</h2>
+      <div class="result-heading"><h2>Round complete</h2><span class="verified-result" id="verifiedResult" hidden></span></div>
       <div class="result-score" id="resultScore">0</div>
       <div class="result-grid">
         <div class="result-box"><strong id="resultTime">0:00</strong><span>Time</span></div>
@@ -143,14 +142,13 @@
 <footer class="footer">
   <div class="container footer-inner">
     <span>AutoType · Competitive autocomplete typing</span>
-    <span>Local prototype · Accounts and social data stay on this device</span>
   </div>
 </footer>
 <div class="toast"></div>
 
 <script src="backend-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="backend.js?v=20261003-5"></script>
+<script src="backend.js?v=20261003-7"></script>
 <script src="core.js"></script>
 
 <script src="game.js"></script>
