@@ -155,10 +155,13 @@
 </footer>
 <div class="toast"></div>
 
+<script src="backend-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="backend.js"></script>
 <script src="core.js"></script>
 
 <script>
-document.addEventListener("DOMContentLoaded",()=>{
+document.addEventListener("DOMContentLoaded",async()=>{\n  await AutoType.ready();
   const a=AutoType.currentAccount(),p=AutoType.currentProfile();
   const target=a||{id:"guest",displayName:"Guest",bio:"Local guest profile",favoriteModes:[],avatarImage:""};
   profileTitle.textContent=AutoType.accountName(target);displayName.value=target.displayName||"Guest";bio.value=target.bio||"";bioCount.textContent=bio.value.length;
