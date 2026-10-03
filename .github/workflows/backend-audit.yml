@@ -23,3 +23,15 @@ jobs:
           node-version: "22"
       - name: Run AutoType static audit
         run: python3 scripts/audit.py
+
+      - name: Package test build
+        run: |
+          zip -qr AutoType-release-hardening-test.zip . \
+            -x ".git/*" "AutoType-release-hardening-test.zip"
+
+      - name: Upload test build
+        uses: actions/upload-artifact@v4
+        with:
+          name: AutoType-release-hardening-test
+          path: AutoType-release-hardening-test.zip
+          if-no-files-found: error
