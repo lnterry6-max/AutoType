@@ -637,7 +637,9 @@
   async function verifySecurityAnswer(answer){return api("verify_security_answer",{answer})}
   async function sendFriendRequest(username){return api("send_friend_request",{username})}
   async function createRace(friendId){return api("create_race",{friendId})}
-  async function submitRaceResult(raceId,score){return api("submit_race_result",{raceId,score})}
+  async function submitRaceResult(raceId,{score=0,durationMs=0,errors=0,erased=0}={}){
+    return api("submit_race_result",{raceId,score,durationMs,errors,erased});
+  }
   async function respondFriendRequest(requestId,accept){return api("respond_friend_request",{requestId,accept})}
   async function cancelFriendRequest(requestId){return api("cancel_friend_request",{requestId})}
   async function removeFriend(userId){return api("remove_friend",{userId})}
