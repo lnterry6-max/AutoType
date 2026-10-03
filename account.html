@@ -60,18 +60,18 @@
 
 
 <main class="container page account-page">
-  <section class="account-intro"><span class="section-kicker">AUTOTYPE ACCOUNT</span><h1>Your progress should feel like yours.</h1><p>Keep separate profiles, cosmetics, friends, achievements, tournament registrations, and settings on this device.</p><div class="account-benefits"><div><strong>Progress</strong><span>Stats, XP, achievements</span></div><div><strong>Identity</strong><span>Profile, titles, banners, inventory</span></div><div><strong>Social</strong><span>Friends, races, tournaments</span></div></div></section>
+  <section class="account-intro"><span class="section-kicker">AUTOTYPE ACCOUNT</span><h1>Your progress should feel like yours.</h1><p>Sign in from any browser and use the same AutoType identity. Profiles and starter account data are now backed by Supabase.</p><div class="account-benefits"><div><strong>Progress</strong><span>Stats, XP, achievements</span></div><div><strong>Identity</strong><span>Profile, titles, banners, inventory</span></div><div><strong>Social</strong><span>Friends, races, tournaments</span></div></div></section>
   <div class="auth-wrap">
     <section class="platform-section auth-card">
       <div class="tabs"><button class="tab active" data-tab="login">Sign in</button><button class="tab" data-tab="create">Create account</button></div>
       <div id="loginPanel">
-        <div class="form-group"><label class="label">Username or email</label><input class="input" id="loginIdentity" autocomplete="username"></div>
+        <div class="form-group"><label class="label">Email</label><input class="input" id="loginIdentity" type="email" autocomplete="email"></div>
         <div class="form-group"><label class="label">Password</label><input class="input" id="loginPassword" type="password" autocomplete="current-password"></div>
         <button class="button button-primary" id="loginButton">Sign in</button>
       </div>
       <div id="createPanel" hidden>
         <div class="form-group"><label class="label">Username</label><input class="input" id="createUsername"></div>
-        <div class="form-group"><label class="label">Email <span style="color:#7f8790">(optional)</span></label><input class="input" id="createEmail" type="email"></div>
+        <div class="form-group"><label class="label">Email</label><input class="input" id="createEmail" type="email" autocomplete="email"></div>
         <div class="form-group">
           <label class="label">Password</label>
           <input class="input" id="createPassword" type="password" minlength="8" maxlength="128" autocomplete="new-password">
@@ -85,21 +85,9 @@
           </div>
         </div>
         <div class="form-group"><label class="label">Confirm password</label><input class="input" id="createPasswordConfirm" type="password" autocomplete="new-password"></div>
-        <div class="form-group">
-          <label class="label">Security question</label>
-          <select class="select" id="createSecurityQuestion">
-            <option value="">Choose a question</option>
-            <option>What was the first game you remember loving?</option>
-            <option>What nickname did you use in a game?</option>
-            <option>What fictional place would you most like to visit?</option>
-            <option>What was the name of a favorite childhood toy?</option>
-            <option>What is a memorable word only you would know?</option>
-          </select>
-        </div>
-        <div class="form-group"><label class="label">Security answer</label><input class="input" id="createSecurityAnswer" autocomplete="off"><div class="help">Your answer is salted and hashed. It is used when changing your password.</div></div>
         <button class="button button-primary" id="createButton">Create account</button>
       </div>
-      <div class="security-note">Passwords are stored locally as salted PBKDF2-SHA-256 hashes. This is still a browser prototype, not production server authentication.</div>
+      <div class="security-note">Online accounts use Supabase Auth. Passwords are no longer stored in AutoType localStorage. Some gameplay systems still use a temporary local mirror while the backend migration is in progress.</div>
     </section>
   </div>
 </main>
@@ -108,25 +96,30 @@
 <footer class="footer">
   <div class="container footer-inner">
     <span>AutoType · Competitive autocomplete typing</span>
-    <span>Local prototype · Accounts and social data stay on this device</span>
+    <span>Backend migration · Auth and profiles are moving to Supabase</span>
   </div>
 </footer>
 <div class="toast"></div>
 
 <script src="core.js"></script>
+<script src="backend-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="backend.js"></script>
 
 <script>
-document.addEventListener("DOMContentLoaded",()=>{
+document.addEventListener("DOMContentLoaded",async()=>{
+  const $=selector=>document.querySelector(selector);
+
   function setTab(t){
     document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.tab===t));
-    loginPanel.hidden=t!=="login";
-    createPanel.hidden=t!=="create";
+    $("#loginPanel").hidden=t!=="login";
+    $("#createPanel").hidden=t!=="create";
   }
   document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>setTab(b.dataset.tab)));
   if(location.hash==="#create")setTab("create");
 
   function renderPasswordRules(){
-    const p=createPassword.value;
+    const p=$("#createPassword").value;
     const checks={
       length:p.length>=8,
       lower:/[a-z]/.test(p),
@@ -139,40 +132,88 @@ document.addEventListener("DOMContentLoaded",()=>{
       el.classList.toggle("ok",!!checks[el.dataset.rule]);
     });
   }
-  createPassword.addEventListener("input",renderPasswordRules);
+  $("#createPassword").addEventListener("input",renderPasswordRules);
   renderPasswordRules();
 
-  loginButton.addEventListener("click",async()=>{
-    loginButton.disabled=true;
+  if(!AutoTypeBackend.configured()){
+    AutoType.toast("Online account backend is not configured.");
+    $("#loginButton").disabled=true;
+    $("#createButton").disabled=true;
+    return;
+  }
+
+  try{
+    const existing=await AutoTypeBackend.session();
+    if(existing){
+      await AutoTypeBackend.hydrateLocalMirror();
+      location.href="profile.html";
+      return;
+    }
+  }catch(error){
+    console.error("Supabase session check failed",error);
+  }
+
+  $("#loginButton").addEventListener("click",async()=>{
+    $("#loginButton").disabled=true;
     try{
-      await AutoType.login(loginIdentity.value,loginPassword.value);
+      await AutoTypeBackend.signIn({
+        email:$("#loginIdentity").value,
+        password:$("#loginPassword").value
+      });
+      await AutoTypeBackend.hydrateLocalMirror();
       location.href="index.html";
-    }catch(e){AutoType.toast(e.message)}
-    finally{loginButton.disabled=false}
+    }catch(e){
+      AutoType.toast(e.message);
+    }finally{
+      $("#loginButton").disabled=false;
+    }
   });
 
-  createButton.addEventListener("click",async()=>{
-    if(createPassword.value!==createPasswordConfirm.value){
+  $("#createButton").addEventListener("click",async()=>{
+    if($("#createPassword").value!==$("#createPasswordConfirm").value){
       AutoType.toast("Passwords do not match.");
       return;
     }
-    const problems=AutoType.passwordProblems(createPassword.value,createUsername.value||createEmail.value);
+    if(!$("#createEmail").value.trim()){
+      AutoType.toast("Email is required.");
+      return;
+    }
+    const username=$("#createUsername").value.trim();
+    if(!/^[A-Za-z0-9_]{3,24}$/.test(username)){
+      AutoType.toast("Username must be 3–24 letters, numbers, or underscores.");
+      return;
+    }
+    const problems=AutoType.passwordProblems($("#createPassword").value,username);
     if(problems.length){
       AutoType.toast(`Password needs ${problems[0]}.`);
       return;
     }
-    createButton.disabled=true;
+
+    $("#createButton").disabled=true;
     try{
-      await AutoType.createAccount({
-        username:createUsername.value,
-        email:createEmail.value,
-        password:createPassword.value,
-        securityQuestion:createSecurityQuestion.value,
-        securityAnswer:createSecurityAnswer.value
+      const existing=await AutoTypeBackend.publicProfileByUsername(username);
+      if(existing)throw new Error("That username already exists.");
+
+      const data=await AutoTypeBackend.signUp({
+        username,
+        email:$("#createEmail").value,
+        password:$("#createPassword").value,
+        displayName:username
       });
-      location.href="profile.html";
-    }catch(e){AutoType.toast(e.message)}
-    finally{createButton.disabled=false}
+
+      if(data.session){
+        await AutoTypeBackend.hydrateLocalMirror();
+        location.href="profile.html";
+      }else{
+        AutoType.toast("Account created. Check your email to confirm it, then sign in.");
+        setTab("login");
+        $("#loginIdentity").value=$("#createEmail").value;
+      }
+    }catch(e){
+      AutoType.toast(e.message);
+    }finally{
+      $("#createButton").disabled=false;
+    }
   });
 });
 </script>
