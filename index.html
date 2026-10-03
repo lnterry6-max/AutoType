@@ -122,12 +122,12 @@
   <div class="home-dashboard-grid">
     <section class="platform-section compact-section home-feature-link">
       <div class="feature-icon">◆</div>
-      <div><span class="section-kicker">TOURNAMENTS</span><h2>Competitive events</h2><p><span id="homeTournamentMetric">0</span> registrations · free or earned-ticket entry.</p></div>
+      <div><span class="section-kicker">TOURNAMENTS</span><h2>Competitive events</h2><p><span id="homeTournamentMetric">0</span> registrations</p></div>
       <a class="button button-secondary" href="tournaments.html">View events</a>
     </section>
     <section class="platform-section compact-section home-feature-link">
       <div class="feature-icon">◎</div>
-      <div><span class="section-kicker">COMMUNITY</span><h2>Friends & predictions</h2><p><span id="homeRequestMetric">0</span> requests · <span id="homeSuggestionMetric">0</span> lab suggestions.</p></div>
+      <div><span class="section-kicker">COMMUNITY</span><h2>Friends & predictions</h2><p><span id="homeRequestMetric">0</span> requests · <span id="homeSuggestionMetric">0</span> mappings</p></div>
       <a class="button button-secondary" href="friends.html">Open social</a>
     </section>
   </div>
@@ -137,15 +137,18 @@
 <footer class="footer">
   <div class="container footer-inner">
     <span>AutoType · Competitive autocomplete typing</span>
-    <span>Local prototype · Accounts and social data stay on this device</span>
   </div>
 </footer>
 <div class="toast"></div>
 
+<script src="backend-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="backend.js?v=20261003-10"></script>
 <script src="core.js"></script>
 
 <script>
-document.addEventListener("DOMContentLoaded",()=>{
+document.addEventListener("DOMContentLoaded",async()=>{
+  await AutoType.ready();
   const $=id=>document.getElementById(id);
   const demos=[
     ["m","i","ld","AutoType got i right. Keep it and erase only ld."],
@@ -238,13 +241,45 @@ document.addEventListener("DOMContentLoaded",()=>{
     try{renderCommunity(account,store)}catch(err){console.error("Home community render failed",err)}
   }
 
-  renderHome();
+  async function refreshOnlineHome(){
+    renderHome();
+    const account=AutoType.currentAccount();
+    if(!account?.online)return;
+    try{
+      const [announcement,predictions,social,tournaments]=await Promise.all([
+        AutoTypeBackend.activeAnnouncement(),
+        AutoTypeBackend.predictionsSnapshot(),
+        AutoTypeBackend.friendsSnapshot(),
+        AutoTypeBackend.tournamentsSnapshot()
+      ]);
 
-  // Refresh when another AutoType page modifies local data in another tab.
+      const announcementEl=$("homeAnnouncement");
+      if(announcementEl){
+        const message=String(announcement?.message||"").trim();
+        announcementEl.hidden=!message;
+        announcementEl.innerHTML=message
+          ? `<strong>Announcement</strong><span>${AutoType.escapeHTML(message)}</span>`
+          : "";
+      }
+
+      const set=(id,value)=>{const el=$(id);if(el)el.textContent=value};
+      set("homeSuggestionMetric",predictions.suggestions.length);
+      set("homeRequestMetric",social.incoming.length);
+      set("homeTournamentMetric",tournaments.entries.filter(e=>
+        e.user_id===account.supabaseUserId&&!["withdrawn","disqualified"].includes(e.status)
+      ).length);
+    }catch(error){
+      console.warn("Home online summary failed",error);
+    }
+  }
+
+  await refreshOnlineHome();
+
+  // Local guest/legacy updates still refresh through storage events.
   window.addEventListener("storage",event=>{
-    if(event.key==="autotypeAccountsStore")renderHome();
+    if(event.key==="autotypeAccountsStore")refreshOnlineHome();
   });
-  window.addEventListener("pageshow",renderHome);
+  window.addEventListener("pageshow",()=>refreshOnlineHome());
 });
 </script>
 

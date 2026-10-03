@@ -313,12 +313,20 @@
       delete a.wallet.equipped.background;
 
       a.wallet.claims=a.wallet.claims||{};
-      a.role=(a.id===s.developerAccountId)?"developer":"user";
+
+      // Legacy local accounts still use the historical developerAccountId.
+      // Supabase-backed mirrors keep the role last verified by backend.js.
+      if(a.online&&a.supabaseUserId){
+        a.role=(a.role==="developer"||a.role==="admin")?"developer":"user";
+      }else{
+        a.role=(a.id===s.developerAccountId)?"developer":"user";
+      }
     });
     localStorage.setItem(STORE_KEY,JSON.stringify(s));
     return s;
   }
   let store=loadStore();
+  let onlineReadyPromise=Promise.resolve();
 
   function save(){ localStorage.setItem(STORE_KEY,JSON.stringify(store)); }
   function currentAccount(){ return store.accounts.find(a=>a.id===store.currentId)||null; }
@@ -364,7 +372,16 @@
 
 
   function isDeveloper(account=currentAccount()){
-    return !!account && account.id===store.developerAccountId && account.role==="developer";
+    if(!account)return false;
+
+    // Online accounts receive their role from Supabase during hydration.
+    // The local Admin Console is still prototype-only; sensitive backend
+    // operations must independently authorize the server-side role.
+    if(account.online&&account.supabaseUserId){
+      return account.role==="developer";
+    }
+
+    return account.id===store.developerAccountId && account.role==="developer";
   }
 
   function setDeveloperCoins(amount){
@@ -808,8 +825,19 @@
         <a href="settings.html"><span>Settings</span><small>Preferences</small></a>
         <hr>
         <button class="danger" id="signOutAction"><span>Sign Out</span></button>`;
-      dropdown.querySelector("#switchAccountAction")?.addEventListener("click",openSwitchModal);
-      dropdown.querySelector("#signOutAction")?.addEventListener("click",()=>{
+      dropdown.querySelector("#switchAccountAction")?.addEventListener("click",async()=>{
+        if(a.online&&window.AutoTypeBackend?.configured()){
+          try{await AutoTypeBackend.signOut()}catch(e){console.warn("Online sign-out failed",e)}
+          store.currentId=null;save();
+          location.href="account.html?switch=1";
+          return;
+        }
+        openSwitchModal();
+      });
+      dropdown.querySelector("#signOutAction")?.addEventListener("click",async()=>{
+        if(a.online&&window.AutoTypeBackend?.configured()){
+          try{await AutoTypeBackend.signOut()}catch(e){console.warn("Online sign-out failed",e)}
+        }
         store.currentId=null;save();location.href="index.html";
       });
     } else {
@@ -861,7 +889,7 @@
       authPanel.hidden=true;list.hidden=false;
       const rows=[
         {id:null,username:"Guest",displayName:"Guest",bio:"Local guest profile"},
-        ...store.accounts
+        ...store.accounts.filter(a=>!a.online)
       ];
       list.innerHTML=rows.map(a=>{
         const selected=(a.id||null)===(current||null);
@@ -1291,7 +1319,24 @@
     applyAppearance();
   }
 
-  document.addEventListener("DOMContentLoaded",initShell);
+  async function syncOnlineSession(){
+    if(!window.AutoTypeBackend?.configured())return currentAccount();
+    try{
+      const session=await AutoTypeBackend.session();
+      if(session){
+        return await AutoTypeBackend.hydrateLocalMirror();
+      }
+      if(currentAccount()?.online){
+        store.currentId=null;
+        save();
+      }
+    }catch(error){
+      console.warn("AutoType backend sync failed",error);
+    }
+    return currentAccount();
+  }
+
+  function ready(){return onlineReadyPromise;}
 
   window.AutoType={
     store:()=>store,save,currentAccount,currentProfile,currentSettings,accountName,avatarMarkup,avatarColor,
@@ -1303,6 +1348,12 @@
     developerAccounts,setPlayerBalances,grantPlayerAllCosmetics,resetPlayerProgress,removeSuggestionAdmin,setAnnouncement,exportLocalBackup,
     createAccount,login,passwordProblems,setSecurityQuestion,changePassword,deleteCurrentAccount,
     patchCurrentAccount,patchCurrentProfile,patchCurrentSettings,openSwitchModal,
-    imageFileToBackground,relativeLuminanceFromHex
+    imageFileToBackground,relativeLuminanceFromHex,ready,syncOnlineSession
   };
+
+  onlineReadyPromise=syncOnlineSession();
+  document.addEventListener("DOMContentLoaded",async()=>{
+    await onlineReadyPromise;
+    initShell();
+  });
 })();

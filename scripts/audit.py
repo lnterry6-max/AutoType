@@ -49,8 +49,9 @@ def main() -> int:
     issues: list[str] = []
     html_files = sorted(ROOT.glob("*.html"))
 
-    for js in (ROOT / "core.js", ROOT / "game.js"):
-        check_node(js, issues)
+    for js in (ROOT / "core.js", ROOT / "game.js", ROOT / "backend.js"):
+        if js.exists():
+            check_node(js, issues)
 
     for page in html_files:
         text = page.read_text(encoding="utf-8")

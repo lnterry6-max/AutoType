@@ -1,0 +1,14 @@
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.create-checkout-session]
+verify_jwt = true
+
+[functions.game-api]
+verify_jwt = true
+
+[functions.delete-account]
+verify_jwt = true
+
+[functions.refund-payment]
+verify_jwt = true

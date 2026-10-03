@@ -60,18 +60,28 @@
 
 
 <main class="container page account-page">
-  <section class="account-intro"><span class="section-kicker">AUTOTYPE ACCOUNT</span><h1>Your progress should feel like yours.</h1><p>Keep separate profiles, cosmetics, friends, achievements, tournament registrations, and settings on this device.</p><div class="account-benefits"><div><strong>Progress</strong><span>Stats, XP, achievements</span></div><div><strong>Identity</strong><span>Profile, titles, banners, inventory</span></div><div><strong>Social</strong><span>Friends, races, tournaments</span></div></div></section>
+  <section class="account-intro"><span class="section-kicker">AUTOTYPE ACCOUNT</span><h1>Your AutoType account</h1><div class="account-benefits"><div><strong>Progress</strong><span>Stats, XP, achievements</span></div><div><strong>Identity</strong><span>Profile, titles, banners, inventory</span></div><div><strong>Social</strong><span>Friends, races, tournaments</span></div></div></section>
   <div class="auth-wrap">
     <section class="platform-section auth-card">
-      <div class="tabs"><button class="tab active" data-tab="login">Sign in</button><button class="tab" data-tab="create">Create account</button></div>
+      <div class="tabs" id="authTabs"><button class="tab active" data-tab="login">Sign in</button><button class="tab" data-tab="create">Create account</button></div>
       <div id="loginPanel">
-        <div class="form-group"><label class="label">Username or email</label><input class="input" id="loginIdentity" autocomplete="username"></div>
+        <div class="form-group"><label class="label">Email</label><input class="input" id="loginIdentity" type="email" autocomplete="email"></div>
         <div class="form-group"><label class="label">Password</label><input class="input" id="loginPassword" type="password" autocomplete="current-password"></div>
-        <button class="button button-primary" id="loginButton">Sign in</button>
+        <div class="row-wrap">
+          <button class="button button-primary" id="loginButton">Sign in</button>
+          <button class="button button-quiet" id="forgotPasswordButton" type="button">Forgot password?</button>
+        </div>
+        <div id="forgotPasswordPanel" hidden style="margin-top:16px">
+          <div class="divider"></div>
+          <h3 class="section-title">Reset your password</h3>
+          <p class="help">Enter the email on your AutoType account. We’ll send a secure recovery link.</p>
+          <div class="form-group"><label class="label">Email</label><input class="input" id="resetEmail" type="email" autocomplete="email"></div>
+          <button class="button button-primary" id="sendResetButton" type="button">Send recovery email</button>
+        </div>
       </div>
       <div id="createPanel" hidden>
         <div class="form-group"><label class="label">Username</label><input class="input" id="createUsername"></div>
-        <div class="form-group"><label class="label">Email <span style="color:#7f8790">(optional)</span></label><input class="input" id="createEmail" type="email"></div>
+        <div class="form-group"><label class="label">Email</label><input class="input" id="createEmail" type="email" autocomplete="email"></div>
         <div class="form-group">
           <label class="label">Password</label>
           <input class="input" id="createPassword" type="password" minlength="8" maxlength="128" autocomplete="new-password">
@@ -85,21 +95,28 @@
           </div>
         </div>
         <div class="form-group"><label class="label">Confirm password</label><input class="input" id="createPasswordConfirm" type="password" autocomplete="new-password"></div>
-        <div class="form-group">
-          <label class="label">Security question</label>
-          <select class="select" id="createSecurityQuestion">
-            <option value="">Choose a question</option>
-            <option>What was the first game you remember loving?</option>
-            <option>What nickname did you use in a game?</option>
-            <option>What fictional place would you most like to visit?</option>
-            <option>What was the name of a favorite childhood toy?</option>
-            <option>What is a memorable word only you would know?</option>
-          </select>
-        </div>
-        <div class="form-group"><label class="label">Security answer</label><input class="input" id="createSecurityAnswer" autocomplete="off"><div class="help">Your answer is salted and hashed. It is used when changing your password.</div></div>
         <button class="button button-primary" id="createButton">Create account</button>
       </div>
-      <div class="security-note">Passwords are stored locally as salted PBKDF2-SHA-256 hashes. This is still a browser prototype, not production server authentication.</div>
+      <div id="recoveryPanel" hidden>
+        <span class="section-kicker">PASSWORD RECOVERY</span>
+        <h2>Choose a new password</h2>
+        <p class="help" id="recoveryHelp">Your recovery link has been verified.</p>
+        <div class="security-question-display" id="recoveryQuestion" hidden></div>
+        <div class="form-group" id="recoveryAnswerGroup" hidden>
+          <label class="label">Security answer</label>
+          <input class="input" id="recoveryAnswer" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="label">New password</label>
+          <input class="input" id="recoveryPassword" type="password" minlength="8" maxlength="128" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label class="label">Confirm new password</label>
+          <input class="input" id="recoveryPasswordConfirm" type="password" autocomplete="new-password">
+        </div>
+        <button class="button button-primary" id="finishRecoveryButton" type="button">Set new password</button>
+      </div>
+      <div class="security-note">Your password is protected separately from your game profile and inventory.</div>
     </section>
   </div>
 </main>
@@ -108,25 +125,31 @@
 <footer class="footer">
   <div class="container footer-inner">
     <span>AutoType · Competitive autocomplete typing</span>
-    <span>Local prototype · Accounts and social data stay on this device</span>
+    <span>Online accounts · Powered by Supabase</span>
   </div>
 </footer>
 <div class="toast"></div>
 
+<script src="backend-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="backend.js?v=20261003-10"></script>
 <script src="core.js"></script>
 
 <script>
-document.addEventListener("DOMContentLoaded",()=>{
+document.addEventListener("DOMContentLoaded",async()=>{
+  await AutoType.ready();
+  const $=selector=>document.querySelector(selector);
+
   function setTab(t){
     document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.tab===t));
-    loginPanel.hidden=t!=="login";
-    createPanel.hidden=t!=="create";
+    $("#loginPanel").hidden=t!=="login";
+    $("#createPanel").hidden=t!=="create";
   }
   document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>setTab(b.dataset.tab)));
   if(location.hash==="#create")setTab("create");
 
   function renderPasswordRules(){
-    const p=createPassword.value;
+    const p=$("#createPassword").value;
     const checks={
       length:p.length>=8,
       lower:/[a-z]/.test(p),
@@ -139,40 +162,166 @@ document.addEventListener("DOMContentLoaded",()=>{
       el.classList.toggle("ok",!!checks[el.dataset.rule]);
     });
   }
-  createPassword.addEventListener("input",renderPasswordRules);
+  $("#createPassword").addEventListener("input",renderPasswordRules);
   renderPasswordRules();
 
-  loginButton.addEventListener("click",async()=>{
-    loginButton.disabled=true;
-    try{
-      await AutoType.login(loginIdentity.value,loginPassword.value);
-      location.href="index.html";
-    }catch(e){AutoType.toast(e.message)}
-    finally{loginButton.disabled=false}
+  if(!AutoTypeBackend.configured()){
+    AutoType.toast("Online account backend is not configured.");
+    $("#loginButton").disabled=true;
+    $("#createButton").disabled=true;
+    return;
+  }
+
+  $("#forgotPasswordButton").addEventListener("click",()=>{
+    $("#forgotPasswordPanel").hidden=!$("#forgotPasswordPanel").hidden;
+    $("#resetEmail").value=$("#loginIdentity").value;
+    if(!$("#forgotPasswordPanel").hidden)$("#resetEmail").focus();
   });
 
-  createButton.addEventListener("click",async()=>{
-    if(createPassword.value!==createPasswordConfirm.value){
+  $("#sendResetButton").addEventListener("click",async()=>{
+    const email=$("#resetEmail").value.trim()||$("#loginIdentity").value.trim();
+    if(!email){AutoType.toast("Enter your account email.");return}
+    $("#sendResetButton").disabled=true;
+    try{
+      await AutoTypeBackend.requestPasswordReset(email);
+      AutoType.toast("Recovery email sent. Check your inbox.");
+      $("#recoveryHelp").textContent="Check your email for the AutoType recovery link.";
+    }catch(e){AutoType.toast(e.message)}
+    finally{$("#sendResetButton").disabled=false}
+  });
+
+  const params=new URLSearchParams(location.search);
+  const recovery=params.get("reset")==="1";
+  if(recovery){
+    $("#authTabs").hidden=true;
+    $("#loginPanel").hidden=true;
+    $("#createPanel").hidden=true;
+    $("#recoveryPanel").hidden=false;
+
+    const recoverySession=await AutoTypeBackend.session();
+    if(!recoverySession){
+      $("#recoveryHelp").textContent="This recovery link is invalid or expired. Request a new one.";
+      $("#finishRecoveryButton").disabled=true;
+    }else{
+      try{
+        const question=await AutoTypeBackend.securityQuestion();
+        if(question?.question){
+          $("#recoveryQuestion").hidden=false;
+          $("#recoveryQuestion").textContent=question.question;
+          $("#recoveryAnswerGroup").hidden=false;
+          $("#recoveryHelp").textContent="Verify your recovery question, then choose a new password.";
+        }else{
+          $("#recoveryHelp").textContent="Your email recovery link is verified. Choose a new password.";
+        }
+      }catch(error){console.warn("Could not load recovery question",error)}
+    }
+
+    $("#finishRecoveryButton").addEventListener("click",async()=>{
+      const password=$("#recoveryPassword").value;
+      if(password!==$("#recoveryPasswordConfirm").value){
+        AutoType.toast("Passwords do not match.");return;
+      }
+      const problems=AutoType.passwordProblems(password,AutoType.currentAccount()?.username||"");
+      if(problems.length){AutoType.toast(`Password needs ${problems[0]}.`);return}
+      $("#finishRecoveryButton").disabled=true;
+      try{
+        if(!$("#recoveryAnswerGroup").hidden){
+          const checked=await AutoTypeBackend.verifySecurityAnswer($("#recoveryAnswer").value);
+          if(!checked?.ok)throw new Error("Security answer is incorrect.");
+        }
+        await AutoTypeBackend.updatePassword(password);
+        await AutoTypeBackend.signOut();
+        AutoType.toast("Password changed. Sign in with your new password.");
+        setTimeout(()=>location.href="account.html",700);
+      }catch(e){
+        AutoType.toast(e.message);
+        $("#finishRecoveryButton").disabled=false;
+      }
+    });
+    return;
+  }
+
+  const switching=params.get("switch")==="1";
+  if(switching){
+    try{await AutoTypeBackend.signOut()}catch(error){console.warn("Switch-account sign-out failed",error)}
+    const localStore=AutoType.store();
+    localStore.currentId=null;
+    AutoType.save();
+    history.replaceState({},document.title,"account.html");
+  }else{
+    try{
+      const existing=await AutoTypeBackend.session();
+      if(existing){
+        await AutoTypeBackend.hydrateLocalMirror();
+        location.href="profile.html";
+        return;
+      }
+    }catch(error){
+      console.error("Supabase session check failed",error);
+    }
+  }
+
+  $("#loginButton").addEventListener("click",async()=>{
+    $("#loginButton").disabled=true;
+    try{
+      await AutoTypeBackend.signIn({
+        email:$("#loginIdentity").value,
+        password:$("#loginPassword").value
+      });
+      await AutoTypeBackend.hydrateLocalMirror();
+      location.href="index.html";
+    }catch(e){
+      AutoType.toast(e.message);
+    }finally{
+      $("#loginButton").disabled=false;
+    }
+  });
+
+  $("#createButton").addEventListener("click",async()=>{
+    if($("#createPassword").value!==$("#createPasswordConfirm").value){
       AutoType.toast("Passwords do not match.");
       return;
     }
-    const problems=AutoType.passwordProblems(createPassword.value,createUsername.value||createEmail.value);
+    if(!$("#createEmail").value.trim()){
+      AutoType.toast("Email is required.");
+      return;
+    }
+    const username=$("#createUsername").value.trim();
+    if(!/^[A-Za-z0-9_]{3,24}$/.test(username)){
+      AutoType.toast("Username must be 3–24 letters, numbers, or underscores.");
+      return;
+    }
+    const problems=AutoType.passwordProblems($("#createPassword").value,username);
     if(problems.length){
       AutoType.toast(`Password needs ${problems[0]}.`);
       return;
     }
-    createButton.disabled=true;
+
+    $("#createButton").disabled=true;
     try{
-      await AutoType.createAccount({
-        username:createUsername.value,
-        email:createEmail.value,
-        password:createPassword.value,
-        securityQuestion:createSecurityQuestion.value,
-        securityAnswer:createSecurityAnswer.value
+      const existing=await AutoTypeBackend.publicProfileByUsername(username);
+      if(existing)throw new Error("That username already exists.");
+
+      const data=await AutoTypeBackend.signUp({
+        username,
+        email:$("#createEmail").value,
+        password:$("#createPassword").value,
+        displayName:username
       });
-      location.href="profile.html";
-    }catch(e){AutoType.toast(e.message)}
-    finally{createButton.disabled=false}
+
+      if(data.session){
+        await AutoTypeBackend.hydrateLocalMirror();
+        location.href="profile.html";
+      }else{
+        AutoType.toast("Account created. Check your email to confirm it, then sign in.");
+        setTab("login");
+        $("#loginIdentity").value=$("#createEmail").value;
+      }
+    }catch(e){
+      AutoType.toast(e.message);
+    }finally{
+      $("#createButton").disabled=false;
+    }
   });
 });
 </script>

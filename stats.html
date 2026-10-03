@@ -61,7 +61,6 @@
   <div class="page-heading platform-page-heading">
     <div class="eyebrow">Performance</div>
     <h1>Your stats</h1>
-    <p>A complete view of the progress AutoType has saved for the current profile.</p>
   </div>
 
   <div class="stats-page-grid">
@@ -103,13 +102,16 @@
 <footer class="footer">
   <div class="container footer-inner">
     <span>AutoType · Competitive autocomplete typing</span>
-    <span>Local prototype · Accounts and social data stay on this device</span>
   </div>
 </footer>
 <div class="toast"></div>
+<script src="backend-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="backend.js?v=20261003-10"></script>
 <script src="core.js"></script>
 <script>
-document.addEventListener("DOMContentLoaded",()=>{
+document.addEventListener("DOMContentLoaded",async()=>{
+  await AutoType.ready();
   const p=AutoType.currentProfile();
   const info=AutoType.levelInfo(p);
   const rounds=p.rounds||0;
