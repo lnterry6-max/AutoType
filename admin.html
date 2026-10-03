@@ -60,13 +60,12 @@
 <main class="container page admin-page">
   <div id="adminDenied" class="platform-section admin-denied" hidden>
     <h1>Developer access required</h1>
-    <p>This console is available only to the locally bound developer account.</p>
-    <a class="button button-secondary" href="index.html">Return home</a>
+        <a class="button button-secondary" href="index.html">Return home</a>
   </div>
 
   <div id="adminConsole" hidden>
     <header class="admin-head">
-      <div><div class="eyebrow">Developer</div><h1>Admin Console</h1><p>Manage the local AutoType prototype from one place.</p></div>
+      <div><div class="eyebrow">Developer</div><h1>Admin Console</h1></div>
       <div class="developer-badge">Developer mode</div>
     </header>
 
@@ -75,6 +74,7 @@
     <nav class="admin-tabs">
       <a href="#tournaments">Tournaments</a>
       <a href="#players">Players</a>
+      <a href="#payments">Payments</a>
       <a href="#announcement">Announcement</a>
       <a href="#moderation">Prediction Lab</a>
       <a href="#data">Data</a>
@@ -82,7 +82,7 @@
 
     <section class="admin-section" id="tournaments">
       <div class="admin-section-head">
-        <div><span class="section-kicker">COMPETITION</span><h2>Tournament Manager</h2><p>Create, edit, open, close, or delete events.</p></div>
+        <div><span class="section-kicker">COMPETITION</span><h2>Tournament Manager</h2></div>
         <button class="button button-primary" id="newTournamentButton">Create tournament</button>
       </div>
 
@@ -111,26 +111,33 @@
 
     <section class="admin-section" id="players">
       <div class="admin-section-head">
-        <div><span class="section-kicker">PLAYERS</span><h2>Player Manager</h2><p>Inspect local accounts and adjust test balances/progression.</p></div>
+        <div><span class="section-kicker">PLAYERS</span><h2>Player Manager</h2></div>
         <input class="input admin-search" id="playerSearch" placeholder="Search username">
       </div>
       <div class="admin-player-list" id="adminPlayerList"></div>
     </section>
 
+    <section class="admin-section" id="payments">
+      <div class="admin-section-head">
+        <div><span class="section-kicker">STRIPE</span><h2>Payments</h2></div>
+      </div>
+      <div class="admin-payment-list" id="adminPaymentList"></div>
+    </section>
+
     <section class="admin-section" id="announcement">
-      <div class="admin-section-head"><div><span class="section-kicker">LIVE MESSAGE</span><h2>Homepage Announcement</h2><p>Display one short announcement at the top of Home.</p></div></div>
+      <div class="admin-section-head"><div><span class="section-kicker">LIVE MESSAGE</span><h2>Homepage Announcement</h2></div></div>
       <div class="form-group"><label class="label">Message</label><input class="input" id="announcementInput" maxlength="180"></div>
       <label class="admin-check"><input type="checkbox" id="announcementActive"> Show announcement</label>
       <div class="row-wrap"><button class="button button-primary" id="saveAnnouncement">Save announcement</button><button class="button button-quiet" id="clearAnnouncement">Clear</button></div>
     </section>
 
     <section class="admin-section" id="moderation">
-      <div class="admin-section-head"><div><span class="section-kicker">UGC</span><h2>Prediction Lab Moderation</h2><p>Remove local community mappings that should not remain in the predictor.</p></div></div>
+      <div class="admin-section-head"><div><span class="section-kicker">UGC</span><h2>Prediction Lab Moderation</h2></div></div>
       <div class="admin-suggestion-list" id="adminSuggestionList"></div>
     </section>
 
     <section class="admin-section" id="data">
-      <div class="admin-section-head"><div><span class="section-kicker">LOCAL DATA</span><h2>Backup</h2><p>Export a JSON snapshot of the current shared AutoType application data.</p></div></div>
+      <div class="admin-section-head"><div><span class="section-kicker">DATA</span><h2>Backup</h2></div></div>
       <button class="button button-secondary" id="exportBackupButton">Export JSON backup</button>
     </section>
   </div>
@@ -139,7 +146,6 @@
 <footer class="footer">
   <div class="container footer-inner">
     <span>AutoType · Competitive autocomplete typing</span>
-    <span>Local prototype · Accounts and social data stay on this device</span>
   </div>
 </footer>
 <div class="toast"></div>
@@ -385,6 +391,66 @@ document.addEventListener("DOMContentLoaded",async()=>{
       });
     }
 
+    function renderOnlinePayments(){
+      const m=maps();
+      const labels={
+        pending:"Pending",
+        paid:"Paid",
+        partially_refunded:"Partially refunded",
+        refunded:"Refunded",
+        failed:"Failed",
+        cancelled:"Cancelled",
+        disputed:"Disputed",
+        dispute_won:"Dispute resolved",
+        dispute_lost:"Dispute lost"
+      };
+
+      const payments=(snapshot.payments||[]).filter(p=>p.status!=="pending"||p.provider_session_id);
+      adminPaymentList.innerHTML=payments.length?payments.map(order=>{
+        const profile=m.profiles[order.user_id];
+        const name=profile?.display_name||profile?.username||"Player";
+        const amount=(Number(order.amount_cents||0)/100).toLocaleString(undefined,{
+          style:"currency",currency:String(order.currency||"usd").toUpperCase()
+        });
+        const refunded=Number(order.refunded_amount_cents||0);
+        const refundable=["paid","partially_refunded","disputed","dispute_won"].includes(order.status)
+          && refunded<Number(order.amount_cents||0)
+          && !!order.provider_payment_intent_id;
+        return `<article class="admin-payment-row">
+          <div class="admin-payment-main">
+            <strong>${AutoType.escapeHTML(name)}</strong>
+            <span>${Number(order.coins||0).toLocaleString()} Coins · ${amount}</span>
+            <small>${new Date(order.completed_at||order.created_at).toLocaleString()}</small>
+          </div>
+          <div class="admin-payment-state">
+            <span class="purchase-status status-${AutoType.escapeHTML(order.status)}">${AutoType.escapeHTML(labels[order.status]||order.status)}</span>
+            ${refunded>0?`<small>${(refunded/100).toLocaleString(undefined,{style:"currency",currency:String(order.currency||"usd").toUpperCase()})} refunded</small>`:""}
+          </div>
+          <div class="admin-row-actions">
+            <button class="button button-danger" data-refund-order="${order.id}" ${refundable?"":"disabled"}>${order.status==="refunded"?"Refunded":"Refund"}</button>
+          </div>
+        </article>`;
+      }).join(""):`<div class="empty">No payments yet.</div>`;
+
+      adminPaymentList.querySelectorAll("[data-refund-order]").forEach(button=>button.addEventListener("click",async()=>{
+        const order=(snapshot.payments||[]).find(x=>x.id===button.dataset.refundOrder);
+        if(!order)return;
+        const profile=m.profiles[order.user_id];
+        const name=profile?.display_name||profile?.username||"this player";
+        if(!confirm(`Refund the remaining payment for ${name}? AutoType Coins will be reconciled automatically.`))return;
+        button.disabled=true;
+        try{
+          const result=await AutoTypeBackend.adminRefundPayment(order.id);
+          if(order.user_id===account.supabaseUserId)await AutoTypeBackend.hydrateLocalMirror();
+          AutoType.toast(result?.status==="succeeded"?"Refund completed.":"Refund started.");
+          await refreshOnlineAdmin();
+        }catch(error){
+          AutoType.toast(error.message);
+          button.disabled=false;
+        }
+      }));
+    }
+
     function renderOnlineAnnouncement(){
       const current=(snapshot.announcements||[]).find(x=>x.active)||(snapshot.announcements||[])[0];
       announcementInput.value=current?.message||"";
@@ -412,6 +478,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
       renderOnlineMetrics();
       renderOnlineTournaments();
       renderOnlinePlayers();
+      renderOnlinePayments();
       renderOnlineAnnouncement();
       renderOnlineSuggestions();
     }
