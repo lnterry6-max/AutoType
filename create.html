@@ -91,7 +91,8 @@
 <script src="core.js"></script>
 
 <script>
-document.addEventListener("DOMContentLoaded",async()=>{\n  await AutoType.ready();
+document.addEventListener("DOMContentLoaded",async()=>{
+  await AutoType.ready();
   const descriptions={classic:"Only the current word prefix influences the prediction.",context:"The previous completed word helps rank the next guess.",sentence:"Context plus a visible prediction for the rest of the sentence.",evil:"Wrong-but-plausible words and slang are deliberately prioritized."};
   const names={classic:"Word mode",context:"Context mode",sentence:"Sentence mode",evil:"Evil mode"};
   function preview(){
