@@ -208,13 +208,13 @@
 
 <script src="backend-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="backend.js?v=20261003-6"></script>
+<script src="backend.js?v=20261003-7"></script>
 <script src="core.js"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded",async()=>{
   await AutoType.ready();
-  const REQUIRED_BACKEND_BUILD="20261003-6";
+  const REQUIRED_BACKEND_BUILD="20261003-7";
   if(AutoTypeBackend.version!==REQUIRED_BACKEND_BUILD){
     console.error("AutoType build mismatch",{
       expected:REQUIRED_BACKEND_BUILD,
@@ -369,7 +369,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
       let question=null;
       try{question=await AutoTypeBackend.securityQuestion()}catch(error){console.warn(error)}
       const hasQuestion=!!question?.question;
-      securitySummary.innerHTML=`<div><strong>${AutoType.escapeHTML(AutoType.accountName(account))}</strong><div class="help">@${AutoType.escapeHTML(account.username)} · Supabase Auth · ${hasQuestion?"Recovery question configured":"No recovery question yet"}</div></div>`;
+      securitySummary.innerHTML=`<div><strong>${AutoType.escapeHTML(AutoType.accountName(account))}</strong><div class="help">@${AutoType.escapeHTML(account.username)} · ${hasQuestion?"Recovery question set":"No recovery question"}</div></div>`;
       securityQuestionSetup.hidden=false;
       setSecurityQuestionButton.textContent=hasQuestion?"Change security question":"Set security question";
       if(hasQuestion){
