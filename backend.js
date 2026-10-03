@@ -648,6 +648,7 @@
   async function adminRemovePrediction(suggestionId){return api("admin_remove_prediction",{suggestionId})}
   async function adminUpsertTournament(payload){return api("admin_upsert_tournament",payload)}
   async function adminDeleteTournament(tournamentId){return api("admin_delete_tournament",{tournamentId})}
+  async function adminRestoreTournaments(){return api("admin_restore_tournaments",{})}
   async function adminResetPlayer(userId){return api("admin_reset_player",{userId})}
   async function adminSnapshot(){return api("admin_snapshot",{})}
 
@@ -749,6 +750,7 @@
     adminRemovePrediction,
     adminUpsertTournament,
     adminDeleteTournament,
+    adminRestoreTournaments,
     adminResetPlayer,
     adminSnapshot,
     dailyLeaderboard,
