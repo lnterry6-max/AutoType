@@ -1,5 +1,5 @@
 
-(() => {
+AutoType.ready().then(()=>{
   const sentences=[
     "the moon looked bright over the quiet city","we found a tiny note under the old table",
     "my friend brought fresh coffee before class today","the rain made every street shine at night",
@@ -440,4 +440,4 @@
   $("newBtn").addEventListener("click",()=>{if(!fixed)reset(pick())});
   $("againBtn").addEventListener("click",()=>reset());
   reset();
-})();
+});;
