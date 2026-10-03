@@ -63,11 +63,21 @@
   <section class="account-intro"><span class="section-kicker">AUTOTYPE ACCOUNT</span><h1>Your progress should feel like yours.</h1><p>Sign in from any browser and use the same AutoType identity. Profiles and starter account data are now backed by Supabase.</p><div class="account-benefits"><div><strong>Progress</strong><span>Stats, XP, achievements</span></div><div><strong>Identity</strong><span>Profile, titles, banners, inventory</span></div><div><strong>Social</strong><span>Friends, races, tournaments</span></div></div></section>
   <div class="auth-wrap">
     <section class="platform-section auth-card">
-      <div class="tabs"><button class="tab active" data-tab="login">Sign in</button><button class="tab" data-tab="create">Create account</button></div>
+      <div class="tabs" id="authTabs"><button class="tab active" data-tab="login">Sign in</button><button class="tab" data-tab="create">Create account</button></div>
       <div id="loginPanel">
         <div class="form-group"><label class="label">Email</label><input class="input" id="loginIdentity" type="email" autocomplete="email"></div>
         <div class="form-group"><label class="label">Password</label><input class="input" id="loginPassword" type="password" autocomplete="current-password"></div>
-        <button class="button button-primary" id="loginButton">Sign in</button>
+        <div class="row-wrap">
+          <button class="button button-primary" id="loginButton">Sign in</button>
+          <button class="button button-quiet" id="forgotPasswordButton" type="button">Forgot password?</button>
+        </div>
+        <div id="forgotPasswordPanel" hidden style="margin-top:16px">
+          <div class="divider"></div>
+          <h3 class="section-title">Reset your password</h3>
+          <p class="help">Enter the email on your AutoType account. We’ll send a secure recovery link.</p>
+          <div class="form-group"><label class="label">Email</label><input class="input" id="resetEmail" type="email" autocomplete="email"></div>
+          <button class="button button-primary" id="sendResetButton" type="button">Send recovery email</button>
+        </div>
       </div>
       <div id="createPanel" hidden>
         <div class="form-group"><label class="label">Username</label><input class="input" id="createUsername"></div>
@@ -87,7 +97,26 @@
         <div class="form-group"><label class="label">Confirm password</label><input class="input" id="createPasswordConfirm" type="password" autocomplete="new-password"></div>
         <button class="button button-primary" id="createButton">Create account</button>
       </div>
-      <div class="security-note">Online accounts use Supabase Auth. Passwords are no longer stored in AutoType localStorage. Some gameplay systems still use a temporary local mirror while the backend migration is in progress.</div>
+      <div id="recoveryPanel" hidden>
+        <span class="section-kicker">PASSWORD RECOVERY</span>
+        <h2>Choose a new password</h2>
+        <p class="help" id="recoveryHelp">Your recovery link has been verified.</p>
+        <div class="security-question-display" id="recoveryQuestion" hidden></div>
+        <div class="form-group" id="recoveryAnswerGroup" hidden>
+          <label class="label">Security answer</label>
+          <input class="input" id="recoveryAnswer" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="label">New password</label>
+          <input class="input" id="recoveryPassword" type="password" minlength="8" maxlength="128" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label class="label">Confirm new password</label>
+          <input class="input" id="recoveryPasswordConfirm" type="password" autocomplete="new-password">
+        </div>
+        <button class="button button-primary" id="finishRecoveryButton" type="button">Set new password</button>
+      </div>
+      <div class="security-note">Online accounts use Supabase Auth. Passwords and recovery sessions are handled by Supabase; account progress and inventory are stored in the AutoType database.</div>
     </section>
   </div>
 </main>
@@ -96,7 +125,7 @@
 <footer class="footer">
   <div class="container footer-inner">
     <span>AutoType · Competitive autocomplete typing</span>
-    <span>Backend migration · Auth and profiles are moving to Supabase</span>
+    <span>Online accounts · Powered by Supabase</span>
   </div>
 </footer>
 <div class="toast"></div>
@@ -143,7 +172,76 @@ document.addEventListener("DOMContentLoaded",async()=>{
     return;
   }
 
-  const switching=new URLSearchParams(location.search).get("switch")==="1";
+  $("#forgotPasswordButton").addEventListener("click",()=>{
+    $("#forgotPasswordPanel").hidden=!$("#forgotPasswordPanel").hidden;
+    $("#resetEmail").value=$("#loginIdentity").value;
+    if(!$("#forgotPasswordPanel").hidden)$("#resetEmail").focus();
+  });
+
+  $("#sendResetButton").addEventListener("click",async()=>{
+    const email=$("#resetEmail").value.trim()||$("#loginIdentity").value.trim();
+    if(!email){AutoType.toast("Enter your account email.");return}
+    $("#sendResetButton").disabled=true;
+    try{
+      await AutoTypeBackend.requestPasswordReset(email);
+      AutoType.toast("Recovery email sent. Check your inbox.");
+      $("#recoveryHelp").textContent="Check your email for the AutoType recovery link.";
+    }catch(e){AutoType.toast(e.message)}
+    finally{$("#sendResetButton").disabled=false}
+  });
+
+  const params=new URLSearchParams(location.search);
+  const recovery=params.get("reset")==="1";
+  if(recovery){
+    $("#authTabs").hidden=true;
+    $("#loginPanel").hidden=true;
+    $("#createPanel").hidden=true;
+    $("#recoveryPanel").hidden=false;
+
+    const recoverySession=await AutoTypeBackend.session();
+    if(!recoverySession){
+      $("#recoveryHelp").textContent="This recovery link is invalid or expired. Request a new one.";
+      $("#finishRecoveryButton").disabled=true;
+    }else{
+      try{
+        const question=await AutoTypeBackend.securityQuestion();
+        if(question?.question){
+          $("#recoveryQuestion").hidden=false;
+          $("#recoveryQuestion").textContent=question.question;
+          $("#recoveryAnswerGroup").hidden=false;
+          $("#recoveryHelp").textContent="Verify your recovery question, then choose a new password.";
+        }else{
+          $("#recoveryHelp").textContent="Your email recovery link is verified. Choose a new password.";
+        }
+      }catch(error){console.warn("Could not load recovery question",error)}
+    }
+
+    $("#finishRecoveryButton").addEventListener("click",async()=>{
+      const password=$("#recoveryPassword").value;
+      if(password!==$("#recoveryPasswordConfirm").value){
+        AutoType.toast("Passwords do not match.");return;
+      }
+      const problems=AutoType.passwordProblems(password,AutoType.currentAccount()?.username||"");
+      if(problems.length){AutoType.toast(`Password needs ${problems[0]}.`);return}
+      $("#finishRecoveryButton").disabled=true;
+      try{
+        if(!$("#recoveryAnswerGroup").hidden){
+          const checked=await AutoTypeBackend.verifySecurityAnswer($("#recoveryAnswer").value);
+          if(!checked?.ok)throw new Error("Security answer is incorrect.");
+        }
+        await AutoTypeBackend.updatePassword(password);
+        await AutoTypeBackend.signOut();
+        AutoType.toast("Password changed. Sign in with your new password.");
+        setTimeout(()=>location.href="account.html",700);
+      }catch(e){
+        AutoType.toast(e.message);
+        $("#finishRecoveryButton").disabled=false;
+      }
+    });
+    return;
+  }
+
+  const switching=params.get("switch")==="1";
   if(switching){
     try{await AutoTypeBackend.signOut()}catch(error){console.warn("Switch-account sign-out failed",error)}
     const localStore=AutoType.store();
