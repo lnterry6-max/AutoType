@@ -145,6 +145,26 @@
     return data;
   }
 
+  async function setEquipped(slot,itemId){
+    const db=getClient();
+    const current=await user();
+    if(!db||!current)throw new Error("Sign in first.");
+    const columns={
+      title:"title_id",banner:"banner_id",frame:"frame_id",arena:"arena_id",
+      trail:"trail_id",cursor:"cursor_id",predictor:"predictor_id",result:"victory_fx_id"
+    };
+    const column=columns[slot];
+    if(!column)throw new Error("Unknown cosmetic slot.");
+    const {data,error}=await db
+      .from("equipped_cosmetics")
+      .update({[column]:itemId})
+      .eq("user_id",current.id)
+      .select()
+      .single();
+    if(error)throw error;
+    return data;
+  }
+
   async function myAchievements(){
     const db=getClient();
     const current=await user();
@@ -438,6 +458,7 @@
     updateMyProfile,
     myRole,
     myEquipped,
+    setEquipped,
     myAchievements,
     myPreferences,
     updateMyPreferences,
