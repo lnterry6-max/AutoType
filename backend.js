@@ -34,6 +34,18 @@
     return client;
   }
 
+  async function api(action,payload={}){
+    const db=getClient();
+    if(!db)throw new Error("Supabase is not configured yet.");
+    const {data,error}=await db.functions.invoke("game-api",{body:{action,payload}});
+    if(error){
+      const message=error?.context?.body?.error||error?.message||"Backend request failed.";
+      throw new Error(message);
+    }
+    if(data?.error)throw new Error(data.error);
+    return data;
+  }
+
   async function session(){
     const db=getClient();
     if(!db)return null;
@@ -218,18 +230,42 @@
     return data;
   }
 
+  async function avatarJpeg(file){
+    if(!file)throw new Error("Choose an image first.");
+    if(file.size>12*1024*1024)throw new Error("Avatar must be 12 MB or smaller.");
+    const url=URL.createObjectURL(file);
+    try{
+      const img=await new Promise((resolve,reject)=>{
+        const el=new Image();
+        el.onload=()=>resolve(el);
+        el.onerror=()=>reject(new Error("Safari could not read that image. Try JPG or PNG."));
+        el.src=url;
+      });
+      const max=640;
+      const scale=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
+      const canvas=document.createElement("canvas");
+      canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));
+      canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+      const ctx=canvas.getContext("2d");
+      ctx.drawImage(img,0,0,canvas.width,canvas.height);
+      return await new Promise((resolve,reject)=>canvas.toBlob(
+        blob=>blob?resolve(blob):reject(new Error("Could not process avatar.")),
+        "image/jpeg",0.88
+      ));
+    }finally{
+      URL.revokeObjectURL(url);
+    }
+  }
+
   async function uploadAvatar(file){
     const db=getClient();
     const current=await user();
     if(!db||!current)throw new Error("Sign in first.");
-    if(!file)throw new Error("Choose an image first.");
-    if(!["image/jpeg","image/png","image/webp"].includes(file.type))throw new Error("Use a JPG, PNG, or WebP image.");
-    if(file.size>5*1024*1024)throw new Error("Avatar must be 5 MB or smaller.");
-
-    const path=`${current.id}/avatar`;
+    const blob=await avatarJpeg(file);
+    const path=`${current.id}/avatar.jpg`;
     const {error:uploadError}=await db.storage
       .from("avatars")
-      .upload(path,file,{upsert:true,contentType:file.type,cacheControl:"3600"});
+      .upload(path,blob,{upsert:true,contentType:"image/jpeg",cacheControl:"3600"});
     if(uploadError)throw uploadError;
 
     const {data:publicData}=db.storage.from("avatars").getPublicUrl(path);
@@ -242,7 +278,7 @@
     const db=getClient();
     const current=await user();
     if(!db||!current)throw new Error("Sign in first.");
-    await db.storage.from("avatars").remove([`${current.id}/avatar`]);
+    await db.storage.from("avatars").remove([`${current.id}/avatar.jpg`,`${current.id}/avatar`]);
     await updateMyProfile({avatar_url:null});
     return true;
   }
@@ -269,6 +305,24 @@
     if(!db||!current)throw new Error("Sign in first.");
     await db.storage.from("backgrounds").remove([`${current.id}/background`]);
     return true;
+  }
+
+  async function requestPasswordReset(email){
+    const db=getClient();
+    if(!db)throw new Error("Supabase is not configured yet.");
+    const redirectTo=new URL("account.html?reset=1",location.href).href;
+    const {data,error}=await db.auth.resetPasswordForEmail(String(email||"").trim().toLowerCase(),{redirectTo});
+    if(error)throw error;
+    return data;
+  }
+
+  async function securityQuestion(){
+    const db=getClient();
+    const current=await user();
+    if(!db||!current)return null;
+    const {data,error}=await db.from("security_questions").select("question,updated_at").eq("user_id",current.id).maybeSingle();
+    if(error)throw error;
+    return data||null;
   }
 
   async function updatePassword(newPassword){
@@ -389,28 +443,15 @@
       result:equipped?.victory_fx_id||"result_default"
     };
 
-    // During the backend migration, do not overwrite local gameplay/economy
-    // changes until those systems have server-authoritative write endpoints.
-    // New devices start from the database records; existing mirrors keep their
-    // current progress and balances while identity/profile/settings stay online.
-    const localProfile=mirror?.profile
-      ? {...mirror.profile,achievements:{...(mirror.profile.achievements||{}),...achievementMap}}
-      : serverProfile;
-
-    const localWallet=mirror?.wallet
-      ? {
-          ...mirror.wallet,
-          owned:[...new Set([...(mirror.wallet.owned||[]),...serverOwned])],
-          equipped:{...(mirror.wallet.equipped||{}),...serverEquipped}
-        }
-      : {
-          coins:Number(wallet?.coins||0),
-          tickets:Number(wallet?.tournament_tickets||0),
-          crateKeys:Number(wallet?.crate_tokens||0),
-          owned:serverOwned,
-          equipped:serverEquipped,
-          claims:{}
-        };
+    const localProfile=serverProfile;
+    const localWallet={
+      coins:Number(wallet?.coins||0),
+      tickets:Number(wallet?.tournament_tickets||0),
+      crateKeys:Number(wallet?.crate_tokens||0),
+      owned:serverOwned,
+      equipped:serverEquipped,
+      claims:{}
+    };
 
     const patch={
       id:localId,
@@ -462,6 +503,70 @@
     return mirror;
   }
 
+  async function friendsSnapshot(){
+    const db=getClient();
+    const current=await user();
+    if(!db||!current)return {friends:[],incoming:[],outgoing:[]};
+    const [{data:requests,error:reqError},{data:links,error:linkError}]=await Promise.all([
+      db.from("friend_requests").select("*").or(`sender_id.eq.${current.id},receiver_id.eq.${current.id}`).eq("status","pending"),
+      db.from("friendships").select("*").or(`user_a.eq.${current.id},user_b.eq.${current.id}`)
+    ]);
+    if(reqError)throw reqError;if(linkError)throw linkError;
+    const ids=new Set();
+    for(const r of requests||[]){ids.add(r.sender_id);ids.add(r.receiver_id)}
+    for(const x of links||[]){ids.add(x.user_a);ids.add(x.user_b)}
+    ids.delete(current.id);
+    let profiles=[];
+    if(ids.size){
+      const {data,error}=await db.from("profiles").select("id,username,display_name,avatar_url").in("id",[...ids]);
+      if(error)throw error;profiles=data||[];
+    }
+    const byId=Object.fromEntries(profiles.map(p=>[p.id,p]));
+    return {
+      friends:(links||[]).map(x=>byId[x.user_a===current.id?x.user_b:x.user_a]).filter(Boolean),
+      incoming:(requests||[]).filter(r=>r.receiver_id===current.id).map(r=>({...r,profile:byId[r.sender_id]})),
+      outgoing:(requests||[]).filter(r=>r.sender_id===current.id).map(r=>({...r,profile:byId[r.receiver_id]}))
+    };
+  }
+
+  async function tournamentsSnapshot(){
+    const db=getClient();
+    if(!db)return {tournaments:[],entries:[]};
+    const current=await user();
+    const {data:tournaments,error:tError}=await db.from("tournaments").select("*").order("created_at",{ascending:true});
+    if(tError)throw tError;
+    let entries=[];
+    if(current){
+      const {data,error}=await db.from("tournament_entries").select("*").eq("user_id",current.id);
+      if(error)throw error;entries=data||[];
+    }
+    return {tournaments:tournaments||[],entries};
+  }
+
+  async function predictionsSnapshot(){
+    const db=getClient();
+    if(!db)return {suggestions:[],votes:[]};
+    const current=await user();
+    const {data:suggestions,error:sError}=await db.from("prediction_suggestions")
+      .select("id,author_id,prefix,word,status,created_at,profiles!prediction_suggestions_author_id_fkey(username,display_name)")
+      .eq("status","approved").order("created_at",{ascending:false});
+    if(sError)throw sError;
+    let votes=[];
+    if(current){
+      const {data,error}=await db.from("prediction_votes").select("suggestion_id,user_id").eq("user_id",current.id);
+      if(error)throw error;votes=data||[];
+    }
+    return {suggestions:suggestions||[],votes};
+  }
+
+  async function activeAnnouncement(){
+    const db=getClient();
+    if(!db)return null;
+    const {data,error}=await db.from("site_announcements").select("id,message,active,created_at").eq("active",true).order("created_at",{ascending:false}).limit(1).maybeSingle();
+    if(error)throw error;
+    return data||null;
+  }
+
   async function publicProfileByUsername(username){
     const db=getClient();
     if(!db)return null;
@@ -473,6 +578,30 @@
     if(error)throw error;
     return data||null;
   }
+
+  async function recordRound(payload){return api("round_complete",payload)}
+  async function purchaseItem(itemId){return api("purchase_item",{itemId})}
+  async function purchaseCollection(collectionId){return api("purchase_collection",{collectionId})}
+  async function openCrate(crateId){return api("open_crate",{crateId})}
+  async function setSecurityQuestion(question,answer){return api("set_security_question",{question,answer})}
+  async function verifySecurityAnswer(answer){return api("verify_security_answer",{answer})}
+  async function sendFriendRequest(username){return api("send_friend_request",{username})}
+  async function respondFriendRequest(requestId,accept){return api("respond_friend_request",{requestId,accept})}
+  async function cancelFriendRequest(requestId){return api("cancel_friend_request",{requestId})}
+  async function removeFriend(userId){return api("remove_friend",{userId})}
+  async function joinTournament(tournamentId){return api("join_tournament",{tournamentId})}
+  async function leaveTournament(tournamentId){return api("leave_tournament",{tournamentId})}
+  async function awardTournament(tournamentId,winnerId){return api("award_tournament",{tournamentId,winnerId})}
+  async function submitPrediction(prefix,word){return api("submit_prediction",{prefix,word})}
+  async function togglePredictionVote(suggestionId){return api("toggle_prediction_vote",{suggestionId})}
+  async function adminSetBalances(userId,coins,tickets,crateTokens){return api("admin_set_balances",{userId,coins,tickets,crateTokens})}
+  async function adminGrantAll(userId){return api("admin_grant_all",{userId})}
+  async function adminSetAnnouncement(message,active=true){return api("admin_set_announcement",{message,active})}
+  async function adminRemovePrediction(suggestionId){return api("admin_remove_prediction",{suggestionId})}
+  async function adminUpsertTournament(payload){return api("admin_upsert_tournament",payload)}
+  async function adminDeleteTournament(tournamentId){return api("admin_delete_tournament",{tournamentId})}
+  async function adminResetPlayer(userId){return api("admin_reset_player",{userId})}
+  async function adminSnapshot(){return api("admin_snapshot",{})}
 
   async function leaderboard(limit=50){
     const db=getClient();
@@ -489,6 +618,7 @@
   window.AutoTypeBackend={
     configured,
     getClient,
+    api,
     session,
     user,
     signUp,
@@ -506,6 +636,8 @@
     removeAvatar,
     uploadBackground,
     removeBackground,
+    requestPasswordReset,
+    securityQuestion,
     updatePassword,
     reauthenticate,
     deleteMyAccount,
@@ -513,7 +645,34 @@
     myStats,
     myInventory,
     hydrateLocalMirror,
+    friendsSnapshot,
+    tournamentsSnapshot,
+    predictionsSnapshot,
+    activeAnnouncement,
     publicProfileByUsername,
+    recordRound,
+    purchaseItem,
+    purchaseCollection,
+    openCrate,
+    setSecurityQuestion,
+    verifySecurityAnswer,
+    sendFriendRequest,
+    respondFriendRequest,
+    cancelFriendRequest,
+    removeFriend,
+    joinTournament,
+    leaveTournament,
+    awardTournament,
+    submitPrediction,
+    togglePredictionVote,
+    adminSetBalances,
+    adminGrantAll,
+    adminSetAnnouncement,
+    adminRemovePrediction,
+    adminUpsertTournament,
+    adminDeleteTournament,
+    adminResetPlayer,
+    adminSnapshot,
     leaderboard
   };
 })();
