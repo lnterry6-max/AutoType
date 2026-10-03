@@ -47,11 +47,39 @@ Deno.serve(async(req:Request)=>{
     }
 
     switch(action){
-      case "round_complete":
+      case "start_round":
+        return json(await rpc("autotype_start_round",{
+          p_user:user.id,
+          p_mode:String(payload.mode||""),
+          p_tournament:payload.tournamentId?String(payload.tournamentId):null
+        }));
+
+      case "round_complete": {
+        const mode=String(payload.mode||"");
+        const competitive=["classic","context","sentence","evil","daily","tournament"].includes(mode);
+
+        if(competitive){
+          if(!payload.challengeId)throw new Error("This competitive round is missing its server challenge.");
+          return json(await rpc("autotype_record_verified_round",{
+            p_user:user.id,
+            p_challenge:payload.challengeId,
+            p_round:payload.roundId,
+            p_mode:mode,
+            p_score:Number(payload.score||0),
+            p_words:Number(payload.words||0),
+            p_erased:Number(payload.erased||0),
+            p_max_streak:Number(payload.maxStreak||0),
+            p_total_keys:Number(payload.totalKeys||0),
+            p_errors:Number(payload.errors||0),
+            p_duration_ms:Number(payload.durationMs||0),
+            p_one_clue:!!payload.oneClue
+          }));
+        }
+
         return json(await rpc("autotype_record_round",{
           p_user:user.id,
           p_round:payload.roundId,
-          p_mode:payload.mode,
+          p_mode:mode,
           p_score:Number(payload.score||0),
           p_words:Number(payload.words||0),
           p_erased:Number(payload.erased||0),
@@ -61,6 +89,7 @@ Deno.serve(async(req:Request)=>{
           p_duration_ms:Number(payload.durationMs||0),
           p_one_clue:!!payload.oneClue
         }));
+      }
 
       case "claim_daily_reward":
         return json(await rpc("autotype_claim_daily_first",{p_user:user.id,p_day:String(payload.day||"")}));
