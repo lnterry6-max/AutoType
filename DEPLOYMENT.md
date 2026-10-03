@@ -21,6 +21,8 @@ The Supabase backend consists of:
 - Storage buckets for avatars/backgrounds
 - `game-api` Edge Function for trusted gameplay/economy/social/admin actions
 - `delete-account` Edge Function for authenticated account deletion
+- `create-checkout-session` Edge Function for authenticated Stripe Checkout sessions
+- `stripe-webhook` Edge Function for signed Stripe payment events
 
 Apply migrations in filename order when provisioning another project, then deploy the Edge Functions.
 
@@ -38,6 +40,21 @@ Never expose:
 - private API secrets
 
 The Edge Functions receive trusted Supabase secrets through their hosted environment.
+
+For Stripe, configure these Supabase project secrets:
+
+```text
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
+
+Point the Stripe webhook endpoint at:
+
+```text
+https://<project-ref>.supabase.co/functions/v1/stripe-webhook
+```
+
+Subscribe at minimum to `checkout.session.completed`, `checkout.session.async_payment_succeeded`, and `checkout.session.expired`. Start in Stripe test mode before enabling live payments.
 
 ## Release checks
 
@@ -59,4 +76,5 @@ The backend now persists accounts, economy, inventory, social data, tournaments,
 - backup/restore operations and monitoring
 - production email branding/deliverability
 - enabling Supabase leaked-password protection
-- payment integration only for clearly identified, non-randomized purchases if monetization is added
+- refund/chargeback handling before live monetization
+- tax/receipt/business compliance review before live monetization
