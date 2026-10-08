@@ -12,6 +12,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 IGNORED_DIRS = {".git", ".github", "docs", "scripts", "__pycache__"}
 
+SECRET_PATTERNS = {
+    "Stripe secret key": re.compile(r"sk_(?:live|test)_[A-Za-z0-9]{20,}"),
+    "Stripe webhook secret": re.compile(r"whsec_[A-Za-z0-9]{20,}"),
+    "Supabase secret key": re.compile(r"sb_secret_[A-Za-z0-9_-]{20,}"),
+}
+
 
 class PageParser(HTMLParser):
     def __init__(self) -> None:
@@ -100,6 +106,18 @@ def main() -> int:
         missing = sorted(calls - exports)
         if missing:
             fail("Missing AutoType exports: " + ", ".join(missing), issues)
+
+    secret_scan_files = [
+        *(p for p in ROOT.glob("*.js") if p.is_file()),
+        *(p for p in ROOT.glob("*.html") if p.is_file()),
+        *(ROOT / "supabase" / "functions").glob("**/*.ts"),
+        *(ROOT / "supabase" / "functions").glob("**/*.js"),
+    ]
+    for path in secret_scan_files:
+        text = path.read_text(encoding="utf-8")
+        for label, pattern in SECRET_PATTERNS.items():
+            if pattern.search(text):
+                fail(f"{path.relative_to(ROOT)}: possible {label} committed", issues)
 
     leftovers = sorted(p.name for p in ROOT.iterdir() if p.is_file() and (".before_" in p.name or "before-home-fix" in p.name))
     if leftovers:
