@@ -55,7 +55,7 @@ def main() -> int:
     issues: list[str] = []
     html_files = sorted(ROOT.glob("*.html"))
 
-    for js in (ROOT / "core.js", ROOT / "game.js", ROOT / "backend.js", ROOT / "plinko.js", ROOT / "content-pack.js", ROOT / "daily-mix.js"):
+    for js in (ROOT / "core.js", ROOT / "game.js", ROOT / "backend.js", ROOT / "plinko.js", ROOT / "content-pack.js", ROOT / "daily-mix.js", ROOT / "shop-rotation.js"):
         if js.exists():
             check_node(js, issues)
 
@@ -81,6 +81,14 @@ def main() -> int:
         proc = subprocess.run(["node", str(daily_mix_test)], capture_output=True, text=True, timeout=20)
         if proc.returncode:
             fail("Daily Mix regression failed:\n" + (proc.stderr.strip() or proc.stdout.strip()), issues)
+        else:
+            print(proc.stdout.strip())
+
+    rotation_test = ROOT / "scripts" / "test-shop-rotation.cjs"
+    if rotation_test.exists():
+        proc = subprocess.run(["node", str(rotation_test)], capture_output=True, text=True, timeout=20)
+        if proc.returncode:
+            fail("Shop rotation regression failed:\n" + (proc.stderr.strip() or proc.stdout.strip()), issues)
         else:
             print(proc.stdout.strip())
 
