@@ -55,7 +55,7 @@ def main() -> int:
     issues: list[str] = []
     html_files = sorted(ROOT.glob("*.html"))
 
-    for js in (ROOT / "core.js", ROOT / "game.js", ROOT / "backend.js", ROOT / "plinko.js"):
+    for js in (ROOT / "core.js", ROOT / "game.js", ROOT / "backend.js", ROOT / "plinko.js", ROOT / "content-pack.js"):
         if js.exists():
             check_node(js, issues)
 
