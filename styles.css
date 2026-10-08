@@ -3472,3 +3472,18 @@ body.high-contrast .help,body.high-contrast .eyebrow,body.high-contrast .label{
 .shop-daily-grid{margin-bottom:24px}
 .shop-rotation-note{font-size:11px;color:var(--muted);line-height:1.5;margin:15px 0}
 @media(max-width:670px){.shop-daily-banner{padding:16px;flex-direction:column;align-items:stretch}.shop-daily-timer{flex-direction:row;flex-wrap:wrap;gap:8px;min-width:0;justify-content:space-between}.shop-daily-timer strong{font-size:21px;margin:0}}
+
+
+/* Limited daily shop: permanent ownership lives in the player profile. */
+.shop-v3-tabs .shop-locker-link{
+  display:inline-flex;align-items:center;justify-content:center;
+  margin-left:auto;padding:10px 15px;font-size:12px;font-weight:750;
+  color:#9ed9ff;text-decoration:none
+}
+.shop-v3-tabs .shop-locker-link:hover,.shop-v3-tabs .shop-locker-link:focus-visible{color:#fff;text-decoration:underline}
+.shop-stock-note{font-size:11px;color:var(--muted);font-weight:650}
+.shop-rotation-note a{color:#93d5ff;font-weight:750}
+@media(max-width:680px){
+  .shop-v3-tabs .shop-locker-link{padding:11px 8px;font-size:11px}
+  .shop-stock-note{font-size:10px}
+}
