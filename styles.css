@@ -3383,3 +3383,34 @@ body.high-contrast .help,body.high-contrast .eyebrow,body.high-contrast .label{
 .how-score-examples strong{font-size:19px;color:var(--text)}
 @media(max-width:730px){.explore-grid{grid-template-columns:1fr}}
 @media(max-width:400px){.how-score-examples{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Daily Mix — optional, skill-only replay loop. */
+.daily-mix-section{margin-bottom:14px}
+.daily-mix-play-promo{margin-top:16px;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:11px}
+.daily-mix-summary{font-size:12px;font-weight:750;color:#94d0f3;white-space:nowrap}
+.daily-mix-intro{margin:0 0 16px;color:var(--muted);font-size:12px;line-height:1.55}
+.daily-mix-play-promo .daily-mix-intro{margin:14px 0 0}
+.daily-mix-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.daily-mix-card{display:flex;flex-direction:column;min-width:0;min-height:165px;padding:15px;background:#23292f;border:1px solid var(--border);border-radius:9px}
+.daily-mix-card:hover{border-color:#55636f}
+.daily-mix-card.is-complete{border-color:rgba(87,185,130,.44);background:#24312e}
+.daily-mix-card-top{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.daily-mix-slot{font-size:10px;letter-spacing:.05em;font-weight:850;color:#97a7b7}
+.daily-mix-state{font-size:10px;font-weight:750;color:#8bc4e9}
+.is-complete .daily-mix-state{color:#93d7ae}
+.daily-mix-card h3{font-size:17px;margin:13px 0 5px;letter-spacing:-.02em}
+.daily-mix-card p{font-size:12px;color:var(--muted);line-height:1.5;margin:0 0 15px}
+.daily-mix-action{margin-top:auto;display:inline-flex;align-self:flex-start;font-size:12px;font-weight:800;color:#86ceff}
+.daily-mix-action:hover,.daily-mix-action:focus-visible{text-decoration:underline}
+.daily-mix-result{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0;padding:12px 14px;border:1px solid rgba(87,185,130,.4);border-radius:8px;background:#24312e}
+.daily-mix-result strong{font-size:13px;color:#a2ddba}
+.daily-mix-result span{color:var(--muted);font-size:12px}
+.daily-mix-result a{color:#9bd7ff;font-weight:750}
+.hero-actions{flex-wrap:wrap}
+@media(max-width:760px){
+  .daily-mix-grid{grid-template-columns:1fr}
+  .daily-mix-card{min-height:120px}
+  .daily-mix-summary{white-space:normal}
+  .daily-mix-section .platform-section-head,.daily-mix-play-promo .platform-section-head{align-items:flex-start;flex-direction:column}
+}

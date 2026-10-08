@@ -72,6 +72,7 @@
       <div class="hero-actions">
         <a class="button button-primary home-play-button" href="play.html">Play AutoType</a>
         <a class="button button-secondary" href="play.html?mode=daily">Daily Challenge</a>
+        <a class="button button-secondary" data-surprise-mode href="play.html?mode=classic">Surprise Me</a>
       </div>
       <div class="home-mini-stats">
         <div><span>Best</span><strong id="homeBestScore">0</strong></div>
@@ -87,6 +88,15 @@
       <div class="preview-caption" id="demoCaption">The i is correct. Keep it and erase only ld.</div>
       <div class="home-preview-keys"><span>TYPE</span><b>→</b><span>PREDICT</span><b>→</b><span>REJECT / LOCK</span></div>
     </div>
+  </section>
+
+  <section class="platform-section daily-mix-section" aria-label="Daily Mix skill challenges">
+    <div class="platform-section-head">
+      <div><span class="section-kicker">DAILY MIX · <span data-daily-mix-date></span></span><h2>Three reasons to play something different</h2></div>
+      <strong class="daily-mix-summary" id="dailyMixSummary" aria-live="polite">Loading today’s goals…</strong>
+    </div>
+    <p class="daily-mix-intro">Three rotating skill goals. Complete them at your own pace today — no extra purchases, no rewards to lose, and no penalty for missing a day. Online progress uses verified rounds.</p>
+    <div class="daily-mix-grid" id="dailyMixCards" aria-live="polite"><p class="section-note">Loading Daily Mix…</p></div>
   </section>
 
   <section class="platform-section">
@@ -149,11 +159,14 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="backend.js?v=20261008-level-consistency"></script>
 <script src="core.js?v=20261008-variety-ux"></script>
+<script src="daily-mix.js?v=20261008-replay"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded",async()=>{
   await AutoType.ready();
   const $=id=>document.getElementById(id);
+  AutoTypeDailyMix.wireSurpriseLinks();
+  AutoTypeDailyMix.render($("dailyMixCards"),$("dailyMixSummary"));
   const demos=[
     ["m","i","ld","AutoType got i right. Keep it and erase only ld."],
     ["min","u","te","Correct overlap stays while only the wrong tail gets erased."],
@@ -283,7 +296,10 @@ document.addEventListener("DOMContentLoaded",async()=>{
   window.addEventListener("storage",event=>{
     if(event.key==="autotypeAccountsStore")refreshOnlineHome();
   });
-  window.addEventListener("pageshow",()=>refreshOnlineHome());
+  window.addEventListener("pageshow",()=>{
+    refreshOnlineHome();
+    AutoTypeDailyMix.render($("dailyMixCards"),$("dailyMixSummary"));
+  });
 });
 </script>
 

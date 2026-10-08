@@ -350,6 +350,7 @@ AutoType.ready().then(async()=>{
     sentence=newSentence;words=sentence.split(" ");index=0;prefix="";visible="";score=0;streak=0;maxStreak=0;keyCount=0;erased=0;errors=0;clueCounts=[];
     cluesThisWord=0;recentGuesses=[];justKeptAI=0;
     $("time").textContent="0:00";$("results").hidden=true;
+    if($("dailyMixResult"))$("dailyMixResult").hidden=true;
     $("mobileGameControls").hidden=false;
     $("mobileTypingInput").value="";
     $("mobileStartButton").textContent="Tap to start typing ⌨";
@@ -505,6 +506,7 @@ AutoType.ready().then(async()=>{
 
     let coinsEarned=0;
     let newlyUnlocked=[];
+    let verifiedSaved=false;
     const activeAccount=AutoType.currentAccount();
 
     if(activeAccount?.online){
@@ -523,6 +525,7 @@ AutoType.ready().then(async()=>{
           durationMs:Math.max(250,Math.round(ms)),
           oneClue:clueCounts.some(n=>n===1)
         });
+        verifiedSaved=!!result?.verified;
         coinsEarned=Number(result?.coins_earned||0);
         newlyUnlocked=Array.isArray(result?.new_achievements)?result.new_achievements:[];
         const verifiedBadge=$("verifiedResult");
@@ -567,6 +570,23 @@ AutoType.ready().then(async()=>{
         AutoType.addCoins(coinsEarned,"Round reward");
         if(p.rounds>0&&p.rounds%10===0)AutoType.addTickets(1,"10-round milestone");
       }
+    }
+
+    // Optional daily goals are read from verified backend results for online players.
+    // Guests may keep local-only progress; neither path mints coins or modifies scores.
+    const dailyMixRound={mode,score,words:words.length,errors,max_streak:maxStreak};
+    if(!activeAccount?.online)AutoTypeDailyMix.recordGuestRound(dailyMixRound);
+    const cleared=AutoTypeDailyMix.plan().find(goal=>
+      AutoTypeDailyMix.isComplete(goal,dailyMixRound)
+    );
+    const dailyMixResult=$("dailyMixResult");
+    if(dailyMixResult){
+      const show=!!cleared&&(!activeAccount?.online||verifiedSaved);
+      dailyMixResult.hidden=!show;
+      dailyMixResult.innerHTML=show
+        ? '<strong>Daily Mix goal complete: '+AutoType.escapeHTML(cleared.title)+
+          '</strong><span>Nice run. <a href="index.html">See today\'s lineup →</a></span>'
+        : "";
     }
 
     if(race&&activeAccount){

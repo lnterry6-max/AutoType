@@ -91,6 +91,7 @@
       <a class="mode-tile" href="play.html?mode=sentence"><span class="mode-number">03</span><div><small>FULL VIEW</small><h2>Sentence</h2><p>Watch AutoType make chaotic sentence-wide predictions.</p></div><b>Play →</b></a>
       <a class="mode-tile evil-mode" href="play.html?mode=evil"><span class="mode-number">04</span><div><small>CHAOS</small><h2>Evil</h2><p>Unexpected slang and wildly unhelpful guesses keep you on your toes.</p></div><b>Play →</b></a>
       <a class="mode-tile plinko-mode" href="plinko.html"><span class="mode-number">05</span><div><small>ARCADE · FREE</small><h2>Plinko</h2><p>Drop five free balls through a maze of pegs. Score arcade points and beat your personal best — no coins involved.</p></div><b>Drop →</b></a>
+      <a class="mode-tile surprise-mode" data-surprise-mode href="play.html?mode=classic"><span class="mode-number">06</span><div><small>RANDOM MODE</small><h2>Surprise Me</h2><p>Try a different challenge without overthinking what to play next.</p></div><b>Shuffle →</b></a>
     </div>
 
     <div class="special-mode-strip">
@@ -99,6 +100,11 @@
       <a href="friends.html"><span>SOCIAL</span><strong>Race</strong><small>Challenge a friend</small></a>
       <a href="tournaments.html"><span>COMPETE</span><strong>Tournaments</strong><small>Skill-based events</small></a>
     </div>
+    <section class="daily-mix-play-promo" aria-label="Today's Daily Mix">
+      <div class="platform-section-head"><div><span class="section-kicker">DAILY MIX · <span data-daily-mix-date></span></span><h2>Today's three goals</h2></div><strong class="daily-mix-summary" id="playDailyMixSummary">Loading…</strong></div>
+      <div class="daily-mix-grid" id="playDailyMixCards"><p class="section-note">Loading Daily Mix…</p></div>
+      <p class="daily-mix-intro">Just for variety: goals reset daily, with no penalty for missing a day.</p>
+    </section>
   </section>
 
   <section class="game-page" id="gameArea" hidden>
@@ -181,7 +187,8 @@
       </div>
       <div class="match-result" id="matchResult" hidden></div>
       <div class="achievement-unlocks" id="achievementUnlocks" hidden></div>
-      <div class="row-wrap"><button class="button button-primary" id="againBtn">Play again</button><a class="button button-secondary" href="play.html">Modes</a></div>
+      <div class="daily-mix-result" id="dailyMixResult" hidden></div>
+      <div class="row-wrap"><button class="button button-primary" id="againBtn">Play again</button><a class="button button-secondary" data-surprise-mode href="play.html?mode=classic">Surprise Me →</a><a class="button button-secondary" href="play.html">Modes</a></div>
     </section>
   </section>
 </main>
@@ -198,6 +205,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="backend.js?v=20261008-level-consistency"></script>
 <script src="core.js?v=20261008-variety-ux"></script>
+<script src="daily-mix.js?v=20261008-replay"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded",async()=>{
@@ -293,7 +301,15 @@ document.addEventListener("DOMContentLoaded",async()=>{
 </script>
 
 <script src="content-pack.js?v=20261008-variety"></script>
-<script src="game.js?v=20261008-mobile-hotfix"></script>
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+  AutoType.ready().then(()=>{
+    AutoTypeDailyMix.wireSurpriseLinks();
+    AutoTypeDailyMix.render(document.getElementById("playDailyMixCards"),document.getElementById("playDailyMixSummary"));
+  }).catch(error=>console.warn("Daily Mix could not initialize",error));
+});
+</script>
+<script src="game.js?v=20261008-replay"></script>
 
 </body>
 </html>
