@@ -92,6 +92,14 @@ def main() -> int:
         else:
             print(proc.stdout.strip())
 
+    admin_level_test = ROOT / "scripts" / "test-admin-progression.cjs"
+    if admin_level_test.exists():
+        proc = subprocess.run(["node", str(admin_level_test)], capture_output=True, text=True, timeout=20)
+        if proc.returncode:
+            fail("Admin progression regression failed:\\n" + (proc.stderr.strip() or proc.stdout.strip()), issues)
+        else:
+            print(proc.stdout.strip())
+
     canonical_more = [
         "predictions.html", "leaderboard.html", "how-to.html", "explore.html", "settings.html"
     ]
@@ -102,7 +110,7 @@ def main() -> int:
     ]
     special_pages = {"404.html", "backend-test.html"}
     # Daily Mix CSS must be cache-busted on both screens when its layout changes.
-    mix_stylesheet_version = "styles.css?v=20261008-daily-mix-v2"
+    mix_stylesheet_version = "styles.css?v=20261008-integrity-1"
     mix_script_version = "daily-mix.js?v=20261008-daily-mix-v2"
 
     for page in html_files:
@@ -149,7 +157,7 @@ def main() -> int:
         if page.name == "shop.html":
             for required in (
                 'shop-rotation.js?v=20261008-et-limited',
-                'styles.css?v=20261008-et-limited',
+                'styles.css?v=20261008-integrity-1',
                 'id="shopDailyGrid"', 'id="shopRotationClock"',
                 'href="profile.html#inventory"',
             ):
@@ -171,6 +179,43 @@ def main() -> int:
                     fail(f"play.html: missing mobile/scoring control #{required_id}", issues)
             if 'type="text" inputmode="text"' not in text:
                 fail("play.html: native mobile keyboard input is missing", issues)
+
+        if page.name == "profile.html":
+            for expected in ('id="inventory"', 'inventoryAccordion.open=true',
+                             'styles.css?v=20261008-integrity-1'):
+                if expected not in text:
+                    fail(f"profile.html: missing inventory accordion detail {expected}", issues)
+            if 'id="developerPanel"' in text:
+                fail("Developer controls must live in Admin Console, not Profile", issues)
+        if page.name == "admin.html":
+            if 'backend.js?v=20261008-integrity-1' not in text:
+                fail("Admin level code is not cache-busted", issues)
+            if 'achievements:m.achievements[profile.id]||{}' not in text:
+                fail("Admin player levels are ignoring achievements", issues)
+
+        # Keep all pages on the same live JS/CSS build, rather than silently
+        # mixing old cached components with new HTML markup.
+        for path_or_script in ("styles.css", "core.js", "backend.js"):
+            for match in re.finditer(re.escape(path_or_script) + r'\?v=([^"]+)', text):
+                if match.group(1) != "20261008-integrity-1":
+                    fail(f"{page.name}: stale shared asset build {match.group(0)}", issues)
+
+        # Check cross-page fragment targets, including Inventory deep links.
+        for ref in parser.refs:
+            if ".html#" not in ref or ref.startswith(("http://", "https://")):
+                continue
+            target_path, fragment = ref.split("#", 1)
+            target_path = target_path.split("?", 1)[0]
+            if (target_path,fragment) == ("shop.html","crates"):
+                continue  # JS-driven shop tab supports this hash without a static id.
+            if not target_path or not fragment:
+                continue
+            target_file = ROOT / target_path
+            if target_file.is_file():
+                target_html = target_file.read_text(encoding="utf-8")
+                if (f'id="{fragment}"' not in target_html and
+                        f"id='{fragment}'" not in target_html):
+                    fail(f"{page.name}: broken fragment link {ref}", issues)
 
         duplicates = sorted({value for value in parser.ids if parser.ids.count(value) > 1})
         if duplicates:

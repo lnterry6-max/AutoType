@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Shop · AutoType</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="styles.css?v=20261008-et-limited">
+<link rel="stylesheet" href="styles.css?v=20261008-integrity-1">
 </head>
 <body data-page="shop">
 <header class="topbar">
@@ -105,6 +105,7 @@
       <div><span class="section-kicker">CRATES</span><h2>Crates</h2></div>
       <div class="crate-key-balance">▣ <strong id="crateKeyBalance">0</strong> tokens</div>
     </div>
+    <p class="shop-fixed-pack-note">Fixed cosmetic packs show exactly which item you receive. They use only earned tokens and have no random outcomes.</p>
     <div class="crate-grid" id="crateGrid"></div>
 
   </section>
@@ -161,8 +162,8 @@
 <div class="toast"></div>
 <script src="backend-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="backend.js?v=20261008-level-consistency"></script>
-<script src="core.js?v=20261008-et-limited"></script>
+<script src="backend.js?v=20261008-integrity-1"></script>
+<script src="core.js?v=20261008-integrity-1"></script>
 <script src="shop-rotation.js?v=20261008-et-limited"></script>
 <script>
 document.addEventListener("DOMContentLoaded",async()=>{
@@ -395,7 +396,9 @@ document.addEventListener("DOMContentLoaded",async()=>{
   }
 
   function renderCrates(){
-    crateGrid.innerHTML=AutoType.crateDefs.map(crate=>`<article class="crate-card">
+    crateGrid.innerHTML=AutoType.crateDefs.map(crate=>crate.guaranteedItemId
+      ? fixedPackCard(crate)
+      : `<article class="crate-card">
       <div class="crate-art"><div class="crate-box">AT</div><div class="crate-glow"></div></div>
       <h3>${AutoType.escapeHTML(crate.name)}</h3>
       <p>${AutoType.escapeHTML(crate.description)}</p>
@@ -404,6 +407,37 @@ document.addEventListener("DOMContentLoaded",async()=>{
     </article>`).join("");
 
     crateGrid.querySelectorAll("[data-view-crate]").forEach(button=>button.addEventListener("click",()=>showCrate(button.dataset.viewCrate)));
+    crateGrid.querySelectorAll("[data-open-fixed-pack]").forEach(button=>button.addEventListener("click",()=>openFixedPack(button)));
+  }
+
+  function fixedPackCard(crate){
+    const item=AutoType.shopCatalog.find(x=>x.id===crate.guaranteedItemId);
+    if(!item)return "";
+    const owned=AutoType.currentWallet()?.owned?.includes(item.id);
+    return `<article class="crate-card fixed-pack-card" style="--rarity:${rarityColors[item.rarity]}">
+      <div class="fixed-pack-art">${itemPreview(item)}</div>
+      <span class="fixed-pack-label">EXACT REWARD · NO RANDOM CHANCE</span>
+      <h3>${AutoType.escapeHTML(crate.name)}</h3>
+      <p>${AutoType.escapeHTML(crate.description)}</p>
+      <div class="fixed-pack-contents"><span>Includes:</span><strong>${AutoType.escapeHTML(item.name)}</strong><small>${item.rarity} · ${familyForItem(item)}</small></div>
+      <button class="button button-secondary" data-open-fixed-pack="${crate.id}" ${owned?"disabled":""}>${owned?"Already owned":"Unlock · "+crate.keyCost+" earned token ▣"}</button>
+    </article>`;
+  }
+
+  async function openFixedPack(button){
+    if(!account){location.href="account.html";return}
+    const crate=AutoType.crateDefs.find(c=>c.id===button.dataset.openFixedPack);
+    if(!crate?.guaranteedItemId)return;
+    button.disabled=true;
+    try{
+      if(account.online){
+        const result=await AutoTypeBackend.openCrate(crate.id);
+        if(result.item_id!==crate.guaranteedItemId)throw new Error("Pack contents differ from the advertised item.");
+        await AutoTypeBackend.hydrateLocalMirror();
+      }else AutoType.openCrate(crate.id);
+      AutoType.toast("Unlocked "+AutoType.shopCatalog.find(x=>x.id===crate.guaranteedItemId)?.name+"!");
+      renderWallet();renderCrates();
+    }catch(error){AutoType.toast(error.message);button.disabled=false}
   }
 
   function showCrate(id){

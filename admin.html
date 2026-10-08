@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Admin Console · AutoType</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="styles.css?v=20261008-mobile-hotfix">
+<link rel="stylesheet" href="styles.css?v=20261008-integrity-1">
 </head>
 <body data-page="admin">
 <header class="topbar">
@@ -206,8 +206,8 @@
 <div class="toast"></div>
 <script src="backend-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="backend.js?v=20261008-level-consistency"></script>
-<script src="core.js?v=20261008-daily-shop"></script>
+<script src="backend.js?v=20261008-integrity-1"></script>
+<script src="core.js?v=20261008-integrity-1"></script>
 <script>
 document.addEventListener("DOMContentLoaded",async()=>{
   await AutoType.ready();
@@ -261,7 +261,11 @@ document.addEventListener("DOMContentLoaded",async()=>{
         profiles:byId(snapshot.profiles),
         roles:byId(snapshot.roles,"user_id"),
         wallets:byId(snapshot.wallets,"user_id"),
-        stats:byId(snapshot.stats,"user_id")
+        stats:byId(snapshot.stats,"user_id"),
+        achievements:(snapshot.achievements||[]).reduce((map,entry)=>{
+          (map[entry.user_id]??={})[entry.achievement_id]=true;
+          return map;
+        },{})
       };
     }
 
@@ -289,7 +293,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
           words:Number(stats.words||0),
           bestScore:Number(stats.best_score||0),
           bestStreak:Number(stats.best_streak||0),
-          achievements:{}
+          achievements:m.achievements[profile.id]||{}
         }
       };
     }
