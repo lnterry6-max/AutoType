@@ -146,6 +146,22 @@ def main() -> int:
             if mix_script_version not in text:
                 fail(f"{page.name}: Daily Mix script cache version is outdated", issues)
 
+        if page.name == "shop.html":
+            for required in (
+                'shop-rotation.js?v=20261008-et-limited',
+                'styles.css?v=20261008-et-limited',
+                'id="shopDailyGrid"', 'id="shopRotationClock"',
+                'href="profile.html#inventory"',
+            ):
+                if required not in text:
+                    fail("Limited shop missing current assets or markup: "+required, issues)
+            for removed in (
+                'data-shop-view="cosmetics"', 'id="shopGrid"',
+                'id="collectionGrid"', 'data-open-cosmetics'
+            ):
+                if removed in text:
+                    fail("Limited shop still exposes full catalog: "+removed, issues)
+
         if page.name == "play.html":
             for required_id in (
                 "mobileStartButton", "mobileTypingInput", "mobileEraseButton",

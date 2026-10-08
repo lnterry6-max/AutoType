@@ -546,6 +546,9 @@
     if(!collection)throw new Error("Collection not found.");
     const missing=collectionMissingItems(collectionId,a);
     if(!missing.length)throw new Error("You already own this entire collection.");
+    if(window.AutoTypeShopRotation&&!window.AutoTypeShopRotation.collectionAvailable(collectionId,collectionDefs)){
+      throw new Error("That collection is not featured in today's shop.");
+    }
     const price=collectionPrice(collectionId,a);
     if(!isDeveloper(a)){
       if((a.wallet.coins||0)<price)throw new Error("Not enough coins.");
@@ -608,6 +611,9 @@
       return item;
     }
     if(a.wallet.owned.includes(item.id))throw new Error("You already own that item.");
+    if(window.AutoTypeShopRotation&&!window.AutoTypeShopRotation.itemAvailable(itemId,shopCatalog)){
+      throw new Error("This cosmetic is not available in today's shop.");
+    }
     if(!isDeveloper(a)){
       if((a.wallet.coins||0)<item.price)throw new Error("Not enough coins.");
       a.wallet.coins-=item.price;
