@@ -371,6 +371,12 @@
   }
 
 
+  function isStaff(account=currentAccount()){
+    if(!account)return false;
+    if(account.online)return ["developer","admin"].includes(account.role);
+    return isDeveloper(account);
+  }
+
   function isDeveloper(account=currentAccount()){
     if(!account)return false;
 
@@ -816,11 +822,11 @@
           ${avatarMarkup(a,"avatar dropdown-avatar")}
           <div><strong>${escapeHTML(name)}</strong><span>@${escapeHTML(a.username)}${equippedItem("title",a)?.value?` · ${escapeHTML(equippedItem("title",a).value)}`:""}</span></div>
         </div>
-        <div class="account-wallet-row"><span>◉ ${a.wallet?.coins||0} coins</span><span>◆ ${a.wallet?.tickets||0} tickets</span><span>▣ ${a.wallet?.crateKeys||0} tokens</span></div>${isDeveloper(a)?`<div class="developer-badge">Developer</div>`:""}
+        <div class="account-wallet-row"><span>◉ ${a.wallet?.coins||0} coins</span><span>◆ ${a.wallet?.tickets||0} tickets</span><span>▣ ${a.wallet?.crateKeys||0} tokens</span></div>${isDeveloper(a)?`<div class="developer-badge">Developer</div>`:isStaff(a)?`<div class="developer-badge">Admin</div>`:""}
         <a href="profile.html"><span>My Profile</span><small>View & edit</small></a>
         <a href="shop.html"><span>Shop</span><small>Cosmetics</small></a>
         <a href="tournaments.html"><span>Tournaments</span><small>Compete</small></a>
-        ${isDeveloper(a)?`<a href="admin.html"><span>Admin Console</span><small>Developer controls</small></a>`:""}
+        ${isStaff(a)?`<a href="admin.html"><span>Admin Console</span><small>${isDeveloper(a)?"Developer controls":"Moderation tools"}</small></a>`:""}
         <button id="switchAccountAction"><span>Switch Account</span><small>${store.accounts.length} saved</small></button>
         <a href="settings.html"><span>Settings</span><small>Preferences</small></a>
         <hr>
@@ -1090,7 +1096,7 @@
     renderAccountButton();
 
     const a=currentAccount();
-    if(isDeveloper(a)){
+    if(isStaff(a)){
       document.querySelectorAll(".nav-more-menu").forEach(menu=>{
         if(!menu.querySelector('a[href="admin.html"]')){
           const link=document.createElement("a");
@@ -1376,7 +1382,7 @@
     store:()=>store,save,currentAccount,currentProfile,currentSettings,accountName,avatarMarkup,avatarColor,
     escapeHTML,formatTime,levelInfo,unlockedAchievements,achievementDefs,toast,
     currentWallet,shopCatalog,collectionDefs,crateDefs,tournaments,tournamentById,equippedItem,addCoins,addTickets,
-    purchaseShopItem,equipShopItem,collectionMissingItems,collectionPrice,purchaseCollection,equipCollection,openCrate,isDeveloper,setDeveloperCoins,setDeveloperTickets,setDeveloperCrateKeys,
+    purchaseShopItem,equipShopItem,collectionMissingItems,collectionPrice,purchaseCollection,equipCollection,openCrate,isDeveloper,isStaff,setDeveloperCoins,setDeveloperTickets,setDeveloperCrateKeys,
     grantDeveloperCoins,grantAllCosmetics,tournamentEntry,joinTournament,leaveTournament,
     createTournament,updateTournament,deleteTournament,restoreDefaultTournaments,awardTournamentWinner,
     developerAccounts,setPlayerBalances,grantPlayerAllCosmetics,resetPlayerProgress,removeSuggestionAdmin,setAnnouncement,exportLocalBackup,
