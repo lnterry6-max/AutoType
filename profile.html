@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Profile · AutoType</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="styles.css?v=20261008-variety-ux">
+<link rel="stylesheet" href="styles.css?v=20261008-profile-accordion">
 </head>
 <body data-page="">
 
@@ -138,30 +138,17 @@
       </section>
 
       <div class="divider"></div>
-      <section class="platform-section" id="inventory">
-        <div class="section-title-row">
-          <div><h2 class="section-title">Inventory</h2></div>
-          <a class="text-link" href="shop.html">Shop →</a>
+      <details class="platform-section inventory-accordion" id="inventory">
+        <summary class="inventory-accordion-summary">
+          <span><span class="section-kicker">MY COSMETICS</span><strong>Inventory</strong><small id="inventoryCount">View and equip your saved items</small></span>
+          <span class="inventory-accordion-arrow" aria-hidden="true">▾</span>
+        </summary>
+        <div class="inventory-accordion-body">
+          <div class="inventory-quicklinks"><span>Customize your setup</span><a class="text-link" href="shop.html">Visit Shop →</a></div>
+          <div class="inventory-tabs" id="inventoryTabs"></div>
+          <div class="inventory-grid" id="inventoryGrid"></div>
         </div>
-        <div class="inventory-tabs" id="inventoryTabs"></div>
-        <div class="inventory-grid" id="inventoryGrid"></div>
-      </section>
-
-      <details class="platform-section developer-panel" id="developerPanel" hidden><summary><span>Developer tools</span><span class="developer-badge">Developer</span></summary><div class="developer-body">
-        <div class="developer-controls">
-          <div class="developer-balance-grid">
-            <div class="form-group"><label class="label">Coins</label><input class="input" id="developerCoinAmount" type="number" min="0" max="999999999" step="1"></div>
-            <div class="form-group"><label class="label">Tournament Tickets</label><input class="input" id="developerTicketAmount" type="number" min="0" max="999999999" step="1"></div>
-            <div class="form-group"><label class="label">Crate Tokens</label><input class="input" id="developerKeyAmount" type="number" min="0" max="999999999" step="1"></div>
-          </div>
-          <div class="row-wrap">
-            <button class="button button-primary" id="developerApplyBalances">Apply balances</button>
-            <button class="button button-secondary" id="developerAddCoins">+10,000 coins</button>
-            <button class="button button-secondary" id="developerGrantAll">Grant all cosmetics</button>
-            <a class="button button-secondary" href="admin.html">Open Admin Console</a>
-          </div>
-        </div>
-      </div></details>
+      </details>
 
       <div class="divider"></div>
       <section class="platform-section">
@@ -196,6 +183,12 @@ document.addEventListener("DOMContentLoaded",async()=>{
   const a=AutoType.currentAccount(),p=AutoType.currentProfile();
   const $=id=>document.getElementById(id);
   const target=a||{id:"guest",displayName:"Guest",bio:"Local guest profile",favoriteModes:[],avatarImage:""};
+  const inventoryAccordion=document.getElementById("inventory");
+  const syncInventoryDeepLink=()=>{
+    if(window.location.hash==="#inventory")inventoryAccordion.open=true;
+  };
+  syncInventoryDeepLink();
+  window.addEventListener("hashchange",syncInventoryDeepLink);
   let pendingAvatarFile=null;
   let removeAvatarRequested=false;
   profileTitle.textContent=AutoType.accountName(target);displayName.value=target.displayName||"Guest";bio.value=target.bio||"";bioCount.textContent=bio.value.length;
@@ -333,86 +326,8 @@ document.addEventListener("DOMContentLoaded",async()=>{
     }
     renderInventory();
 
-    if(AutoType.isDeveloper(a)){
-      developerPanel.hidden=false;
-      developerCoinAmount.value=wallet.coins||0;
-      developerTicketAmount.value=wallet.tickets||0;
-      developerKeyAmount.value=wallet.crateKeys||0;
-
-      function refreshDeveloperWalletUI(){
-        const w=AutoType.currentWallet();
-        developerCoinAmount.value=w.coins||0;
-        developerTicketAmount.value=w.tickets||0;
-        developerKeyAmount.value=w.crateKeys||0;
-        profileWallet.innerHTML=`<span>◉ ${w.coins||0} coins</span><span>◆ ${w.tickets||0} tickets</span><span>▣ ${w.crateKeys||0} tokens</span><span class="dev-wallet-tag">DEV</span>`;
-        const nav=document.querySelector("#navCurrency");
-        if(nav){
-          nav.hidden=false;
-          nav.innerHTML=`<a href="shop.html" title="Coins"><span>◉</span>${w.coins||0}</a><a href="tournaments.html" title="Tournament Tickets"><span>◆</span>${w.tickets||0}</a><a href="shop.html#crates" title="Crate Tokens"><span>▣</span>${w.crateKeys||0}</a>`;
-        }
-      }
-
-      developerApplyBalances.addEventListener("click",async()=>{
-        developerApplyBalances.disabled=true;
-        try{
-          if(a.online){
-            await AutoTypeBackend.adminSetBalances(
-              a.supabaseUserId,
-              Number(developerCoinAmount.value||0),
-              Number(developerTicketAmount.value||0),
-              Number(developerKeyAmount.value||0)
-            );
-            await AutoTypeBackend.hydrateLocalMirror();
-            wallet=AutoType.currentWallet();
-          }else{
-            AutoType.setDeveloperCoins(developerCoinAmount.value);
-            AutoType.setDeveloperTickets(developerTicketAmount.value);
-            AutoType.setDeveloperCrateKeys(developerKeyAmount.value);
-          }
-          refreshDeveloperWalletUI();
-          AutoType.toast("Developer balances updated.");
-        }catch(e){AutoType.toast(e.message)}
-        finally{developerApplyBalances.disabled=false}
-      });
-
-      developerAddCoins.addEventListener("click",async()=>{
-        developerAddCoins.disabled=true;
-        try{
-          if(a.online){
-            const w=AutoType.currentWallet();
-            await AutoTypeBackend.adminSetBalances(
-              a.supabaseUserId,
-              Number(w.coins||0)+10000,
-              Number(w.tickets||0),
-              Number(w.crateKeys||0)
-            );
-            await AutoTypeBackend.hydrateLocalMirror();
-            wallet=AutoType.currentWallet();
-          }else{
-            AutoType.grantDeveloperCoins(10000);
-          }
-          refreshDeveloperWalletUI();
-          AutoType.toast("10,000 coins added.");
-        }catch(e){AutoType.toast(e.message)}
-        finally{developerAddCoins.disabled=false}
-      });
-
-      developerGrantAll.addEventListener("click",async()=>{
-        developerGrantAll.disabled=true;
-        try{
-          if(a.online){
-            await AutoTypeBackend.adminGrantAll(a.supabaseUserId);
-            await AutoTypeBackend.hydrateLocalMirror();
-            wallet=AutoType.currentWallet();
-          }else{
-            AutoType.grantAllCosmetics();
-          }
-          renderInventory();
-          AutoType.toast("All cosmetics granted.");
-        }catch(e){AutoType.toast(e.message)}
-        finally{developerGrantAll.disabled=false}
-      });
-    }
+    const inventoryCount=document.getElementById("inventoryCount");
+    inventoryCount.textContent=wallet.owned.length+" items owned · click to browse";
 
   }else{
     profileBannerDisplay.style.background="var(--surface)";
