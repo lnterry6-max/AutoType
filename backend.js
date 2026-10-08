@@ -135,7 +135,7 @@
     const current=await user();
     if(!db||!current)throw new Error("Sign in first.");
     const allowed={};
-    for(const key of ["username","display_name","bio","avatar_url","favorite_modes"]){
+    for(const key of ["display_name","bio","avatar_url","favorite_modes","profile_accent"]){
       if(key in patch)allowed[key]=patch[key];
     }
     const {data,error}=await db
@@ -212,7 +212,9 @@
       backgroundColor:"background_color",
       backgroundImage:"background_image_url",
       backgroundDim:"background_dim",
-      backgroundLuminance:"background_luminance"
+      backgroundLuminance:"background_luminance",
+      highContrast:"high_contrast",
+      textScale:"text_scale"
     };
     for(const [front,back] of Object.entries(map)){
       if(front in patch)allowed[back]=patch[front];
@@ -461,6 +463,8 @@
       bio:profile.bio||"",
       avatarImage:profile.avatar_url||"",
       favoriteModes:Array.isArray(profile.favorite_modes)?profile.favorite_modes:(mirror?.favoriteModes||[]),
+      profileAccent:profile.profile_accent||"#4BA6D8",
+      usernameChangedAt:profile.username_changed_at||null,
       friends:mirror?.friends||[],
       profile:localProfile,
       settings:preferences?{
@@ -471,11 +475,14 @@
         backgroundColor:preferences.background_color||"#1f2328",
         backgroundImage:preferences.background_image_url||"",
         backgroundDim:Number(preferences.background_dim??64),
-        backgroundLuminance:preferences.background_luminance==null?null:Number(preferences.background_luminance)
+        backgroundLuminance:preferences.background_luminance==null?null:Number(preferences.background_luminance),
+        highContrast:!!preferences.high_contrast,
+        textScale:Number(preferences.text_scale||100)
       }:(mirror?.settings||{
         animations:true,reducedFx:false,showPrediction:true,
         backgroundType:"solid",backgroundColor:"#1f2328",
-        backgroundImage:"",backgroundDim:64,backgroundLuminance:null
+        backgroundImage:"",backgroundDim:64,backgroundLuminance:null,
+        highContrast:false,textScale:100
       }),
       wallet:localWallet,
       role:["developer","admin"].includes(role)?role:"user"
@@ -920,6 +927,23 @@
   async function developerRemoveBadge(playerId,badgeId){return api("developer_remove_badge",{playerId,badgeId})}
   async function developerSetStaffRole(playerId,role){return api("developer_set_staff_role",{playerId,role})}
 
+  async function checkUsernameAvailable(name){
+    const proposed=String(name||"").trim();
+    if(!/^[A-Za-z0-9_]{3,24}$/.test(proposed))return {available:false,reason:"Use 3–24 letters, numbers, or underscores."};
+    const reserved=["admin","administrator","developer","autotype","support","moderator","mod","staff","system","official","security","owner","root","help","helper"];
+    if(reserved.includes(proposed.toLowerCase()))return {available:false,reason:"That username is reserved."};
+    const existing=await publicProfileByUsername(proposed);
+    const mine=await user();
+    if(existing?.id===mine?.id)return {available:false,reason:"That's already your username."};
+    return {available:!existing,reason:existing?"That username is taken.":"That username is available."};
+  }
+
+  async function changeUsername(username){
+    const result=await api("change_username",{username});
+    await hydrateLocalMirror();
+    return result;
+  }
+
   window.AutoTypeBackend={
     version:"20261003-10",
     configured,
@@ -932,6 +956,8 @@
     signOut,
     myProfile,
     updateMyProfile,
+    checkUsernameAvailable,
+    changeUsername,
     myRole,
     publicBadgesFor,
     developerRoleSnapshot,
