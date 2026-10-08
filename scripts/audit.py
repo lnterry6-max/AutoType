@@ -126,7 +126,7 @@ def main() -> int:
     ]
     special_pages = {"404.html", "backend-test.html"}
     # Daily Mix CSS must be cache-busted on both screens when its layout changes.
-    mix_stylesheet_version = "styles.css?v=20261008-mode-rounds-v1"
+    mix_stylesheet_version = "styles.css?v=20261008-per-mode-crates-v1"
     mix_script_version = "daily-mix.js?v=20261008-daily-mix-v2"
 
     for page in html_files:
@@ -173,7 +173,7 @@ def main() -> int:
         if page.name == "shop.html":
             for required in (
                 'shop-rotation.js?v=20261008-et-limited',
-                'styles.css?v=20261008-mode-rounds-v1',
+                'styles.css?v=20261008-per-mode-crates-v1',
                 'id="shopDailyGrid"', 'id="shopRotationClock"',
                 'href="profile.html#inventory"',
             ):
@@ -209,13 +209,13 @@ def main() -> int:
 
         if page.name == "profile.html":
             for expected in ('id="inventory"', 'inventoryAccordion.open=true',
-                             'styles.css?v=20261008-mode-rounds-v1'):
+                             'styles.css?v=20261008-per-mode-crates-v1'):
                 if expected not in text:
                     fail(f"profile.html: missing inventory accordion detail {expected}", issues)
             if 'id="developerPanel"' in text:
                 fail("Developer controls must live in Admin Console, not Profile", issues)
         if page.name == "admin.html":
-            if 'backend.js?v=20261008-mode-rounds-v1' not in text:
+            if 'backend.js?v=20261008-per-mode-crates-v1' not in text:
                 fail("Admin level code is not cache-busted", issues)
             if 'achievements:m.achievements[profile.id]||{}' not in text:
                 fail("Admin player levels are ignoring achievements", issues)
@@ -224,7 +224,7 @@ def main() -> int:
         # mixing old cached components with new HTML markup.
         for path_or_script in ("styles.css", "core.js", "backend.js"):
             for match in re.finditer(re.escape(path_or_script) + r'\?v=([^"]+)', text):
-                if match.group(1) != "20261008-mode-rounds-v1":
+                if match.group(1) != "20261008-per-mode-crates-v1":
                     fail(f"{page.name}: stale shared asset build {match.group(0)}", issues)
 
         # Check cross-page fragment targets, including Inventory deep links.
