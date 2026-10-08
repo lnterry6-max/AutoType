@@ -121,6 +121,44 @@ Deno.serve(async(req:Request)=>{
       case "remove_friend":
         return json({ok:await rpc("autotype_remove_friend",{p_user:user.id,p_other:payload.userId})});
 
+      // Friends-only chat uses service-role RPCs; clients cannot bypass friendship/block checks.
+      case "chat_send":
+        return json(await rpc("autotype_chat_send",{
+          p_user:user.id,p_friend:String(payload.friendId||""),p_body:String(payload.message||"")
+        }));
+      case "chat_history":
+        return json(await rpc("autotype_chat_history",{
+          p_user:user.id,p_friend:String(payload.friendId||"")
+        }));
+      case "chat_block":
+        return json(await rpc("autotype_chat_block",{
+          p_user:user.id,p_other:String(payload.friendId||""),p_block:!!payload.block
+        }));
+      case "chat_blocked":
+        return json(await rpc("autotype_chat_blocked_list",{p_user:user.id}));
+      case "chat_report":
+        return json(await rpc("autotype_chat_report",{
+          p_user:user.id,p_message:String(payload.messageId||""),
+          p_reason:String(payload.reason||"other"),p_details:String(payload.details||"")
+        }));
+      case "admin_chat_reports": {
+        await requireDeveloper();
+        const {data,error}=await admin.from("friend_chat_reports")
+          .select("id,reporter_id,sender_id,message_id,body_snapshot,reason,details,status,created_at")
+          .order("created_at",{ascending:false}).limit(100);
+        if(error)throw error;
+        return json(data||[]);
+      }
+      case "admin_chat_report_status": {
+        await requireDeveloper();
+        const status=String(payload.status||"");
+        if(!["new","reviewed","resolved"].includes(status))throw new Error("Invalid report status");
+        const {data,error}=await admin.from("friend_chat_reports")
+          .update({status}).eq("id",String(payload.reportId||"")).select("id,status").single();
+        if(error)throw error;
+        return json(data);
+      }
+
       case "matchmaking_tick":
         return json(await rpc("autotype_matchmaking_tick",{p_user:user.id}));
 
