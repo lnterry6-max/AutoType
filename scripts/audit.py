@@ -119,6 +119,29 @@ def main() -> int:
             if pattern.search(text):
                 fail(f"{path.relative_to(ROOT)}: possible {label} committed", issues)
 
+    # Reject duplicate migration timestamps and mismatched client/server game actions.
+    migration_dir = ROOT / "supabase" / "migrations"
+    versions: dict[str, str] = {}
+    if migration_dir.exists():
+        for path in sorted(migration_dir.glob("*.sql")):
+            match = re.fullmatch(r"(\\d{14})_[a-z0-9_]+\\.sql", path.name)
+            if not match:
+                fail(f"Invalid migration filename: {path.name}", issues)
+                continue
+            version = match.group(1)
+            if version in versions:
+                fail(f"Duplicate migration version {version}: {versions[version]} and {path.name}", issues)
+            versions[version] = path.name
+
+    client = ROOT / "backend.js"
+    gateway = ROOT / "supabase" / "functions" / "game-api" / "index.ts"
+    if client.exists() and gateway.exists():
+        client_actions = set(re.findall(r'api\\(\\s*"([a-z_]+)"', client.read_text(encoding="utf-8")))
+        handler_actions = set(re.findall(r'case\\s+"([a-z_]+)"', gateway.read_text(encoding="utf-8")))
+        missing = sorted(client_actions - handler_actions)
+        if missing:
+            fail("Missing game-api handlers: " + ", ".join(missing), issues)
+
     leftovers = sorted(p.name for p in ROOT.iterdir() if p.is_file() and (".before_" in p.name or "before-home-fix" in p.name))
     if leftovers:
         fail("Historical snapshot files remain in site root: " + ", ".join(leftovers), issues)
