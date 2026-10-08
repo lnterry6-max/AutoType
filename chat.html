@@ -226,6 +226,9 @@ document.addEventListener("DOMContentLoaded",async()=>{
         box.appendChild(meta);area.appendChild(box);
       }
       if(pinned)area.scrollTop=area.scrollHeight;
+      if(!document.hidden && messages.some(m=>m.sender_id!==myId)){
+        AutoTypeBackend.markFriendMessagesRead(person.id).catch(error=>console.warn("Could not mark conversation read:",error));
+      }
       status("Don't share personal contact details or links. You can report or block anytime.");
     }catch(err){
       if(person.id===selected?.id){status(err.message||"Could not load messages.");}
