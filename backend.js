@@ -693,7 +693,22 @@
   async function adminDeleteTournament(tournamentId){return api("admin_delete_tournament",{tournamentId})}
   async function adminRestoreTournaments(){return api("admin_restore_tournaments",{})}
   async function adminResetPlayer(userId){return api("admin_reset_player",{userId})}
-  async function adminSnapshot(){return api("admin_snapshot",{})}
+  async function adminSnapshot(){
+    const snapshot=await api("admin_snapshot",{});
+    if(snapshot?.role!=="developer")return snapshot;
+    const db=getClient();
+    if(!db)throw new Error("Cannot read player achievements.");
+    const ids=(snapshot.profiles||[]).map(profile=>profile.id).filter(Boolean);
+    const achievements=[];
+    for(let offset=0;offset<ids.length;offset+=80){
+      const {data,error}=await db.from("user_achievements")
+        .select("user_id,achievement_id")
+        .in("user_id",ids.slice(offset,offset+80));
+      if(error)throw new Error("Admin achievement sync failed: "+error.message);
+      achievements.push(...(data||[]));
+    }
+    return {...snapshot,achievements};
+  }
 
   async function coinPacks(){
     const db=getClient();
