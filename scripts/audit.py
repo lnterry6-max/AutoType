@@ -93,6 +93,9 @@ def main() -> int:
         "leaderboard.html", "how-to.html", "explore.html", "settings.html"
     ]
     special_pages = {"404.html", "backend-test.html"}
+    # Daily Mix CSS must be cache-busted on both screens when its layout changes.
+    mix_stylesheet_version = "styles.css?v=20261008-daily-mix-v2"
+    mix_script_version = "daily-mix.js?v=20261008-daily-mix-v2"
 
     for page in html_files:
         text = page.read_text(encoding="utf-8")
@@ -128,6 +131,12 @@ def main() -> int:
                     text,
                 ):
                     fail(f"{page.name}: missing persistent header shortcut to {header_url}", issues)
+
+        if page.name in {"index.html", "play.html"}:
+            if mix_stylesheet_version not in text:
+                fail(f"{page.name}: Daily Mix CSS cache version is outdated", issues)
+            if mix_script_version not in text:
+                fail(f"{page.name}: Daily Mix script cache version is outdated", issues)
 
         if page.name == "play.html":
             for required_id in (
