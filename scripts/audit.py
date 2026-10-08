@@ -55,7 +55,7 @@ def main() -> int:
     issues: list[str] = []
     html_files = sorted(ROOT.glob("*.html"))
 
-    for js in (ROOT / "core.js", ROOT / "game.js", ROOT / "backend.js", ROOT / "plinko.js", ROOT / "content-pack.js"):
+    for js in (ROOT / "core.js", ROOT / "game.js", ROOT / "backend.js", ROOT / "plinko.js", ROOT / "content-pack.js", ROOT / "daily-mix.js"):
         if js.exists():
             check_node(js, issues)
 
@@ -75,6 +75,14 @@ def main() -> int:
                 print(proc.stdout.strip())
         except subprocess.TimeoutExpired:
             fail("Leaderboard level consistency regression timed out.", issues)
+
+    daily_mix_test = ROOT / "scripts" / "test-daily-mix.cjs"
+    if daily_mix_test.exists():
+        proc = subprocess.run(["node", str(daily_mix_test)], capture_output=True, text=True, timeout=20)
+        if proc.returncode:
+            fail("Daily Mix regression failed:\n" + (proc.stderr.strip() or proc.stdout.strip()), issues)
+        else:
+            print(proc.stdout.strip())
 
     canonical_more = [
         "predictions.html", "leaderboard.html", "how-to.html", "explore.html", "settings.html"
