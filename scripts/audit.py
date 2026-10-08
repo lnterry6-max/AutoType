@@ -124,7 +124,7 @@ def main() -> int:
     versions: dict[str, str] = {}
     if migration_dir.exists():
         for path in sorted(migration_dir.glob("*.sql")):
-            match = re.fullmatch(r"(\\d{14})_[a-z0-9_]+\\.sql", path.name)
+            match = re.fullmatch(r"(\d{14})_[a-z0-9_]+\.sql", path.name)
             if not match:
                 fail(f"Invalid migration filename: {path.name}", issues)
                 continue
@@ -136,8 +136,8 @@ def main() -> int:
     client = ROOT / "backend.js"
     gateway = ROOT / "supabase" / "functions" / "game-api" / "index.ts"
     if client.exists() and gateway.exists():
-        client_actions = set(re.findall(r'api\\(\\s*"([a-z_]+)"', client.read_text(encoding="utf-8")))
-        handler_actions = set(re.findall(r'case\\s+"([a-z_]+)"', gateway.read_text(encoding="utf-8")))
+        client_actions = set(re.findall(r'api\(\s*"([a-z_]+)"', client.read_text(encoding="utf-8")))
+        handler_actions = set(re.findall(r'case\s+"([a-z_]+)"', gateway.read_text(encoding="utf-8")))
         missing = sorted(client_actions - handler_actions)
         if missing:
             fail("Missing game-api handlers: " + ", ".join(missing), issues)
