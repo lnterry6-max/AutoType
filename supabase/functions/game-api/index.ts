@@ -39,11 +39,20 @@ Deno.serve(async(req:Request)=>{
       if(error)throw error;
       return data;
     }
-    async function requireDeveloper(){
+    async function staffRole(){
       const {data,error}=await admin.from("user_roles").select("role").eq("user_id",user.id).single();
       if(error)throw error;
-      if(!["developer","admin"].includes(data.role))throw new Error("Developer access required.");
-      return data.role;
+      return String(data?.role||"player");
+    }
+    async function requireStaff(){
+      const role=await staffRole();
+      if(!["developer","admin"].includes(role))throw new Error("Admin access required.");
+      return role;
+    }
+    async function requireDeveloper(){
+      const role=await staffRole();
+      if(role!=="developer")throw new Error("Developer access required.");
+      return role;
     }
 
     switch(action){
@@ -142,7 +151,7 @@ Deno.serve(async(req:Request)=>{
           p_reason:String(payload.reason||"other"),p_details:String(payload.details||"")
         }));
       case "admin_chat_reports": {
-        await requireDeveloper();
+        await requireStaff();
         const {data,error}=await admin.from("friend_chat_reports")
           .select("id,reporter_id,sender_id,message_id,body_snapshot,reason,details,status,created_at")
           .order("created_at",{ascending:false}).limit(100);
@@ -150,7 +159,7 @@ Deno.serve(async(req:Request)=>{
         return json(data||[]);
       }
       case "admin_chat_report_status": {
-        await requireDeveloper();
+        await requireStaff();
         const status=String(payload.status||"");
         if(!["new","reviewed","resolved"].includes(status))throw new Error("Invalid report status");
         const {data,error}=await admin.from("friend_chat_reports")
@@ -274,7 +283,7 @@ Deno.serve(async(req:Request)=>{
       case "leave_tournament":
         return json(await rpc("autotype_leave_tournament",{p_user:user.id,p_tournament:String(payload.tournamentId||"")}));
       case "award_tournament":
-        await requireDeveloper();
+        await requireStaff();
         return json(await rpc("autotype_award_tournament",{
           p_actor:user.id,p_tournament:String(payload.tournamentId||""),p_winner:payload.winnerId
         }));
@@ -307,7 +316,7 @@ Deno.serve(async(req:Request)=>{
       }
 
       case "admin_set_balances":
-        await requireDeveloper();
+        await requireStaff();
         return json(await rpc("autotype_admin_set_balances",{
           p_actor:user.id,p_target:payload.userId||user.id,
           p_coins:Number(payload.coins||0),p_tickets:Number(payload.tickets||0),p_tokens:Number(payload.crateTokens||0)
@@ -318,7 +327,7 @@ Deno.serve(async(req:Request)=>{
         return json({granted:await rpc("autotype_admin_grant_all",{p_actor:user.id,p_target:payload.userId||user.id})});
 
       case "admin_set_announcement": {
-        await requireDeveloper();
+        await requireStaff();
         const message=String(payload.message||"").trim().slice(0,180);
         await admin.from("site_announcements").update({active:false}).neq("id","00000000-0000-0000-0000-000000000000");
         if(message){
@@ -339,7 +348,7 @@ Deno.serve(async(req:Request)=>{
         }
 
       case "admin_upsert_tournament": {
-        await requireDeveloper();
+        await requireStaff();
         const input={
           name:String(payload.name||"Untitled Tournament").trim().slice(0,60),
           description:String(payload.description||"").trim().slice(0,240),
@@ -368,7 +377,7 @@ Deno.serve(async(req:Request)=>{
       }
 
       case "admin_delete_tournament":
-        await requireDeveloper();
+        await requireStaff();
         {
           const id=String(payload.tournamentId||"");
           let request=admin.from("tournaments").delete();
@@ -379,7 +388,7 @@ Deno.serve(async(req:Request)=>{
         }
 
       case "admin_restore_tournaments":
-        await requireDeveloper();
+        await requireStaff();
         return json(await rpc("autotype_reset_builtin_tournaments",{p_actor:user.id}));
 
       case "admin_reset_player":
@@ -396,8 +405,23 @@ Deno.serve(async(req:Request)=>{
           return json({ok:true});
         }
 
-      case "admin_snapshot":
-        await requireDeveloper();
+      case "admin_snapshot": {
+        const role=await requireStaff();
+        if(role==="admin"){
+          const [profiles,wallets,tournaments,entries,announcements]=await Promise.all([
+            admin.from("profiles").select("id,username,display_name,avatar_url"),
+            admin.from("wallets").select("user_id,coins,tournament_tickets,crate_tokens").eq("user_id",user.id),
+            admin.from("tournaments").select("*").order("created_at",{ascending:false}),
+            admin.from("tournament_entries").select("*"),
+            admin.from("site_announcements").select("*").order("created_at",{ascending:false})
+          ]);
+          for(const res of [profiles,wallets,tournaments,entries,announcements])if(res.error)throw res.error;
+          return json({
+            role:"admin",profiles:profiles.data,wallets:wallets.data,tournaments:tournaments.data,
+            entries:entries.data,announcements:announcements.data,
+            roles:[],stats:[],suggestions:[],votes:[],payments:[],paymentAdjustments:[]
+          });
+        }
         {
           const [profiles,roles,wallets,stats,tournaments,entries,suggestions,votes,announcements,payments,paymentAdjustments]=await Promise.all([
             admin.from("profiles").select("id,username,display_name,avatar_url,created_at"),
@@ -417,9 +441,76 @@ Deno.serve(async(req:Request)=>{
             profiles:profiles.data,roles:roles.data,wallets:wallets.data,stats:stats.data,
             tournaments:tournaments.data,entries:entries.data,suggestions:suggestions.data,
             votes:votes.data,announcements:announcements.data,
-            payments:payments.data,paymentAdjustments:paymentAdjustments.data
+            payments:payments.data,paymentAdjustments:paymentAdjustments.data,
+            role:"developer"
           });
         }
+      }
+
+      // Only the developer can create display badges or grant Admin permissions.
+      case "developer_role_snapshot": {
+        await requireDeveloper();
+        const [badges,assignments]=await Promise.all([
+          admin.from("role_badges").select("*").order("created_at",{ascending:true}),
+          admin.from("player_role_badges").select("*")
+        ]);
+        if(badges.error)throw badges.error;
+        if(assignments.error)throw assignments.error;
+        return json({badges:badges.data||[],assignments:assignments.data||[]});
+      }
+      case "developer_create_badge": {
+        await requireDeveloper();
+        const name=String(payload.name||"").trim();
+        const color=String(payload.color||"#4BA6D8").trim();
+        if(!/^[a-zA-Z0-9][a-zA-Z0-9 _-]{1,27}$/.test(name))throw new Error("Use 2–28 letters, numbers, spaces or hyphens.");
+        if(!/^#[0-9a-fA-F]{6}$/.test(color))throw new Error("Use a valid badge color.");
+        const {data,error}=await admin.from("role_badges").insert({name,color,created_by:user.id}).select().single();
+        if(error)throw error;
+        await admin.from("admin_audit_log").insert({actor_id:user.id,action:"create_badge",target_type:"role_badge",target_id:data.id,details:{name}});
+        return json(data);
+      }
+      case "developer_delete_badge": {
+        await requireDeveloper();
+        const badgeId=String(payload.badgeId||"");
+        const {error}=await admin.from("role_badges").delete().eq("id",badgeId);
+        if(error)throw error;
+        await admin.from("admin_audit_log").insert({actor_id:user.id,action:"delete_badge",target_type:"role_badge",target_id:badgeId,details:{}});
+        return json({ok:true});
+      }
+      case "developer_assign_badge": {
+        await requireDeveloper();
+        const playerId=String(payload.playerId||""),badgeId=String(payload.badgeId||"");
+        const {error}=await admin.from("player_role_badges")
+          .upsert({user_id:playerId,role_id:badgeId,assigned_by:user.id},{onConflict:"user_id,role_id"});
+        if(error)throw error;
+        await admin.from("admin_audit_log").insert({actor_id:user.id,action:"assign_badge",target_type:"profile",target_id:playerId,details:{badgeId}});
+        return json({ok:true});
+      }
+      case "developer_remove_badge": {
+        await requireDeveloper();
+        const playerId=String(payload.playerId||""),badgeId=String(payload.badgeId||"");
+        const {error}=await admin.from("player_role_badges").delete().eq("user_id",playerId).eq("role_id",badgeId);
+        if(error)throw error;
+        await admin.from("admin_audit_log").insert({actor_id:user.id,action:"remove_badge",target_type:"profile",target_id:playerId,details:{badgeId}});
+        return json({ok:true});
+      }
+      case "developer_set_staff_role": {
+        await requireDeveloper();
+        const playerId=String(payload.playerId||"");
+        const role=String(payload.role||"");
+        if(!["player","admin"].includes(role))throw new Error("Only Admin and Player may be assigned here.");
+        if(playerId===user.id)throw new Error("You cannot change your own permission level.");
+        const {data:existing,error:lookupError}=await admin.from("user_roles").select("role").eq("user_id",playerId).single();
+        if(lookupError)throw lookupError;
+        if(existing.role==="developer")throw new Error("Developer accounts cannot be modified.");
+        const {error}=await admin.from("user_roles").update({role,updated_at:new Date().toISOString()}).eq("user_id",playerId);
+        if(error)throw error;
+        await admin.from("admin_audit_log").insert({
+          actor_id:user.id,action:"set_staff_role",target_type:"profile",target_id:playerId,
+          details:{from:existing.role,to:role}
+        });
+        return json({ok:true,role});
+      }
 
       default:
         return json({error:"Unknown action"},400);
