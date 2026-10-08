@@ -880,6 +880,27 @@
     if(error)throw error;
   }
 
+  // Authenticated friends-only messaging via server-checked Edge Function actions.
+  async function sendFriendMessage(friendId,message){
+    return api("chat_send",{friendId,message});
+  }
+  async function friendChatHistory(friendId){
+    return api("chat_history",{friendId});
+  }
+  async function blockFriendChat(friendId,block=true){
+    return api("chat_block",{friendId,block});
+  }
+  async function blockedChatPlayers(){
+    return api("chat_blocked",{});
+  }
+  async function reportFriendMessage(messageId,reason,details){
+    return api("chat_report",{messageId,reason,details});
+  }
+  async function adminChatReports(){return api("admin_chat_reports",{})}
+  async function adminSetChatReportStatus(reportId,status){
+    return api("admin_chat_report_status",{reportId,status});
+  }
+
   window.AutoTypeBackend={
     version:"20261003-10",
     configured,
@@ -914,6 +935,13 @@
     myInventory,
     hydrateLocalMirror,
     friendsSnapshot,
+    sendFriendMessage,
+    friendChatHistory,
+    blockFriendChat,
+    blockedChatPlayers,
+    reportFriendMessage,
+    adminChatReports,
+    adminSetChatReportStatus,
     searchProfiles,
     racesSnapshot,
     raceById,
