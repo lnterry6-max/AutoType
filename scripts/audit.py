@@ -209,7 +209,7 @@ def main() -> int:
         if page.name == "play.html":
             for required_id in (
                 "mobileStartButton", "mobileTypingInput", "mobileEraseButton",
-                "mobileLockButton", "scoreExplainer", "scoreNextWord"
+                "mobileLockButton", "mobileKeyboardClose", "scoreExplainer", "scoreNextWord"
             ):
                 if required_id not in parser.ids:
                     fail(f"play.html: missing mobile/scoring control #{required_id}", issues)
