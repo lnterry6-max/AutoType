@@ -195,12 +195,10 @@ def main() -> int:
 
         # Keep all pages on the same live JS/CSS build, rather than silently
         # mixing old cached components with new HTML markup.
-        for pattern in (r'href="styles\\.css\\?v=([^"]+)"',
-                        r'src="core\\.js\\?v=([^"]+)"',
-                        r'src="backend\\.js\\?v=([^"]+)"'):
-            match = re.search(pattern, text)
-            if match and match.group(1) != "20261008-integrity-1":
-                fail(f"{page.name}: stale shared asset build {match.group(0)}", issues)
+        for path_or_script in ("styles.css", "core.js", "backend.js"):
+            for match in re.finditer(re.escape(path_or_script) + r'\?v=([^"]+)', text):
+                if match.group(1) != "20261008-integrity-1":
+                    fail(f"{page.name}: stale shared asset build {match.group(0)}", issues)
 
         # Check cross-page fragment targets, including Inventory deep links.
         for ref in parser.refs:
@@ -215,7 +213,8 @@ def main() -> int:
             target_file = ROOT / target_path
             if target_file.is_file():
                 target_html = target_file.read_text(encoding="utf-8")
-                if not re.search(r'\\bid=["\\\']'+re.escape(fragment)+r'["\\\']',target_html):
+                if (f'id="{fragment}"' not in target_html and
+                        f"id='{fragment}'" not in target_html):
                     fail(f"{page.name}: broken fragment link {ref}", issues)
 
         duplicates = sorted({value for value in parser.ids if parser.ids.count(value) > 1})
