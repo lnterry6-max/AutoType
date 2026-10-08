@@ -105,16 +105,15 @@
       <div><span class="section-kicker">CRATES</span><h2>Crates</h2></div>
       <div class="crate-key-balance">▣ <strong id="crateKeyBalance">0</strong> tokens</div>
     </div>
-    <p class="shop-fixed-pack-note">The original crates use earned tokens. The four mode-themed surprise crates use rounds completed in any mode, with no purchase or token cost.</p>
-    <div class="crate-rounds-panel" aria-live="polite">
+    <p class="shop-fixed-pack-note">Play 5 verified rounds <strong>in the same mode</strong> to unlock that mode's free crate. Each mode keeps its own progress, and unspent rounds carry over. The original three crates still use earned tokens.</p>
+    <div class="crate-rounds-panel">
       <div class="crate-rounds-copy">
         <span class="section-kicker">FREE MODE CRATE PROGRESS</span>
-        <strong id="freeCrateRoundCount">Loading…</strong>
-        <small id="freeCrateRoundHint">Every 5 verified rounds unlocks one free crate. Unspent rounds carry over.</small>
+        <strong>Four independent progress counters</strong>
+        <small>Word rounds unlock Word crates only; Context, Sentence and Evil work the same way.</small>
       </div>
-      <div class="crate-rounds-meter">
-        <progress id="freeCrateProgressBar" max="5" value="0" aria-label="Progress toward a free mode crate"></progress>
-        <span id="freeCrateRoundSubline">Your progress is shared between all four modes.</span>
+      <div id="freeCrateModeProgress" class="crate-mode-progress-grid" aria-live="polite">
+        <span class="section-note">Loading your mode progress…</span>
       </div>
     </div>
     <div class="crate-grid" id="crateGrid"></div>
@@ -184,31 +183,38 @@ document.addEventListener("DOMContentLoaded",async()=>{
   let activeView="featured";
   let selectedCrateId=null;
   let opening=false;
-  // All four mode crates share one verified-round balance.
-  // A 24-round balance displays 24/5, then 19/5 after one claim, and so on.
+  // Each mode has its own independent completed-round balance.
   let freeDropProgress=null;
-
-  function freeDropRemaining(){
-    return freeDropProgress?Math.max(0,Number(freeDropProgress.remaining||0)):null;
+  function freeDropRemaining(mode){
+    const state=freeDropProgress?.[mode];
+    return state?Math.max(0,Number(state.remaining||0)):null;
   }
   function localFreeDropProgress(){
     const current=AutoType.currentAccount();
-    const rounds=Math.max(0,Number(current?.profile?.rounds||0));
-    const claimed=Math.max(0,Number(current?.wallet?.freeDropClaims||0));
-    return {rounds,claimed,remaining:Math.max(0,rounds-claimed*5)};
+    const roundCounts=current?.profile?.modeRounds||{};
+    const claimCounts=current?.wallet?.modeDropClaims||{};
+    return Object.fromEntries(["classic","context","sentence","evil"].map(mode=>{
+      const rounds=Math.max(0,Number(roundCounts[mode]||0));
+      const claimed=Math.max(0,Number(claimCounts[mode]||0));
+      return [mode,{rounds,claimed,remaining:Math.max(0,rounds-claimed*5)}];
+    }));
   }
   function renderFreeCrateProgress(){
-    const remaining=freeDropRemaining();
-    freeCrateRoundCount.textContent=remaining===null?"Progress unavailable":remaining+" / 5 rounds";
-    freeCrateRoundHint.textContent=remaining===null
-      ?"Could not load round progress. Please refresh to retry."
-      :remaining>=5
-      ?"Ready to claim a free mode crate. Each claim uses 5 rounds."
-      :(5-remaining)+" more round"+(5-remaining===1?"":"s")+" to your next free crate.";
-    freeCrateProgressBar.value=remaining===null?0:Math.min(5,remaining);
-    freeCrateRoundSubline.textContent=freeDropProgress
-      ?freeDropProgress.rounds+" rounds completed · "+freeDropProgress.claimed+" free crates claimed"
-      :"Your progress is shared between all four mode crates.";
+    const crates=AutoType.crateDefs.filter(crate=>crate.roundsPerDrop&&crate.gameMode);
+    freeCrateModeProgress.innerHTML=crates.map(crate=>{
+      const state=freeDropProgress?.[crate.gameMode];
+      const remaining=freeDropRemaining(crate.gameMode);
+      const count=remaining===null?"—":remaining+" / "+crate.roundsPerDrop;
+      const status=remaining===null?"Unavailable":remaining>=crate.roundsPerDrop
+        ?"Ready":(crate.roundsPerDrop-remaining)+" to go";
+      return '<div class="crate-mode-progress-item">'+
+        '<div class="crate-mode-progress-head"><strong>'+AutoType.escapeHTML(crate.modeLabel.replace(" MODE",""))+
+        '</strong><span>'+AutoType.escapeHTML(status)+'</span></div>'+
+        '<div class="crate-mode-progress-amount">'+count+' <small>rounds</small></div>'+
+        '<progress max="'+crate.roundsPerDrop+'" value="'+Math.min(crate.roundsPerDrop,remaining||0)+
+        '" aria-label="'+AutoType.escapeHTML(crate.modeLabel)+' crate progress"></progress>'+
+        '<small>'+ (state?state.rounds+' completed · '+state.claimed+' opened':'Could not load progress')+'</small></div>';
+    }).join("");
     if(selectedCrateId)syncCrateModalButton();
   }
   async function refreshFreeDropProgress(){
@@ -230,7 +236,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
       openCrateButton.disabled=false;
       return;
     }
-    const remaining=freeDropRemaining();
+    const remaining=freeDropRemaining(crate.gameMode);
     openCrateButton.disabled=remaining===null||remaining<crate.roundsPerDrop;
     openCrateButton.textContent=remaining===null
       ?"Progress unavailable"
@@ -463,17 +469,18 @@ document.addEventListener("DOMContentLoaded",async()=>{
 
 
   function renderCrates(){
-    const balance=freeDropRemaining();
     crateGrid.innerHTML=AutoType.crateDefs.map((crate,index)=>{
       const free=Boolean(crate.roundsPerDrop);
       const count=cratePool(crate).length;
-      const progress=balance===null?"Progress unavailable":balance+" / "+crate.roundsPerDrop+" rounds available";
-      const suffix=free?(balance!==null&&balance>=crate.roundsPerDrop?"Open free mode crate":"View crate · "+progress):"Open details · "+crate.keyCost+" ▣";
-      return `${index===3?'<div class="crate-grid-separator">MODE CRATES · SHARED ROUND PROGRESS</div>':""}
+      const balance=free?freeDropRemaining(crate.gameMode):null;
+      const progress=balance===null?"Progress unavailable":balance+" / "+crate.roundsPerDrop+" "+crate.gameMode+" rounds";
+      const suffix=free?(balance!==null&&balance>=crate.roundsPerDrop?"Open free "+crate.gameMode+" crate":"View crate · "+progress):"Open details · "+crate.keyCost+" ▣";
+      return `${index===3?'<div class="crate-grid-separator">MODE CRATES · SEPARATE PROGRESS FOR EACH MODE</div>':""}
       <article class="crate-card crate-theme-${crate.id}">
         <div class="crate-art"><div class="crate-box">${free?"★":"AT"}</div><div class="crate-glow"></div></div>
         ${free?'<span class="crate-free-label">'+AutoType.escapeHTML(crate.modeLabel)+' · FREE REWARD</span>':""}
         <h3>${AutoType.escapeHTML(crate.name)}</h3>
+        ${free?'<div class="crate-card-round-progress"><strong>'+(balance===null?'—':balance)+' / '+crate.roundsPerDrop+' '+AutoType.escapeHTML(crate.gameMode)+' rounds</strong><progress max="'+crate.roundsPerDrop+'" value="'+Math.min(crate.roundsPerDrop,balance||0)+'" aria-label="'+AutoType.escapeHTML(crate.modeLabel)+' free crate rounds"></progress></div>':""}
         <p>${AutoType.escapeHTML(crate.description)}</p>
         <p class="crate-pool-note">${count} possible cosmetics · ${crate.categories.map(category=>AutoType.escapeHTML(category)).join(" · ")}</p>
         <div class="crate-odds">${Object.entries(crate.odds).map(([rarity,odds])=>`<span style="--rarity:${rarityColors[rarity]}"><i></i>${rarity} ${odds}%</span>`).join("")}</div>
@@ -552,7 +559,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
     if(opening||!selectedCrateId||openCrateButton.disabled)return;
     if(!account){location.href="account.html";return}
     const chosen=AutoType.crateDefs.find(entry=>entry.id===selectedCrateId);
-    if(chosen?.roundsPerDrop&&(freeDropRemaining()===null||freeDropRemaining()<chosen.roundsPerDrop))return;
+    if(chosen?.roundsPerDrop&&(freeDropRemaining(chosen.gameMode)===null||freeDropRemaining(chosen.gameMode)<chosen.roundsPerDrop))return;
     try{
       opening=true;
       openCrateButton.disabled=true;
