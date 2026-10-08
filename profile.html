@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Profile · AutoType</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="styles.css?v=20261008-plinko">
+<link rel="stylesheet" href="styles.css?v=20261008-scoped-roles">
 </head>
 <body data-page="">
 
@@ -70,6 +70,7 @@
     <div>
       <span class="profile-equipped-title" id="profileEquippedTitle"></span>
       <h1 id="profileTitle">Guest</h1>
+      <div class="public-role-badges" id="myProfileBadges" aria-label="My role badges"></div>
     </div>
     <div class="profile-wallet" id="profileWallet" hidden></div>
   </section>
@@ -161,8 +162,8 @@
 
 <script src="backend-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="backend.js?v=20261008-chat"></script>
-<script src="core.js?v=20261008-chat"></script>
+<script src="backend.js?v=20261008-scoped-roles"></script>
+<script src="core.js?v=20261008-scoped-roles"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded",async()=>{
@@ -174,6 +175,16 @@ document.addEventListener("DOMContentLoaded",async()=>{
   profileTitle.textContent=AutoType.accountName(target);displayName.value=target.displayName||"Guest";bio.value=target.bio||"";bioCount.textContent=bio.value.length;
 
   if(a){
+    if(a.online&&a.supabaseUserId){
+      AutoTypeBackend.publicBadgesFor(a.supabaseUserId).then(badges=>{
+        const list=document.querySelector("#myProfileBadges");list.replaceChildren();
+        for(const badge of badges){
+          const item=document.createElement("span");item.className="user-role-badge";
+          item.textContent=badge.name;item.style.setProperty("--badge-color",badge.color);
+          list.appendChild(item);
+        }
+      }).catch(error=>console.warn("Could not load profile roles:",error));
+    }
     let wallet=AutoType.currentWallet();
     const banner=AutoType.equippedItem("banner",a);
     const title=AutoType.equippedItem("title",a);

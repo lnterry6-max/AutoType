@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Player · AutoType</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="styles.css?v=20261008-plinko">
+<link rel="stylesheet" href="styles.css?v=20261008-scoped-roles">
 </head>
 <body data-page="player">
 <header class="topbar">
@@ -75,6 +75,7 @@
         <h1 id="playerName"></h1>
         <p class="player-handle" id="playerHandle"></p>
         <p id="playerBio" class="player-bio"></p>
+        <div class="public-role-badges" id="playerRoleBadges" aria-label="Player role badges"></div>
         <div class="player-actions" id="playerActions"></div>
       </div>
     </section>
@@ -117,8 +118,8 @@
 <div class="toast"></div>
 <script src="backend-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="backend.js?v=20261008-chat"></script>
-<script src="core.js?v=20261008-chat"></script>
+<script src="backend.js?v=20261008-scoped-roles"></script>
+<script src="core.js?v=20261008-scoped-roles"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded",async()=>{
@@ -135,14 +136,21 @@ document.addEventListener("DOMContentLoaded",async()=>{
     $("playerLoading").hidden=true;
     if(!profile){$("playerNotFound").hidden=false;return;}
     const isSelf=current?.supabaseUserId===profile.id;
-    const [awards,stats]=await Promise.all([
+    const [awards,stats,roleBadges]=await Promise.all([
       AutoTypeBackend.publicAchievementsFor(profile.id),
-      AutoTypeBackend.publicPlayerStats(profile.id)
+      AutoTypeBackend.publicPlayerStats(profile.id),
+      AutoTypeBackend.publicBadgesFor(profile.id)
     ]);
     $("playerView").hidden=false;
     $("playerName").textContent=profile.display_name||profile.username;
     $("playerHandle").textContent="@"+profile.username;
     $("playerBio").textContent=profile.bio||"No bio yet.";
+    for(const b of roleBadges){
+      const tag=document.createElement("span");
+      tag.className="user-role-badge";tag.textContent=b.name;
+      tag.style.setProperty("--badge-color",b.color);
+      $("playerRoleBadges").appendChild(tag);
+    }
     const avatar=$("playerAvatar");
     if(profile.avatar_url){
       const img=document.createElement("img");
