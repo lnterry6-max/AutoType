@@ -140,6 +140,12 @@ Deno.serve(async(req:Request)=>{
         return json({ok:await rpc("autotype_remove_friend",{p_user:user.id,p_other:payload.userId})});
 
       // Friends-only chat uses service-role RPCs; clients cannot bypass friendship/block checks.
+      case "chat_mark_read":
+        return json(await rpc("autotype_chat_mark_read",{
+          p_user:user.id,p_friend:String(payload.friendId||"")
+        }));
+      case "chat_unread_summary":
+        return json(await rpc("autotype_chat_unread_summary",{p_user:user.id}));
       case "chat_send":
         return json(await rpc("autotype_chat_send",{
           p_user:user.id,p_friend:String(payload.friendId||""),p_body:String(payload.message||"")
