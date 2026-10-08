@@ -4,3 +4,9 @@ Thumbs.db
 *.zip
 __pycache__/
 *.pyc
+
+.env
+.env.*
+!.env.example
+.supabase/
+supabase/.temp/

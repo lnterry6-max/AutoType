@@ -60,9 +60,8 @@
 <main class="container page shop-page shop-v3">
   <header class="shop-v3-head">
     <div>
-      <div class="eyebrow">AutoType cosmetics</div>
+      <div class="eyebrow">AUTOTYPE SHOP</div>
       <h1>Shop</h1>
-      <p>Collections and effects that actually change how your profile or game looks.</p>
     </div>
     <div class="shop-v3-wallet" id="shopWallet">
       <button class="shop-wallet-item shop-wallet-coins" id="getCoinsButton" type="button" title="Get Coins">
@@ -72,6 +71,14 @@
       <button class="shop-wallet-item" data-shop-view-jump="crates" type="button"><span>▣</span><strong id="shopCrateTokens">0</strong><small>Crate Tokens</small></button>
     </div>
   </header>
+
+  <section class="equipped-strip" id="shopEquippedStrip" hidden>
+    <div class="equipped-strip-head">
+      <strong>Equipped</strong>
+      <a href="profile.html#inventory">Inventory →</a>
+    </div>
+    <div class="equipped-strip-grid" id="shopEquippedGrid"></div>
+  </section>
 
   <nav class="shop-v3-tabs" id="shopMainTabs">
     <button class="active" data-shop-view="featured">Featured</button>
@@ -83,8 +90,7 @@
     <div class="featured-collection" id="featuredCollection"></div>
 
     <div class="shop-v3-section-head">
-      <div><span class="section-kicker">COLLECTIONS</span><h2>Complete looks</h2></div>
-      <span>Bundle savings · one-click equip</span>
+      <div><span class="section-kicker">COLLECTIONS</span><h2>Collections</h2></div>
     </div>
     <div class="collection-grid" id="collectionGrid"></div>
 
@@ -97,8 +103,8 @@
 
   <section class="shop-view" id="shopCosmeticsView" hidden>
     <div class="shop-v3-section-head">
-      <div><span class="section-kicker">COSMETICS</span><h2>Choose what players can actually notice</h2></div>
-      <a href="profile.html#inventory">Manage inventory →</a>
+      <div><span class="section-kicker">COSMETICS</span><h2>Cosmetics</h2></div>
+      <a href="profile.html#inventory">Inventory →</a>
     </div>
     <div class="cosmetic-family-tabs" id="cosmeticFamilyTabs"></div>
     <div class="shop-grid shop-v3-grid" id="shopGrid"></div>
@@ -106,7 +112,7 @@
 
   <section class="shop-view" id="shopCratesView" hidden>
     <div class="shop-v3-section-head">
-      <div><span class="section-kicker">CRATES</span><h2>Tournament reward crates</h2><p>Crate Tokens are earned from tournaments and special events.</p></div>
+      <div><span class="section-kicker">CRATES</span><h2>Crates</h2></div>
       <div class="crate-key-balance">▣ <strong id="crateKeyBalance">0</strong> tokens</div>
     </div>
     <div class="crate-grid" id="crateGrid"></div>
@@ -128,7 +134,6 @@
       <div class="crate-reveal" id="crateReveal" hidden></div>
       <div class="crate-opening-actions">
         <button class="button button-primary" id="openCrateButton">Open crate · 1 ▣</button>
-        <span>Visible odds · duplicate protection · ~5 second reveal</span>
       </div>
     </section>
   </div>
@@ -148,36 +153,10 @@
           <strong>◉ <span id="coinStoreBalance">0</span></strong>
         </div>
 
-        <div class="coin-store-grid">
-          <article>
-            <div class="coin-stack">◉</div>
-            <strong>500</strong>
-            <span>Coins</span>
-            <b>$0.99</b>
-            <button class="button button-primary" disabled>Coming later</button>
-          </article>
-          <article class="featured-pack">
-            <div class="pack-badge">Popular</div>
-            <div class="coin-stack">◉</div>
-            <strong>1,800</strong>
-            <span>Coins</span>
-            <b>$2.99</b>
-            <button class="button button-primary" disabled>Coming later</button>
-          </article>
-          <article>
-            <div class="coin-stack">◉</div>
-            <strong>3,500</strong>
-            <span>Coins</span>
-            <b>$4.99</b>
-            <button class="button button-primary" disabled>Coming later</button>
-          </article>
-        </div>
-
-        <div class="coin-store-note">
-          <strong>What Coins are for</strong>
-          <span>Direct cosmetics and Collections only. Crate Tokens remain earned through tournaments and events.</span>
-        </div>
-        <p class="help">Payment is not connected in this local prototype yet.</p>
+        <div class="payment-mode-badge" id="paymentModeBadge" hidden></div>
+        <div class="coin-store-grid" id="coinPackGrid"></div>
+        <div class="payment-status-line" id="paymentStatusLine"></div>
+        <p class="coin-store-rule">Coins buy direct items and Collections. Crates use earned tokens.</p>
       </div>
     </div>
   </div>
@@ -187,13 +166,16 @@
 <footer class="footer">
   <div class="container footer-inner">
     <span>AutoType · Competitive autocomplete typing</span>
-    <span>Local prototype · Accounts and social data stay on this device</span>
   </div>
 </footer>
 <div class="toast"></div>
+<script src="backend-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="backend.js?v=20261003-10"></script>
 <script src="core.js"></script>
 <script>
-document.addEventListener("DOMContentLoaded",()=>{
+document.addEventListener("DOMContentLoaded",async()=>{
+  await AutoType.ready();
   const account=AutoType.currentAccount();
   const rarityColors={Default:"#8b949e",Common:"#8b949e",Uncommon:"#55b982",Rare:"#4aa9ff",Epic:"#b178ff",Legendary:"#e3b94e"};
   const familyNames=["All","Profile","Arena Skins","Typing FX","Victory FX"];
@@ -222,6 +204,25 @@ document.addEventListener("DOMContentLoaded",()=>{
     crateKeyBalance.textContent=tokens.toLocaleString();
     crateTabCount.textContent=tokens;
     shopCrateTokens.textContent=tokens.toLocaleString();
+  }
+
+  function renderEquipped(){
+    if(!account){
+      shopEquippedStrip.hidden=true;
+      return;
+    }
+    const slots=[
+      ["title","Title"],["banner","Banner"],["frame","Frame"],["arena","Arena"],
+      ["trail","Trail"],["cursor","Cursor"],["predictor","Predictor"],["result","Victory"]
+    ];
+    shopEquippedStrip.hidden=false;
+    shopEquippedGrid.innerHTML=slots.map(([slot,label])=>{
+      const item=AutoType.equippedItem(slot,account);
+      return `<div class="equipped-slot">
+        <span>${label}</span>
+        <strong>${AutoType.escapeHTML(item?.name||"Default")}</strong>
+      </div>`;
+    }).join("");
   }
 
   function itemPreview(item){
@@ -260,19 +261,37 @@ document.addEventListener("DOMContentLoaded",()=>{
   }
 
   function bindItemActions(container){
-    container.querySelectorAll("[data-buy]").forEach(button=>button.addEventListener("click",()=>{
+    container.querySelectorAll("[data-buy]").forEach(button=>button.addEventListener("click",async()=>{
+      button.disabled=true;
       try{
-        const item=AutoType.purchaseShopItem(button.dataset.buy);
-        AutoType.toast(`${item.name} added to your inventory.`);
+        const id=button.dataset.buy;
+        const item=AutoType.shopCatalog.find(x=>x.id===id);
+        if(account?.online){
+          await AutoTypeBackend.purchaseItem(id);
+          await AutoTypeBackend.hydrateLocalMirror();
+        }else{
+          AutoType.purchaseShopItem(id);
+        }
+        AutoType.toast(`${item?.name||"Item"} added to your inventory.`);
         renderAll();
       }catch(e){AutoType.toast(e.message)}
+      finally{button.disabled=false}
     }));
-    container.querySelectorAll("[data-equip]").forEach(button=>button.addEventListener("click",()=>{
+    container.querySelectorAll("[data-equip]").forEach(button=>button.addEventListener("click",async()=>{
+      button.disabled=true;
       try{
-        const item=AutoType.equipShopItem(button.dataset.equip);
-        AutoType.toast(`${item.name} equipped.`);
+        const id=button.dataset.equip;
+        const item=AutoType.shopCatalog.find(x=>x.id===id);
+        if(account?.online){
+          await AutoTypeBackend.equipItem(id);
+          await AutoTypeBackend.hydrateLocalMirror();
+        }else{
+          AutoType.equipShopItem(id);
+        }
+        AutoType.toast(`${item?.name||"Item"} equipped.`);
         renderAll();
       }catch(e){AutoType.toast(e.message)}
+      finally{button.disabled=false}
     }));
   }
 
@@ -311,7 +330,7 @@ document.addEventListener("DOMContentLoaded",()=>{
         <p>${AutoType.escapeHTML(collection.tagline)}</p>
         <div class="collection-items">${itemNames.slice(0,featured?6:4).map(name=>`<span>${AutoType.escapeHTML(name)}</span>`).join("")}</div>
         <div class="collection-price-line">${priceLine}</div>
-        <div class="collection-footer"><small>${ownedAll?"All items owned":`${ownedCount}/${collection.items.length} owned · preview changes every 3 sec`}</small>${action}</div>
+        <div class="collection-footer"><small>${ownedAll?"All items owned":`${ownedCount}/${collection.items.length} owned`}</small>${action}</div>
       </div>
     </article>`;
   }
@@ -339,19 +358,37 @@ document.addEventListener("DOMContentLoaded",()=>{
   }
 
   function bindCollectionActions(container){
-    container.querySelectorAll("[data-buy-collection]").forEach(button=>button.addEventListener("click",()=>{
+    container.querySelectorAll("[data-buy-collection]").forEach(button=>button.addEventListener("click",async()=>{
+      button.disabled=true;
       try{
-        const result=AutoType.purchaseCollection(button.dataset.buyCollection);
-        AutoType.toast(`${result.collection.name} unlocked.`);
+        const id=button.dataset.buyCollection;
+        const collection=AutoType.collectionDefs.find(x=>x.id===id);
+        if(account?.online){
+          await AutoTypeBackend.purchaseCollection(id);
+          await AutoTypeBackend.hydrateLocalMirror();
+        }else{
+          AutoType.purchaseCollection(id);
+        }
+        AutoType.toast(`${collection?.name||"Collection"} unlocked.`);
         renderAll();
       }catch(e){AutoType.toast(e.message)}
+      finally{button.disabled=false}
     }));
-    container.querySelectorAll("[data-equip-collection]").forEach(button=>button.addEventListener("click",()=>{
+    container.querySelectorAll("[data-equip-collection]").forEach(button=>button.addEventListener("click",async()=>{
+      button.disabled=true;
       try{
-        const collection=AutoType.equipCollection(button.dataset.equipCollection);
-        AutoType.toast(`${collection.name} equipped.`);
+        const id=button.dataset.equipCollection;
+        const collection=AutoType.collectionDefs.find(x=>x.id===id);
+        if(account?.online){
+          await AutoTypeBackend.equipCollection(id);
+          await AutoTypeBackend.hydrateLocalMirror();
+        }else{
+          AutoType.equipCollection(id);
+        }
+        AutoType.toast(`${collection?.name||"Collection"} equipped.`);
         renderAll();
       }catch(e){AutoType.toast(e.message)}
+      finally{button.disabled=false}
     }));
   }
 
@@ -457,16 +494,29 @@ document.addEventListener("DOMContentLoaded",()=>{
     },5050);
   }
 
-  function openSelectedCrate(){
+  async function openSelectedCrate(){
     if(opening||!selectedCrateId)return;
     if(!account){location.href="account.html";return}
     try{
-      const result=AutoType.openCrate(selectedCrateId);
       opening=true;
       openCrateButton.disabled=true;
       crateReveal.hidden=true;
+      let result;
+      if(account.online){
+        const raw=await AutoTypeBackend.openCrate(selectedCrateId);
+        await AutoTypeBackend.hydrateLocalMirror();
+        const item=AutoType.shopCatalog.find(x=>x.id===raw.item_id);
+        if(!item)throw new Error("Crate reward is not in the local cosmetic catalog.");
+        result={crate:AutoType.crateDefs.find(c=>c.id===selectedCrateId),item,duplicate:!!raw.duplicate,compensation:Number(raw.compensation||0)};
+      }else{
+        result=AutoType.openCrate(selectedCrateId);
+      }
       animateCrateResult(result);
-    }catch(e){AutoType.toast(e.message)}
+    }catch(e){
+      opening=false;
+      openCrateButton.disabled=false;
+      AutoType.toast(e.message);
+    }
   }
 
   function setView(view){
@@ -482,6 +532,7 @@ document.addEventListener("DOMContentLoaded",()=>{
 
   function renderAll(){
     renderWallet();
+    renderEquipped();
     renderFeatured();
     renderCosmetics();
     renderCrates();
@@ -503,16 +554,72 @@ document.addEventListener("DOMContentLoaded",()=>{
   const coinPackModal=document.querySelector("#coinPackModal");
   const getCoinsButton=document.querySelector("#getCoinsButton");
   const closeCoinPackModal=document.querySelector("#closeCoinPackModal");
+  const coinPackGrid=document.querySelector("#coinPackGrid");
+  const paymentStatusLine=document.querySelector("#paymentStatusLine");
+  const paymentModeBadge=document.querySelector("#paymentModeBadge");
 
   function closeCoinStore(){
     if(coinPackModal)coinPackModal.hidden=true;
     document.body.classList.remove("coin-store-open");
   }
 
-  getCoinsButton?.addEventListener("click",()=>{
+  async function renderCoinPacks(){
+    if(!coinPackGrid)return;
+    coinPackGrid.innerHTML=`<div class="empty">Loading…</div>`;
+    paymentStatusLine.textContent="";
+    paymentModeBadge.hidden=true;
+
+    try{
+      const packs=account?.online?await AutoTypeBackend.coinPacks():[];
+      let payment={configured:false,mode:"off"};
+      if(account?.online)payment=await AutoTypeBackend.paymentConfig();
+
+      if(payment.mode==="test"){
+        paymentModeBadge.hidden=false;
+        paymentModeBadge.textContent="TEST MODE";
+      }else if(payment.mode==="live"){
+        paymentModeBadge.hidden=false;
+        paymentModeBadge.textContent="LIVE";
+      }
+
+      if(!account){
+        coinPackGrid.innerHTML=`<div class="empty">Sign in to buy Coins.<br><br><a class="button button-primary" href="account.html">Sign in</a></div>`;
+        return;
+      }
+
+      coinPackGrid.innerHTML=packs.map((pack,index)=>`<article class="${index===1?"featured-pack":""}">
+        <div class="coin-stack">◉</div>
+        <strong>${Number(pack.coins).toLocaleString()}</strong>
+        <span>Coins</span>
+        <b>${(Number(pack.amount_cents)/100).toFixed(2)}</b>
+        <button class="button button-primary" data-coin-pack="${pack.id}" ${payment.configured?"":"disabled"}>
+          ${payment.configured?"Buy":"Setup needed"}
+        </button>
+      </article>`).join("");
+
+      paymentStatusLine.textContent=payment.configured?"":"Payments are unavailable right now.";
+
+      coinPackGrid.querySelectorAll("[data-coin-pack]").forEach(button=>button.addEventListener("click",async()=>{
+        button.disabled=true;
+        try{
+          const checkout=await AutoTypeBackend.startCoinCheckout(button.dataset.coinPack);
+          location.assign(checkout.url);
+        }catch(error){
+          AutoType.toast(error.message);
+          button.disabled=false;
+        }
+      }));
+    }catch(error){
+      coinPackGrid.innerHTML=`<div class="empty">Could not load coin packs.</div>`;
+      paymentStatusLine.textContent=error.message;
+    }
+  }
+
+  getCoinsButton?.addEventListener("click",async()=>{
     if(coinPackModal){
       coinPackModal.hidden=false;
       document.body.classList.add("coin-store-open");
+      await renderCoinPacks();
     }
   });
   closeCoinPackModal?.addEventListener("click",closeCoinStore);
@@ -523,8 +630,40 @@ document.addEventListener("DOMContentLoaded",()=>{
     if(event.key==="Escape"&&coinPackModal&&!coinPackModal.hidden)closeCoinStore();
   });
 
+  async function handlePaymentReturn(){
+    const params=new URLSearchParams(location.search);
+    const state=params.get("payment");
+    const sessionId=params.get("session_id");
+    if(!state)return;
+
+    if(state==="cancelled"){
+      AutoType.toast("Payment canceled.");
+      history.replaceState({},document.title,"shop.html");
+      return;
+    }
+
+    if(state==="success"&&sessionId&&account?.online){
+      let order=null;
+      for(let i=0;i<12;i++){
+        try{order=await AutoTypeBackend.paymentOrder(sessionId)}catch{}
+        if(order?.status==="paid")break;
+        await new Promise(resolve=>setTimeout(resolve,750));
+      }
+
+      if(order?.status==="paid"){
+        await AutoTypeBackend.hydrateLocalMirror();
+        renderAll();
+        AutoType.toast(`${Number(order.coins).toLocaleString()} coins added.`);
+      }else{
+        AutoType.toast("Payment received. Coins will appear after Stripe confirms it.");
+      }
+      history.replaceState({},document.title,"shop.html");
+    }
+  }
+
   renderAll();
   setView(location.hash==="#crates"?"crates":"featured");
+  await handlePaymentReturn();
 });
 </script>
 </body>

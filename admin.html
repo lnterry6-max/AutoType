@@ -60,13 +60,12 @@
 <main class="container page admin-page">
   <div id="adminDenied" class="platform-section admin-denied" hidden>
     <h1>Developer access required</h1>
-    <p>This console is available only to the locally bound developer account.</p>
-    <a class="button button-secondary" href="index.html">Return home</a>
+        <a class="button button-secondary" href="index.html">Return home</a>
   </div>
 
   <div id="adminConsole" hidden>
     <header class="admin-head">
-      <div><div class="eyebrow">Developer</div><h1>Admin Console</h1><p>Manage the local AutoType prototype from one place.</p></div>
+      <div><div class="eyebrow">Developer</div><h1>Admin Console</h1></div>
       <div class="developer-badge">Developer mode</div>
     </header>
 
@@ -75,6 +74,7 @@
     <nav class="admin-tabs">
       <a href="#tournaments">Tournaments</a>
       <a href="#players">Players</a>
+      <a href="#payments">Payments</a>
       <a href="#announcement">Announcement</a>
       <a href="#moderation">Prediction Lab</a>
       <a href="#data">Data</a>
@@ -82,7 +82,7 @@
 
     <section class="admin-section" id="tournaments">
       <div class="admin-section-head">
-        <div><span class="section-kicker">COMPETITION</span><h2>Tournament Manager</h2><p>Create, edit, open, close, or delete events.</p></div>
+        <div><span class="section-kicker">COMPETITION</span><h2>Tournament Manager</h2></div>
         <button class="button button-primary" id="newTournamentButton">Create tournament</button>
       </div>
 
@@ -94,7 +94,7 @@
         </div>
         <div class="form-group"><label class="label">Description</label><textarea class="textarea" id="tDescription" maxlength="240"></textarea></div>
         <div class="admin-form-grid">
-          <div class="form-group"><label class="label">Status</label><select class="select" id="tStatus"><option value="open">Open</option><option value="scheduled">Scheduled</option><option value="closed">Closed</option></select></div>
+          <div class="form-group"><label class="label">Status</label><select class="select" id="tStatus"><option value="open">Open</option><option value="scheduled">Scheduled</option><option value="running">Running</option><option value="closed">Closed</option></select></div>
           <div class="form-group"><label class="label">Entry</label><select class="select" id="tEntryType"><option value="free">Free</option><option value="ticket">Tickets</option></select></div>
           <div class="form-group"><label class="label">Ticket cost</label><input class="input" id="tEntryCost" type="number" min="1" max="99" value="1"></div>
           <div class="form-group"><label class="label">Max players</label><input class="input" id="tMaxPlayers" type="number" min="2" max="512" value="16"></div>
@@ -111,26 +111,33 @@
 
     <section class="admin-section" id="players">
       <div class="admin-section-head">
-        <div><span class="section-kicker">PLAYERS</span><h2>Player Manager</h2><p>Inspect local accounts and adjust test balances/progression.</p></div>
+        <div><span class="section-kicker">PLAYERS</span><h2>Player Manager</h2></div>
         <input class="input admin-search" id="playerSearch" placeholder="Search username">
       </div>
       <div class="admin-player-list" id="adminPlayerList"></div>
     </section>
 
+    <section class="admin-section" id="payments">
+      <div class="admin-section-head">
+        <div><span class="section-kicker">STRIPE</span><h2>Payments</h2></div>
+      </div>
+      <div class="admin-payment-list" id="adminPaymentList"></div>
+    </section>
+
     <section class="admin-section" id="announcement">
-      <div class="admin-section-head"><div><span class="section-kicker">LIVE MESSAGE</span><h2>Homepage Announcement</h2><p>Display one short announcement at the top of Home.</p></div></div>
+      <div class="admin-section-head"><div><span class="section-kicker">LIVE MESSAGE</span><h2>Homepage Announcement</h2></div></div>
       <div class="form-group"><label class="label">Message</label><input class="input" id="announcementInput" maxlength="180"></div>
       <label class="admin-check"><input type="checkbox" id="announcementActive"> Show announcement</label>
       <div class="row-wrap"><button class="button button-primary" id="saveAnnouncement">Save announcement</button><button class="button button-quiet" id="clearAnnouncement">Clear</button></div>
     </section>
 
     <section class="admin-section" id="moderation">
-      <div class="admin-section-head"><div><span class="section-kicker">UGC</span><h2>Prediction Lab Moderation</h2><p>Remove local community mappings that should not remain in the predictor.</p></div></div>
+      <div class="admin-section-head"><div><span class="section-kicker">UGC</span><h2>Prediction Lab Moderation</h2></div></div>
       <div class="admin-suggestion-list" id="adminSuggestionList"></div>
     </section>
 
     <section class="admin-section" id="data">
-      <div class="admin-section-head"><div><span class="section-kicker">LOCAL DATA</span><h2>Backup</h2><p>Export the current local prototype database before large tests or migrations.</p></div></div>
+      <div class="admin-section-head"><div><span class="section-kicker">DATA</span><h2>Backup</h2></div></div>
       <button class="button button-secondary" id="exportBackupButton">Export JSON backup</button>
     </section>
   </div>
@@ -139,19 +146,440 @@
 <footer class="footer">
   <div class="container footer-inner">
     <span>AutoType · Competitive autocomplete typing</span>
-    <span>Local prototype · Accounts and social data stay on this device</span>
   </div>
 </footer>
 <div class="toast"></div>
+<script src="backend-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="backend.js?v=20261003-10"></script>
 <script src="core.js"></script>
 <script>
-document.addEventListener("DOMContentLoaded",()=>{
+document.addEventListener("DOMContentLoaded",async()=>{
+  await AutoType.ready();
+  const REQUIRED_BACKEND_BUILD="20261003-10";
+  if(AutoTypeBackend.version!==REQUIRED_BACKEND_BUILD){
+    console.error("AutoType build mismatch",{
+      expected:REQUIRED_BACKEND_BUILD,
+      loaded:AutoTypeBackend.version||"unknown"
+    });
+    AutoType.toast("Old AutoType files are loaded. Restart from the latest folder.");
+    return;
+  }
   const account=AutoType.currentAccount();
   if(!account||!AutoType.isDeveloper(account)){
     adminDenied.hidden=false;
     return;
   }
   adminConsole.hidden=false;
+  const adminPaymentList=document.querySelector("#adminPaymentList");
+
+  if(account.online){
+    let snapshot=null;
+
+    const byId=(list,key="id")=>Object.fromEntries((list||[]).map(x=>[x[key],x]));
+
+    async function loadSnapshot(){
+      snapshot=await AutoTypeBackend.adminSnapshot();
+    }
+
+    function maps(){
+      return {
+        profiles:byId(snapshot.profiles),
+        roles:byId(snapshot.roles,"user_id"),
+        wallets:byId(snapshot.wallets,"user_id"),
+        stats:byId(snapshot.stats,"user_id")
+      };
+    }
+
+    function adminAccount(profile){
+      const m=maps();
+      const wallet=m.wallets[profile.id]||{};
+      const stats=m.stats[profile.id]||{};
+      const role=m.roles[profile.id]?.role||"player";
+      return {
+        id:"sb_"+profile.id,
+        supabaseUserId:profile.id,
+        username:profile.username,
+        displayName:profile.display_name||profile.username,
+        avatarImage:profile.avatar_url||"",
+        role:role==="developer"||role==="admin"?"developer":"user",
+        online:true,
+        wallet:{
+          coins:Number(wallet.coins||0),
+          tickets:Number(wallet.tournament_tickets||0),
+          crateKeys:Number(wallet.crate_tokens||0),
+          owned:[],equipped:{}
+        },
+        profile:{
+          rounds:Number(stats.rounds||0),
+          words:Number(stats.words||0),
+          bestScore:Number(stats.best_score||0),
+          bestStreak:Number(stats.best_streak||0),
+          achievements:{}
+        }
+      };
+    }
+
+    function tournamentKey(t){return t.slug||t.id}
+
+    function renderOnlineMetrics(){
+      adminMetrics.innerHTML=`
+        <div><span>Players</span><strong>${snapshot.profiles.length}</strong></div>
+        <div><span>Tournaments</span><strong>${snapshot.tournaments.length}</strong></div>
+        <div><span>Registrations</span><strong>${snapshot.entries.filter(e=>!["withdrawn","disqualified"].includes(e.status)).length}</strong></div>
+        <div><span>Suggestions</span><strong>${snapshot.suggestions.length}</strong></div>`;
+    }
+
+    function editOnlineTournament(key){
+      const t=key?snapshot.tournaments.find(x=>tournamentKey(x)===key):null;
+      tournamentForm.hidden=false;
+      tournamentId.value=t?tournamentKey(t):"";
+      tName.value=t?.name||"";
+      tSchedule.value=t?.schedule_label||"";
+      tDescription.value=t?.description||"";
+      tStatus.value=["open","scheduled","running","closed"].includes(t?.status)?t.status:"open";
+      tEntryType.value=t?.entry_type||"free";
+      tEntryCost.value=t?.entry_cost||1;
+      tMaxPlayers.value=t?.max_players||16;
+      tRewardCoins.value=t?.reward_coins||500;
+      tRewardCrateTokens.value=t?.reward_crate_tokens||0;
+      tRewardTitle.value=t?.reward_title||"";
+      tName.focus();
+    }
+
+    function onlineTournamentData(t=null){
+      return {
+        tournamentId:t?tournamentKey(t):(tournamentId.value||null),
+        name:tName.value,
+        schedule:tSchedule.value,
+        description:tDescription.value,
+        status:tStatus.value,
+        entryType:tEntryType.value,
+        entryCost:Number(tEntryCost.value||0),
+        maxPlayers:Number(tMaxPlayers.value||16),
+        rewardCoins:Number(tRewardCoins.value||0),
+        rewardCrateTokens:Number(tRewardCrateTokens.value||0),
+        rewardTitle:tRewardTitle.value
+      };
+    }
+
+    function payloadFromTournament(t,patch={}){
+      return {
+        tournamentId:tournamentKey(t),
+        name:t.name,
+        schedule:t.schedule_label||"TBA",
+        description:t.description||"",
+        status:t.status,
+        entryType:t.entry_type,
+        entryCost:t.entry_cost,
+        maxPlayers:t.max_players,
+        rewardCoins:t.reward_coins,
+        rewardCrateTokens:t.reward_crate_tokens,
+        rewardTitle:t.reward_title||"",
+        ...patch
+      };
+    }
+
+    function renderOnlineTournaments(){
+      const m=maps();
+      adminTournamentList.innerHTML=snapshot.tournaments.map(t=>{
+        const entrants=snapshot.entries.filter(e=>e.tournament_id===t.id&&!["withdrawn","disqualified"].includes(e.status));
+        const completedScores=entrants.map(e=>e.score).filter(x=>x!=null).map(Number);
+        const topScore=completedScores.length?Math.max(...completedScores):null;
+        const entrantsHtml=entrants.length?`<div class="admin-entrant-list">${entrants.map(e=>{
+          const p=m.profiles[e.user_id];
+          if(!p)return "";
+          const a=adminAccount(p);
+          const score=e.score==null?"—":Number(e.score).toLocaleString();
+          const isLeader=e.score!=null&&Number(e.score)===topScore;
+          const canAward=!t.winner_id&&isLeader;
+          return `<div>
+            <span>${AutoType.avatarMarkup(a,"avatar")}<strong>${AutoType.escapeHTML(AutoType.accountName(a))}</strong><small>${e.status} · ${score}${isLeader?" · leader":""}</small></span>
+            <button class="button button-secondary" data-online-award="${tournamentKey(t)}" data-online-player="${p.id}" ${canAward?"":"disabled"}>${e.status==="winner"?"Winner awarded":t.winner_id?"Prize already awarded":isLeader?"Award winner":"Top score required"}</button>
+          </div>`;
+        }).join("")}</div>`:"";
+
+        return `<article class="admin-tournament-row admin-tournament-expanded">
+          <div class="admin-tournament-summary">
+            <div><span class="admin-status status-${t.status}">${t.status}</span><strong>${AutoType.escapeHTML(t.name)}</strong><small>${AutoType.escapeHTML(t.schedule_label||"TBA")} · ${entrants.length}/${t.max_players} players · ${t.entry_type==="free"?"Free":t.entry_cost+" tickets"}</small></div>
+            <div class="admin-row-actions">
+              <button class="button button-secondary" data-online-edit-tour="${tournamentKey(t)}">Edit</button>
+              <button class="button button-quiet" data-online-toggle-tour="${tournamentKey(t)}">${t.status==="open"?"Close":"Open"}</button>
+              <button class="button button-danger" data-online-delete-tour="${tournamentKey(t)}">Delete</button>
+            </div>
+          </div>
+          ${entrantsHtml}
+        </article>`;
+      }).join("")||`<div class="empty">No tournaments configured.</div>`;
+
+      adminTournamentList.querySelectorAll("[data-online-edit-tour]").forEach(b=>b.addEventListener("click",()=>editOnlineTournament(b.dataset.onlineEditTour)));
+      adminTournamentList.querySelectorAll("[data-online-toggle-tour]").forEach(b=>b.addEventListener("click",async()=>{
+        b.disabled=true;
+        try{
+          const t=snapshot.tournaments.find(x=>tournamentKey(x)===b.dataset.onlineToggleTour);
+          await AutoTypeBackend.adminUpsertTournament(payloadFromTournament(t,{status:t.status==="open"?"closed":"open"}));
+          await refreshOnlineAdmin();
+        }catch(e){AutoType.toast(e.message);b.disabled=false}
+      }));
+      adminTournamentList.querySelectorAll("[data-online-delete-tour]").forEach(b=>b.addEventListener("click",async()=>{
+        const t=snapshot.tournaments.find(x=>tournamentKey(x)===b.dataset.onlineDeleteTour);
+        if(!confirm(`Delete ${t?.name||"this tournament"} and its registrations?`))return;
+        b.disabled=true;
+        try{await AutoTypeBackend.adminDeleteTournament(b.dataset.onlineDeleteTour);await refreshOnlineAdmin()}
+        catch(e){AutoType.toast(e.message);b.disabled=false}
+      }));
+      adminTournamentList.querySelectorAll("[data-online-award]").forEach(b=>b.addEventListener("click",async()=>{
+        const t=snapshot.tournaments.find(x=>tournamentKey(x)===b.dataset.onlineAward);
+        const p=m.profiles[b.dataset.onlinePlayer];
+        if(!t||!p)return;
+        if(!confirm(`Award ${p.display_name||p.username} the winner prize for ${t.name}?`))return;
+        b.disabled=true;
+        try{
+          await AutoTypeBackend.awardTournament(b.dataset.onlineAward,b.dataset.onlinePlayer);
+          AutoType.toast("Winner prize awarded.");
+          await refreshOnlineAdmin();
+        }catch(e){AutoType.toast(e.message);b.disabled=false}
+      }));
+    }
+
+    function renderOnlinePlayers(){
+      const m=maps();
+      const q=playerSearch.value.trim().toLowerCase();
+      const list=snapshot.profiles.filter(p=>!q||
+        p.username.toLowerCase().includes(q)||
+        String(p.display_name||"").toLowerCase().includes(q)
+      );
+      adminPlayerList.innerHTML=list.map(p=>{
+        const a=adminAccount(p);
+        const level=AutoType.levelInfo(a.profile).level;
+        const role=m.roles[p.id]?.role||"player";
+        return `<article class="admin-player-row" data-online-player="${p.id}">
+          <div class="admin-player-main">${AutoType.avatarMarkup(a,"avatar")}<div><strong>${AutoType.escapeHTML(AutoType.accountName(a))} ${["developer","admin"].includes(role)?'<span class="developer-mini">DEV</span>':""}</strong><small>@${AutoType.escapeHTML(p.username)} · LV ${level}</small></div></div>
+          <div class="admin-balance-fields">
+            <label>Coins<input type="number" data-coins value="${a.wallet.coins}" min="0" max="999999999"></label>
+            <label>Tickets<input type="number" data-tickets value="${a.wallet.tickets}" min="0" max="999999999"></label>
+            <label>Crate Tokens<input type="number" data-keys value="${a.wallet.crateKeys}" min="0" max="999999999"></label>
+          </div>
+          <div class="admin-row-actions">
+            <button class="button button-primary" data-online-save-player>Save balances</button>
+            <button class="button button-secondary" data-online-grant-cosmetics>Grant cosmetics</button>
+            <button class="button button-quiet" data-online-reset-progress>Reset progress</button>
+          </div>
+        </article>`;
+      }).join("");
+
+      adminPlayerList.querySelectorAll(".admin-player-row").forEach(row=>{
+        const id=row.dataset.onlinePlayer;
+        row.querySelector("[data-online-save-player]").addEventListener("click",async e=>{
+          e.currentTarget.disabled=true;
+          try{
+            await AutoTypeBackend.adminSetBalances(
+              id,
+              Number(row.querySelector("[data-coins]").value||0),
+              Number(row.querySelector("[data-tickets]").value||0),
+              Number(row.querySelector("[data-keys]").value||0)
+            );
+            if(id===account.supabaseUserId)await AutoTypeBackend.hydrateLocalMirror();
+            AutoType.toast("Player balances updated.");
+            await refreshOnlineAdmin();
+          }catch(err){AutoType.toast(err.message);e.currentTarget.disabled=false}
+        });
+        row.querySelector("[data-online-grant-cosmetics]").addEventListener("click",async e=>{
+          e.currentTarget.disabled=true;
+          try{
+            await AutoTypeBackend.adminGrantAll(id);
+            if(id===account.supabaseUserId)await AutoTypeBackend.hydrateLocalMirror();
+            AutoType.toast("All cosmetics granted.");
+            await refreshOnlineAdmin();
+          }catch(err){AutoType.toast(err.message);e.currentTarget.disabled=false}
+        });
+        row.querySelector("[data-online-reset-progress]").addEventListener("click",async e=>{
+          if(!confirm("Reset this player's gameplay progression? Wallet and cosmetics will stay."))return;
+          e.currentTarget.disabled=true;
+          try{
+            await AutoTypeBackend.adminResetPlayer(id);
+            if(id===account.supabaseUserId)await AutoTypeBackend.hydrateLocalMirror();
+            AutoType.toast("Progress reset.");
+            await refreshOnlineAdmin();
+          }catch(err){AutoType.toast(err.message);e.currentTarget.disabled=false}
+        });
+      });
+    }
+
+    function renderOnlinePayments(){
+      const m=maps();
+      const labels={
+        pending:"Pending",
+        paid:"Paid",
+        partially_refunded:"Partially refunded",
+        refunded:"Refunded",
+        failed:"Failed",
+        cancelled:"Cancelled",
+        disputed:"Disputed",
+        dispute_won:"Dispute resolved",
+        dispute_lost:"Dispute lost"
+      };
+
+      const payments=(snapshot.payments||[]).filter(p=>p.status!=="pending"||p.provider_session_id);
+      adminPaymentList.innerHTML=payments.length?payments.map(order=>{
+        const profile=m.profiles[order.user_id];
+        const name=profile?.display_name||profile?.username||"Player";
+        const amount=(Number(order.amount_cents||0)/100).toLocaleString(undefined,{
+          style:"currency",currency:String(order.currency||"usd").toUpperCase()
+        });
+        const refunded=Number(order.refunded_amount_cents||0);
+        const refundable=["paid","partially_refunded","disputed","dispute_won"].includes(order.status)
+          && refunded<Number(order.amount_cents||0)
+          && !!order.provider_payment_intent_id;
+        return `<article class="admin-payment-row">
+          <div class="admin-payment-main">
+            <strong>${AutoType.escapeHTML(name)}</strong>
+            <span>${Number(order.coins||0).toLocaleString()} Coins · ${amount}</span>
+            <small>${new Date(order.completed_at||order.created_at).toLocaleString()}</small>
+          </div>
+          <div class="admin-payment-state">
+            <span class="purchase-status status-${AutoType.escapeHTML(order.status)}">${AutoType.escapeHTML(labels[order.status]||order.status)}</span>
+            ${refunded>0?`<small>${(refunded/100).toLocaleString(undefined,{style:"currency",currency:String(order.currency||"usd").toUpperCase()})} refunded</small>`:""}
+          </div>
+          <div class="admin-row-actions">
+            <button class="button button-danger" data-refund-order="${order.id}" ${refundable?"":"disabled"}>${order.status==="refunded"?"Refunded":"Refund"}</button>
+          </div>
+        </article>`;
+      }).join(""):`<div class="empty">No payments yet.</div>`;
+
+      adminPaymentList.querySelectorAll("[data-refund-order]").forEach(button=>button.addEventListener("click",async()=>{
+        const order=(snapshot.payments||[]).find(x=>x.id===button.dataset.refundOrder);
+        if(!order)return;
+        const profile=m.profiles[order.user_id];
+        const name=profile?.display_name||profile?.username||"this player";
+        if(!confirm(`Refund the remaining payment for ${name}? AutoType Coins will be reconciled automatically.`))return;
+        button.disabled=true;
+        try{
+          let result;
+          if(typeof AutoTypeBackend.adminRefundPayment==="function"){
+            result=await AutoTypeBackend.adminRefundPayment(order.id);
+          }else{
+            const db=AutoTypeBackend.getClient();
+            if(!db)throw new Error("Supabase is not configured.");
+            const {data,error}=await db.functions.invoke("refund-payment",{body:{orderId:order.id}});
+            if(error){
+              let message=error.message||"Refund failed.";
+              try{
+                const payload=await error.context?.clone?.().json();
+                if(payload?.error)message=payload.error;
+              }catch{}
+              throw new Error(message);
+            }
+            if(data?.error)throw new Error(data.error);
+            result=data;
+          }
+          if(order.user_id===account.supabaseUserId)await AutoTypeBackend.hydrateLocalMirror();
+          AutoType.toast(result?.status==="succeeded"?"Refund completed.":"Refund started.");
+          await refreshOnlineAdmin();
+        }catch(error){
+          AutoType.toast(error.message);
+          button.disabled=false;
+        }
+      }));
+    }
+
+    function renderOnlineAnnouncement(){
+      const current=(snapshot.announcements||[]).find(x=>x.active)||(snapshot.announcements||[])[0];
+      announcementInput.value=current?.message||"";
+      announcementActive.checked=!!current?.active;
+    }
+
+    function renderOnlineSuggestions(){
+      const m=maps();
+      const voteCount=id=>(snapshot.votes||[]).filter(v=>v.suggestion_id===id).length;
+      adminSuggestionList.innerHTML=snapshot.suggestions.length?snapshot.suggestions.map(s=>{
+        const p=m.profiles[s.author_id];
+        return `<div class="admin-suggestion-row">
+          <div><strong>${AutoType.escapeHTML(s.prefix)} → ${AutoType.escapeHTML(s.word)}</strong><small>${AutoType.escapeHTML(p?.display_name||p?.username||"Player")} · ${voteCount(s.id)} votes</small></div>
+          <button class="button button-danger" data-online-remove-suggestion="${s.id}">Remove</button>
+        </div>`;
+      }).join(""):`<div class="empty">No Prediction Lab suggestions.</div>`;
+      adminSuggestionList.querySelectorAll("[data-online-remove-suggestion]").forEach(b=>b.addEventListener("click",async()=>{
+        b.disabled=true;
+        try{await AutoTypeBackend.adminRemovePrediction(b.dataset.onlineRemoveSuggestion);await refreshOnlineAdmin()}
+        catch(e){AutoType.toast(e.message);b.disabled=false}
+      }));
+    }
+
+    function renderOnlineAll(){
+      renderOnlineMetrics();
+      renderOnlineTournaments();
+      renderOnlinePlayers();
+      renderOnlinePayments();
+      renderOnlineAnnouncement();
+      renderOnlineSuggestions();
+    }
+
+    async function refreshOnlineAdmin(){
+      await loadSnapshot();
+      renderOnlineAll();
+    }
+
+    newTournamentButton.addEventListener("click",()=>editOnlineTournament(null));
+    cancelTournamentEdit.addEventListener("click",()=>tournamentForm.hidden=true);
+    tournamentForm.addEventListener("submit",async e=>{
+      e.preventDefault();
+      const submit=tournamentForm.querySelector('button[type="submit"]');
+      if(submit)submit.disabled=true;
+      try{
+        await AutoTypeBackend.adminUpsertTournament(onlineTournamentData());
+        tournamentForm.hidden=true;
+        AutoType.toast("Tournament saved.");
+        await refreshOnlineAdmin();
+      }catch(err){AutoType.toast(err.message)}
+      finally{if(submit)submit.disabled=false}
+    });
+
+    restoreTournamentsButton.addEventListener("click",async()=>{
+      restoreTournamentsButton.disabled=true;
+      try{
+        await AutoTypeBackend.adminRestoreTournaments();
+        AutoType.toast("Built-in tournaments restored.");
+        await refreshOnlineAdmin();
+      }catch(e){AutoType.toast(e.message)}
+      finally{restoreTournamentsButton.disabled=false}
+    });
+
+    playerSearch.addEventListener("input",renderOnlinePlayers);
+
+    saveAnnouncement.addEventListener("click",async()=>{
+      saveAnnouncement.disabled=true;
+      try{
+        await AutoTypeBackend.adminSetAnnouncement(announcementInput.value,announcementActive.checked);
+        AutoType.toast("Announcement saved.");
+        await refreshOnlineAdmin();
+      }catch(e){AutoType.toast(e.message)}
+      finally{saveAnnouncement.disabled=false}
+    });
+    clearAnnouncement.addEventListener("click",async()=>{
+      clearAnnouncement.disabled=true;
+      try{
+        await AutoTypeBackend.adminSetAnnouncement("",false);
+        announcementInput.value="";announcementActive.checked=false;
+        AutoType.toast("Announcement cleared.");
+        await refreshOnlineAdmin();
+      }catch(e){AutoType.toast(e.message)}
+      finally{clearAnnouncement.disabled=false}
+    });
+
+    exportBackupButton.addEventListener("click",()=>{
+      const blob=new Blob([JSON.stringify(snapshot,null,2)],{type:"application/json"});
+      const url=URL.createObjectURL(blob);
+      const link=document.createElement("a");
+      link.href=url;
+      link.download=`autotype-server-backup-${new Date().toISOString().slice(0,10)}.json`;
+      link.click();
+      setTimeout(()=>URL.revokeObjectURL(url),500);
+    });
+
+    try{await refreshOnlineAdmin()}catch(e){AutoType.toast(e.message)}
+    return;
+  }
 
   function renderMetrics(){
     const store=AutoType.store();

@@ -1,5 +1,5 @@
 
-(() => {
+AutoType.ready().then(async()=>{
   const sentences=[
     "the moon looked bright over the quiet city","we found a tiny note under the old table",
     "my friend brought fresh coffee before class today","the rain made every street shine at night",
@@ -91,15 +91,50 @@
   const $=id=>document.getElementById(id);
   const params=new URLSearchParams(location.search);
   const settings=AutoType.currentSettings();
+  let sharedSuggestions=AutoType.store().suggestions||[];
+  if(AutoType.currentAccount()?.online){
+    try{
+      const predictionData=await AutoTypeBackend.predictionsSnapshot();
+      sharedSuggestions=(predictionData.suggestions||[]).map(s=>({
+        id:s.id,
+        prefix:s.prefix,
+        word:s.word,
+        voters:(predictionData.votes||[]).filter(v=>v.suggestion_id===s.id).map(v=>v.user_id)
+      }));
+    }catch(error){
+      console.warn("Could not load shared prediction mappings",error);
+      sharedSuggestions=[];
+    }
+  }
   let mode=params.get("mode");
   let predictorMode=mode;
   let race=null;
   let fixed=false;
+  const account=AutoType.currentAccount();
+  const tournamentId=params.get("tournament");
+  const competitiveModes=new Set(["classic","context","sentence","evil","daily","tournament"]);
+  let serverChallenge=null;
 
   if(params.get("race")){
-    race=AutoType.store().races.find(r=>r.id===params.get("race"));
+    const raceId=params.get("race");
+    if(account?.online){
+      try{
+        const room=await AutoTypeBackend.raceById(raceId);
+        if(room)race={id:room.id,sentence:room.target_text,mode:room.mode||"context",room};
+      }catch(error){
+        console.error("Could not load online race",error);
+        AutoType.toast("Could not load that race.");
+      }
+    }else{
+      race=AutoType.store().races.find(r=>r.id===raceId);
+    }
     if(race){mode="race";predictorMode=race.mode||"context";fixed=true}
+  }else if(tournamentId){
+    mode="tournament";
+    predictorMode="context";
+    fixed=true;
   }
+
   if(mode==="custom"){predictorMode=params.get("predictor")||"classic";fixed=true}
   if(mode==="daily"){predictorMode="context";fixed=true}
 
@@ -109,34 +144,57 @@
   $("modePicker").hidden=true;$("gameArea").hidden=false;
 
   function sanitize(s){return String(s||"").toLowerCase().replace(/[^a-z0-9' ]+/g," ").replace(/\s+/g," ").trim()}
-  function dateKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+  function dateKey(){return new Date().toISOString().slice(0,10)}
   function dailySentence(){let hash=0;for(const c of dateKey())hash=((hash<<5)-hash)+c.charCodeAt(0);return sentences[Math.abs(hash)%sentences.length]}
   function pick(){
     const pool=predictorMode==="evil"?[...sentences,...evilSentences,...evilSentences]:sentences;
     return pool[Math.floor(Math.random()*pool.length)]
   }
 
-  let sentence = race?.sentence || (mode==="daily"?dailySentence() : mode==="custom"?sanitize(params.get("sentence")) : pick());
+  async function issueServerChallenge(){
+    if(!account?.online||!competitiveModes.has(mode))return null;
+    const challenge=await AutoTypeBackend.startRound(mode,mode==="tournament"?tournamentId:null);
+    serverChallenge=challenge;
+    return challenge;
+  }
+
+  let sentence;
+  if(account?.online&&competitiveModes.has(mode)){
+    try{
+      const challenge=await issueServerChallenge();
+      sentence=challenge?.target_text||"";
+    }catch(error){
+      console.error("Could not start verified round",error);
+      AutoType.toast(error.message||"Could not start this round.");
+      $("gameArea").hidden=true;
+      return;
+    }
+  }else{
+    sentence=race?.sentence||(mode==="daily"?dailySentence():mode==="custom"?sanitize(params.get("sentence")):pick());
+  }
   if(!sentence)sentence=pick();
 
   let words=[],index=0,prefix="",visible="",score=0,streak=0,maxStreak=0,keyCount=0,erased=0,errors=0,clueCounts=[];
+  let roundId=crypto.randomUUID();
   let cluesThisWord=0,recentGuesses=[],justKeptAI=0;
   let started=false,startTime=0,timer=null;
 
-  const names={classic:"Word",context:"Context",sentence:"Sentence",evil:"Evil",daily:"Daily Challenge",custom:"Custom",race:"Friend Race"};
-  $("modeName").textContent=names[mode]||"Word";
+  const names={classic:"Word",context:"Context",sentence:"Sentence",evil:"Evil",daily:"Daily Challenge",custom:"Custom",race:"Friend Race",tournament:"Tournament"};
+  const quickMatch=mode==="race"&&race?.room?.match_type==="matchmaking";
+  $("modeName").textContent=quickMatch?"Quick Match":(names[mode]||"Word");
   $("newBtn").disabled=fixed;
+  if(mode==="tournament"||quickMatch)$("againBtn").hidden=true;
 
   function elapsed(){return started?Date.now()-startTime:0}
   function fmt(ms){return AutoType.formatTime(ms)}
   function suggestionsFor(pref){
-    return AutoType.store().suggestions.filter(s=>s.prefix===pref)
+    return sharedSuggestions.filter(s=>s.prefix===pref)
       .sort((a,b)=>(b.voters?.length||0)-(a.voters?.length||0)).map(s=>s.word)
   }
   function candidates(pref){
     if(!pref)return[];
     const prev=index?words[index-1]:null;
-    let base=[...suggestionsFor(pref),...extended,...sentenceVocabulary,...contractions,...AutoType.store().suggestions.map(s=>s.word)];
+    let base=[...suggestionsFor(pref),...extended,...sentenceVocabulary,...contractions,...sharedSuggestions.map(s=>s.word)];
     if(["context","sentence","evil"].includes(predictorMode)&&prev&&nextWord[prev]){
       base=[...suggestionsFor(pref),...nextWord[prev],...base];
     }
@@ -255,10 +313,13 @@
     if(started)return;started=true;startTime=Date.now();timer=setInterval(()=>$("time").textContent=fmt(elapsed()),250)
   }
   function reset(newSentence=sentence){
+    roundId=crypto.randomUUID();
     if(timer)clearInterval(timer);started=false;startTime=0;
     sentence=newSentence;words=sentence.split(" ");index=0;prefix="";visible="";score=0;streak=0;maxStreak=0;keyCount=0;erased=0;errors=0;clueCounts=[];
     cluesThisWord=0;recentGuesses=[];justKeptAI=0;
-    $("time").textContent="0:00";$("results").hidden=true;render()
+    $("time").textContent="0:00";$("results").hidden=true;
+    if($("verifiedResult"))$("verifiedResult").hidden=true;
+    render()
   }
 
   function spawnTypingTrail(){
@@ -362,54 +423,139 @@
     unlock("comboKing",p.bestStreak>=10);
     return newly;
   }
-  function finish(){
+  function quickMatchOpponent(room){
+    const currentId=account?.supabaseUserId;
+    return (room?.players||[]).find(p=>p.user_id!==currentId)||null;
+  }
+
+  function renderQuickMatchResult(room){
+    const box=$("matchResult");
+    if(!box||!quickMatch)return;
+    box.hidden=false;
+    const currentId=account?.supabaseUserId;
+    const mine=(room?.players||[]).find(p=>p.user_id===currentId);
+    const opponent=quickMatchOpponent(room);
+    const opponentName=opponent?.profile?.display_name||opponent?.profile?.username||"Opponent";
+    const levels=mine?.level_at_match&&opponent?.level_at_match
+      ? `LV ${mine.level_at_match} vs LV ${opponent.level_at_match}`
+      : "";
+
+    if(room?.status==="finished"){
+      const verdict=!room.winner_id?"Draw":room.winner_id===currentId?"Victory":"Defeat";
+      box.innerHTML=`<strong>${verdict}</strong><span>${AutoType.escapeHTML(opponentName)}${levels?` · ${levels}`:""}</span>`;
+    }else{
+      box.innerHTML=`<strong>Result submitted</strong><span>Waiting for ${AutoType.escapeHTML(opponentName)}${levels?` · ${levels}`:""}</span>`;
+    }
+  }
+
+  async function pollQuickMatchResult(attempt=0){
+    if(!quickMatch||!race?.id)return;
+    try{
+      const room=await AutoTypeBackend.raceById(race.id);
+      if(!room)return;
+      race.room=room;
+      renderQuickMatchResult(room);
+      if(room.status!=="finished"&&attempt<20){
+        setTimeout(()=>pollQuickMatchResult(attempt+1),1500);
+      }
+    }catch(error){
+      console.warn("Could not refresh Quick Match result",error);
+    }
+  }
+
+  async function finish(){
     if(timer)clearInterval(timer);
-    const ms=elapsed();$("time").textContent=fmt(ms);
-    const p=AutoType.currentProfile();
-    p.rounds++;p.words+=words.length;p.erased+=erased;p.bestErasedRound=Math.max(p.bestErasedRound||0,erased);
-    p.totalKeys=(p.totalKeys||0)+keyCount;
-    p.totalErrors=(p.totalErrors||0)+errors;
-    p.totalScore=(p.totalScore||0)+score;
-    p.bestScore=Math.max(p.bestScore||0,score);p.bestStreak=Math.max(p.bestStreak||0,maxStreak);
-    p.fastest=!p.fastest||ms<p.fastest?ms:p.fastest;if(errors===0)p.perfectRounds=(p.perfectRounds||0)+1;
-    if(clueCounts.some(n=>n===1))p.mindReaderCount=(p.mindReaderCount||0)+1;
-    if(mode==="daily")p.daily[dateKey()]=Math.max(p.daily[dateKey()]||0,score);
-    const newlyUnlocked=unlocks(p);AutoType.patchCurrentProfile(p);
+    const ms=elapsed();
+    $("time").textContent=fmt(ms);
 
     let coinsEarned=0;
+    let newlyUnlocked=[];
     const activeAccount=AutoType.currentAccount();
-    if(activeAccount){
-      // Prestige titles are earned, not sold. Mind Reader is awarded with
-      // the matching achievement and then appears in Profile inventory.
-      if(newlyUnlocked.includes("mindReader")&&!activeAccount.wallet.owned.includes("title_mindreader")){
-        activeAccount.wallet.owned.push("title_mindreader");
+
+    if(activeAccount?.online){
+      $("resultCoins").textContent="Saving…";
+      try{
+        const result=await AutoTypeBackend.recordRound({
+          roundId,
+          challengeId:serverChallenge?.challenge_id||null,
+          mode,
+          score,
+          words:words.length,
+          erased,
+          maxStreak,
+          totalKeys:keyCount,
+          errors,
+          durationMs:Math.max(250,Math.round(ms)),
+          oneClue:clueCounts.some(n=>n===1)
+        });
+        coinsEarned=Number(result?.coins_earned||0);
+        newlyUnlocked=Array.isArray(result?.new_achievements)?result.new_achievements:[];
+        const verifiedBadge=$("verifiedResult");
+        if(verifiedBadge){
+          verifiedBadge.hidden=!result?.verified;
+          verifiedBadge.textContent=result?.verified?"Verified round":"";
+        }
+        await AutoTypeBackend.hydrateLocalMirror();
+      }catch(error){
+        console.error("Round save failed",error);
+        if($("verifiedResult"))$("verifiedResult").hidden=true;
+        AutoType.toast(error.message||"Round finished, but the backend could not save it.");
+      }
+    }else{
+      const p=AutoType.currentProfile();
+      p.rounds++;
+      p.words+=words.length;
+      p.erased+=erased;
+      p.bestErasedRound=Math.max(p.bestErasedRound||0,erased);
+      p.totalKeys=(p.totalKeys||0)+keyCount;
+      p.totalErrors=(p.totalErrors||0)+errors;
+      p.totalScore=(p.totalScore||0)+score;
+      p.bestScore=Math.max(p.bestScore||0,score);
+      p.bestStreak=Math.max(p.bestStreak||0,maxStreak);
+      p.fastest=!p.fastest||ms<p.fastest?ms:p.fastest;
+      if(errors===0)p.perfectRounds=(p.perfectRounds||0)+1;
+      if(clueCounts.some(n=>n===1))p.mindReaderCount=(p.mindReaderCount||0)+1;
+      if(mode==="daily")p.daily[dateKey()]=Math.max(p.daily[dateKey()]||0,score);
+      newlyUnlocked=unlocks(p);
+      AutoType.patchCurrentProfile(p);
+
+      if(activeAccount){
+        if(newlyUnlocked.includes("mindReader")&&!activeAccount.wallet.owned.includes("title_mindreader")){
+          activeAccount.wallet.owned.push("title_mindreader");
+          AutoType.save();
+        }
+        coinsEarned+=20;
+        if(errors===0)coinsEarned+=10;
+        if(maxStreak>=5)coinsEarned+=5;
+        if(mode==="daily")coinsEarned+=15;
+        coinsEarned+=newlyUnlocked.length*75;
+        AutoType.addCoins(coinsEarned,"Round reward");
+        if(p.rounds>0&&p.rounds%10===0)AutoType.addTickets(1,"10-round milestone");
+      }
+    }
+
+    if(race&&activeAccount){
+      if(activeAccount.online){
+        try{
+          await AutoTypeBackend.submitRaceResult(race.id,{score,durationMs:ms,errors,erased});
+          if(quickMatch)await pollQuickMatchResult();
+        }catch(error){
+          console.error("Race result save failed",error);
+          AutoType.toast(error.message||"Round saved, but the race result could not sync.");
+        }
+      }else{
+        race.results=race.results||{};
+        race.results[activeAccount.id]={time:ms,errors,erased,score};
         AutoType.save();
       }
-
-      coinsEarned+=20;
-      if(errors===0)coinsEarned+=10;
-      if(maxStreak>=5)coinsEarned+=5;
-      if(mode==="daily")coinsEarned+=15;
-      coinsEarned+=newlyUnlocked.length*75;
-      AutoType.addCoins(coinsEarned,"Round reward");
-
-      // Tournament Tickets are earned through play. Crate Tokens are reserved
-      // for tournament/event rewards so random crates stay separate from paid currency.
-      if(p.rounds>0&&p.rounds%10===0){
-        AutoType.addTickets(1,"10-round milestone");
-      }
     }
 
-    if(race&&AutoType.currentAccount()){
-      race.results=race.results||{};
-      race.results[AutoType.currentAccount().id]={time:ms,errors,erased,score};AutoType.save();
-    }
     $("resultScore").textContent=score;
     $("resultTime").textContent=fmt(ms);
     $("resultKeys").textContent=keyCount;
     $("resultErrors").textContent=errors;
     $("resultErased").textContent=erased;
-    $("resultCoins").textContent=AutoType.currentAccount()?`+${coinsEarned}`:"Sign in";
+    $("resultCoins").textContent=activeAccount?`+${coinsEarned}`:"Sign in";
 
     const unlockBox=$("achievementUnlocks");
     if(newlyUnlocked.length){
@@ -436,8 +582,31 @@
     else if(e.key==="Backspace"){e.preventDefault();backspace()}
     else if(e.key===" "||e.key==="Enter"){e.preventDefault();lock()}
   });
-  $("restartBtn").addEventListener("click",()=>reset());
-  $("newBtn").addEventListener("click",()=>{if(!fixed)reset(pick())});
-  $("againBtn").addEventListener("click",()=>reset());
+  async function resetVerifiedRound(){
+    try{
+      const challenge=await issueServerChallenge();
+      if(challenge?.target_text){
+        sentence=challenge.target_text;
+        reset(sentence);
+      }
+    }catch(error){
+      AutoType.toast(error.message||"Could not start a new round.");
+    }
+  }
+
+  $("restartBtn").addEventListener("click",async()=>{
+    if(account?.online&&competitiveModes.has(mode))await resetVerifiedRound();
+    else reset();
+  });
+  $("newBtn").addEventListener("click",async()=>{
+    if(fixed)return;
+    if(account?.online&&competitiveModes.has(mode))await resetVerifiedRound();
+    else reset(pick());
+  });
+  $("againBtn").addEventListener("click",async()=>{
+    if(mode==="tournament")return;
+    if(account?.online&&competitiveModes.has(mode))await resetVerifiedRound();
+    else reset();
+  });
   reset();
-})();
+});

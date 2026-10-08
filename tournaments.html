@@ -62,7 +62,6 @@
     <div>
       <div class="eyebrow">Competitive events</div>
       <h1>Tournaments</h1>
-      <p>Register for skill-based AutoType events. Entry is free or uses Tournament Tickets earned through play.</p>
     </div>
     <div class="tournament-hero-actions">
       <div class="tournament-wallet" id="tournamentWallet">
@@ -86,7 +85,7 @@
 
   <section class="panel panel-pad">
     <div class="section-title-row">
-      <div><h2 class="section-title">Your registrations</h2><p class="help">This local prototype tracks registration. Live brackets and server-verified results come with the backend.</p></div>
+      <div><h2 class="section-title">Your registrations</h2></div>
     </div>
     <div id="registrationList" class="tournament-registration-list"></div>
   </section>
@@ -95,17 +94,130 @@
 <footer class="footer">
   <div class="container footer-inner">
     <span>AutoType · Competitive autocomplete typing</span>
-    <span>Local prototype · Accounts and social data stay on this device</span>
   </div>
 </footer>
 <div class="toast"></div>
+<script src="backend-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="backend.js?v=20261003-10"></script>
 <script src="core.js"></script>
 <script>
-document.addEventListener("DOMContentLoaded",()=>{
+document.addEventListener("DOMContentLoaded",async()=>{
+  await AutoType.ready();
   const account=AutoType.currentAccount();
   const store=AutoType.store();
 
   if(account&&AutoType.isDeveloper(account))manageTournamentsLink.hidden=false;
+
+  if(account?.online){
+    let snapshot={tournaments:[],entries:[]};
+
+    const tournamentKey=t=>t.slug||t.id;
+    const statusLabelOnline=t=>{
+      if(t.status==="open")return "Registration open";
+      if(t.status==="scheduled")return "Coming soon";
+      if(t.status==="running")return "In progress";
+      return "Closed";
+    };
+
+    async function loadOnline(){
+      snapshot=await AutoTypeBackend.tournamentsSnapshot();
+    }
+
+    function renderOnline(){
+      const wallet=AutoType.currentWallet();
+      ticketBalance.textContent=wallet?.tickets||0;
+      const currentId=account.supabaseUserId;
+
+      tournamentGrid.innerHTML=snapshot.tournaments.length?snapshot.tournaments.map(t=>{
+        const entry=snapshot.entries.find(e=>e.tournament_id===t.id&&e.user_id===currentId&&e.status!=="withdrawn");
+        const entrants=snapshot.entries.filter(e=>e.tournament_id===t.id&&!["withdrawn","disqualified"].includes(e.status)).length;
+        const entryText=t.entry_type==="free"?"Free entry":`${t.entry_cost} ◆`;
+        const full=entrants>=t.max_players;
+        const key=tournamentKey(t);
+        const profileMap=Object.fromEntries((snapshot.profiles||[]).map(p=>[p.id,p]));
+        const scored=snapshot.entries
+          .filter(e=>e.tournament_id===t.id&&e.score!=null&&!["withdrawn","disqualified"].includes(e.status))
+          .sort((a,b)=>Number(b.score)-Number(a.score)||new Date(a.finished_at||0)-new Date(b.finished_at||0));
+        const winnerProfile=t.winner_id?profileMap[t.winner_id]:null;
+        const standings=scored.length?`<div class="tournament-standings">
+          ${winnerProfile?`<div class="tournament-winner"><span>Winner</span><strong>${AutoType.escapeHTML(winnerProfile.display_name||winnerProfile.username)}</strong></div>`:""}
+          <div class="tournament-standings-list">
+            ${scored.slice(0,3).map((row,index)=>{
+              const p=profileMap[row.user_id];
+              return `<div><span>#${index+1}</span><strong>${AutoType.escapeHTML(p?.display_name||p?.username||"Player")}</strong><b>${Number(row.score).toLocaleString()}</b></div>`;
+            }).join("")}
+          </div>
+        </div>`:"";
+        let action;
+
+        if(entry){
+          if(t.status==="running"&&entry.status!=="finished"&&entry.score==null){
+            action=`<a class="button button-primary" href="play.html?tournament=${encodeURIComponent(key)}">Play tournament</a>`;
+          }else if(entry.status==="finished"||entry.score!=null){
+            action=`<span class="tournament-score">Score <strong>${Number(entry.score||0).toLocaleString()}</strong></span>`;
+          }else{
+            action=`<button class="button button-quiet" data-online-leave="${key}" ${t.status==="closed"?"disabled":""}>${t.status==="closed"?"Tournament closed":"Leave tournament"}</button>`;
+          }
+        }else if(t.status!=="open"){
+          action=`<button class="button button-secondary" disabled>${t.status==="scheduled"?"Registration not open":t.status==="running"?"Tournament started":"Registration closed"}</button>`;
+        }else if(full){
+          action=`<button class="button button-secondary" disabled>Tournament full</button>`;
+        }else{
+          action=`<button class="button button-primary" data-online-join="${key}">Register · ${entryText}</button>`;
+        }
+
+        return `<article class="tournament-card ${entry?"registered":""} status-${t.status}">
+          <div class="tournament-card-top">
+            <span>${AutoType.escapeHTML(t.schedule_label||"TBA")}</span>
+            <span class="tournament-status">${statusLabelOnline(t)}</span>
+          </div>
+          <h2>${AutoType.escapeHTML(t.name)}</h2>
+          <p>${AutoType.escapeHTML(t.description||"")}</p>
+          <div class="tournament-prizes">
+            <div><span>Entry</span><strong>${entryText}</strong></div>
+            <div><span>Players</span><strong>${entrants}/${t.max_players}</strong></div>
+            <div><span>Coins</span><strong>${Number(t.reward_coins||0).toLocaleString()} ◉</strong></div>
+            <div><span>Crate tokens</span><strong>${Number(t.reward_crate_tokens||0)} ▣</strong></div>
+          </div>
+          ${t.reward_title?`<div class="tournament-title-prize">Winner title · ${AutoType.escapeHTML(t.reward_title)}</div>`:""}
+          <div class="tournament-card-action">${action}</div>
+          ${(t.status==="running"||t.status==="closed")?standings:""}
+        </article>`;
+      }).join(""):`<div class="empty tournament-empty">No tournaments are currently configured.</div>`;
+
+      tournamentGrid.querySelectorAll("[data-online-join]").forEach(b=>b.addEventListener("click",async()=>{
+        b.disabled=true;
+        try{
+          await AutoTypeBackend.joinTournament(b.dataset.onlineJoin);
+          await Promise.all([AutoTypeBackend.hydrateLocalMirror(),loadOnline()]);
+          AutoType.toast("Tournament registration confirmed.");
+          renderOnline();
+        }catch(e){AutoType.toast(e.message);b.disabled=false}
+      }));
+      tournamentGrid.querySelectorAll("[data-online-leave]").forEach(b=>b.addEventListener("click",async()=>{
+        b.disabled=true;
+        try{
+          const result=await AutoTypeBackend.leaveTournament(b.dataset.onlineLeave);
+          await Promise.all([AutoTypeBackend.hydrateLocalMirror(),loadOnline()]);
+          AutoType.toast(result?.refund?"Registration cancelled and ticket refunded.":"Registration cancelled.");
+          renderOnline();
+        }catch(e){AutoType.toast(e.message);b.disabled=false}
+      }));
+
+      const mine=snapshot.entries.filter(e=>e.user_id===currentId&&e.status!=="withdrawn");
+      registrationList.innerHTML=mine.length?mine.map(e=>{
+        const t=snapshot.tournaments.find(x=>x.id===e.tournament_id);
+        return `<div class="tournament-registration">
+          <div><strong>${AutoType.escapeHTML(t?.name||"Tournament")}</strong><span>${AutoType.escapeHTML(t?.schedule_label||"")} · ${new Date(e.joined_at).toLocaleDateString()}</span></div>
+          <span class="status-pill">${e.status==="winner"?"Winner":e.status==="finished"?`Score ${Number(e.score||0).toLocaleString()}`:e.status==="playing"?"Playing":"Registered"}</span>
+        </div>`;
+      }).join(""):`<div class="empty">You are not registered for any tournaments.</div>`;
+    }
+
+    try{await loadOnline();renderOnline()}catch(e){AutoType.toast(e.message)}
+    return;
+  }
 
   function statusLabel(t){
     return t.status==="open"?"Registration open":t.status==="scheduled"?"Coming soon":"Closed";

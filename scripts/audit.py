@@ -12,6 +12,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 IGNORED_DIRS = {".git", ".github", "docs", "scripts", "__pycache__"}
 
+SECRET_PATTERNS = {
+    "Stripe secret key": re.compile(r"sk_(?:live|test)_[A-Za-z0-9]{20,}"),
+    "Stripe webhook secret": re.compile(r"whsec_[A-Za-z0-9]{20,}"),
+    "Supabase secret key": re.compile(r"sb_secret_[A-Za-z0-9_-]{20,}"),
+}
+
 
 class PageParser(HTMLParser):
     def __init__(self) -> None:
@@ -49,8 +55,9 @@ def main() -> int:
     issues: list[str] = []
     html_files = sorted(ROOT.glob("*.html"))
 
-    for js in (ROOT / "core.js", ROOT / "game.js"):
-        check_node(js, issues)
+    for js in (ROOT / "core.js", ROOT / "game.js", ROOT / "backend.js"):
+        if js.exists():
+            check_node(js, issues)
 
     for page in html_files:
         text = page.read_text(encoding="utf-8")
@@ -99,6 +106,41 @@ def main() -> int:
         missing = sorted(calls - exports)
         if missing:
             fail("Missing AutoType exports: " + ", ".join(missing), issues)
+
+    secret_scan_files = [
+        *(p for p in ROOT.glob("*.js") if p.is_file()),
+        *(p for p in ROOT.glob("*.html") if p.is_file()),
+        *(ROOT / "supabase" / "functions").glob("**/*.ts"),
+        *(ROOT / "supabase" / "functions").glob("**/*.js"),
+    ]
+    for path in secret_scan_files:
+        text = path.read_text(encoding="utf-8")
+        for label, pattern in SECRET_PATTERNS.items():
+            if pattern.search(text):
+                fail(f"{path.relative_to(ROOT)}: possible {label} committed", issues)
+
+    # Reject duplicate migration timestamps and mismatched client/server game actions.
+    migration_dir = ROOT / "supabase" / "migrations"
+    versions: dict[str, str] = {}
+    if migration_dir.exists():
+        for path in sorted(migration_dir.glob("*.sql")):
+            match = re.fullmatch(r"(\d{14})_[a-z0-9_]+\.sql", path.name)
+            if not match:
+                fail(f"Invalid migration filename: {path.name}", issues)
+                continue
+            version = match.group(1)
+            if version in versions:
+                fail(f"Duplicate migration version {version}: {versions[version]} and {path.name}", issues)
+            versions[version] = path.name
+
+    client = ROOT / "backend.js"
+    gateway = ROOT / "supabase" / "functions" / "game-api" / "index.ts"
+    if client.exists() and gateway.exists():
+        client_actions = set(re.findall(r'api\(\s*"([a-z_]+)"', client.read_text(encoding="utf-8")))
+        handler_actions = set(re.findall(r'case\s+"([a-z_]+)"', gateway.read_text(encoding="utf-8")))
+        missing = sorted(client_actions - handler_actions)
+        if missing:
+            fail("Missing game-api handlers: " + ", ".join(missing), issues)
 
     leftovers = sorted(p.name for p in ROOT.iterdir() if p.is_file() and (".before_" in p.name or "before-home-fix" in p.name))
     if leftovers:
