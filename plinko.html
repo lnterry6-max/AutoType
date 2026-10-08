@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Plinko Arcade · AutoType</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="styles.css?v=20261008-plinko">
+</head>
+<body data-page="plinko">
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a class="brand" href="index.html">
+      <span class="brand-logo"><img src="assets/logo.png" alt="AutoType"></span>
+      <span>AutoType</span>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" data-nav="home">Home</a>
+      <a href="play.html" data-nav="play">Play</a>
+      <a href="tournaments.html" data-nav="tournaments">Tournaments</a>
+      <a href="shop.html" data-nav="shop">Shop</a>
+      <a href="friends.html" data-nav="friends">Friends</a>
+      <details class="nav-more">
+        <summary>More</summary>
+        <div class="nav-more-menu">
+          <a href="create.html" data-nav="create">Create</a>
+          <a href="predictions.html" data-nav="predictions">Prediction Lab</a>
+          <a href="achievements.html" data-nav="achievements">Achievements</a>
+          <a href="leaderboard.html" data-nav="leaderboard">Leaderboard</a>
+          <a href="stats.html" data-nav="stats">Stats</a>
+          <a href="how-to.html" data-nav="help">How to Play</a>
+          <a href="settings.html" data-nav="settings">Settings</a>
+        </div>
+      </details>
+    </nav>
+    <div class="nav-spacer"></div>
+    <a class="header-messages-link" data-nav="messages" href="chat.html" aria-label="Messages"><span aria-hidden="true">✉</span><span class="header-messages-text">Messages</span></a>
+    <a class="header-feedback-link" data-nav="feedback" href="feedback.html">✎ Feedback</a>
+    <div class="nav-currency" id="navCurrency" hidden></div>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Open navigation">☰</button>
+    <div class="nav-account">
+      <button class="account-button" id="accountMenuButton"></button>
+      <div class="account-dropdown" id="accountDropdown" hidden></div>
+    </div>
+  </div>
+</header>
+<nav class="mobile-nav" id="mobileNav">
+  <a data-nav="feedback" href="feedback.html">Send feedback</a>
+  <a href="index.html">Home</a>
+  <a href="play.html">Play</a>
+  <a href="tournaments.html">Tournaments</a>
+  <a href="shop.html">Shop</a>
+  <a href="friends.html">Friends</a>
+  <a href="chat.html" data-nav="messages">Messages</a>
+  <a href="create.html">Create</a>
+  <a href="predictions.html">Prediction Lab</a>
+  <a href="achievements.html">Achievements</a>
+  <a href="leaderboard.html">Leaderboard</a>
+  <a href="stats.html">Stats</a>
+  <a href="how-to.html">How to Play</a>
+  <a href="settings.html">Settings</a>
+</nav>
+
+<main class="container page plinko-page">
+  <header class="platform-page-heading plinko-intro">
+    <div>
+      <span class="section-kicker">ARCADE · NEW MODE</span>
+      <h1>Plinko</h1>
+      <p>Aim, drop, and watch the ball bounce through a field of pegs. Land in point slots and beat your own best score.</p>
+    </div>
+    <a class="button button-secondary" href="play.html">← All modes</a>
+  </header>
+  <section class="plinko-overview platform-section" aria-label="Plinko arcade information">
+    <div class="plinko-overview-mark"><span>●</span></div>
+    <div>
+      <strong>Five drops. One high score.</strong>
+      <p>Free arcade play · Score is measured in <strong>points only</strong>. No AutoType coins are spent or awarded.</p>
+    </div>
+    <span class="plinko-arcade-flag">FREE PLAY</span>
+  </section>
+  <section class="plinko-layout" aria-label="Plinko game">
+    <div class="plinko-cabinet">
+      <div class="plinko-cabinet-top"><span>PLINKO // AUTOTYPE ARCADE</span><span class="plinko-live-label"><i></i> READY</span></div>
+      <canvas id="plinkoBoard" width="720" height="750" role="img" aria-label="Plinko board with pegs and nine point slots. Adjust the launch position with the Aim slider and select Drop ball.">
+        Visual Plinko game board. Adjust the Aim position slider and press Drop ball to play.
+      </canvas>
+      <p class="plinko-board-help">Click the board to adjust the drop position, or use the Aim slider. Arrow keys work on the slider.</p>
+    </div>
+    <aside class="plinko-sidebar">
+      <section class="platform-section plinko-stats">
+        <div class="platform-section-head"><div><span class="section-kicker">YOUR ROUND</span><h2>Arcade score</h2></div></div>
+        <div class="plinko-main-score"><strong id="plinkoScore">0</strong><span>POINTS</span></div>
+        <div class="plinko-stat-grid">
+          <div><span>Free drops left</span><strong id="plinkoDrops">5</strong></div>
+          <div><span>Personal best</span><strong id="plinkoBest">0</strong></div>
+        </div>
+        <p id="plinkoStatus" class="plinko-status" aria-live="polite">Ready to drop. Select your launch position.</p>
+      </section>
+      <section class="platform-section plinko-controls">
+        <div class="platform-section-head"><div><span class="section-kicker">CONTROLS</span><h2>Take your shot</h2></div></div>
+        <label for="plinkoAim" class="plinko-control-label">Aim position <span>LEFT <span aria-hidden="true">↔</span> RIGHT</span></label>
+        <input type="range" id="plinkoAim" min="0" max="100" value="50" step="1" aria-label="Aim the ball from left to right">
+        <div class="plinko-actions">
+          <button type="button" class="button button-primary" id="plinkoDrop">Drop ball</button>
+          <button type="button" class="button button-secondary" id="plinkoReset">Reset round</button>
+        </div>
+        <p class="help">One ball at a time. Each completed round has five free drops.</p>
+      </section>
+      <section class="platform-section plinko-tips">
+        <span class="section-kicker">HOW TO PLAY</span>
+        <h2>A little luck, a little aim.</h2>
+        <p>Choose a starting position and drop. The ball bounces naturally off pins and ends in one of nine scoring slots.</p>
+        <p>Outside slots are worth more arcade points, but a ball can travel anywhere as it falls.</p>
+        <p>Your personal best stays in this browser. It does not affect your wallet, XP, or the competitive leaderboards.</p>
+      </section>
+    </aside>
+  </section>
+  <div class="plinko-live-sr" id="plinkoAnnounce" role="status" aria-live="polite" aria-atomic="true"></div>
+</main>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <span>AutoType · Competitive autocomplete typing</span>
+  </div>
+</footer>
+<div class="toast"></div>
+<script src="backend-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="backend.js?v=20261008-chat"></script>
+<script src="core.js?v=20261008-chat"></script>
+
+<script src="plinko.js?v=20261008-plinko"></script>
+</body>
+</html>
