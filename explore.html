@@ -3,12 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Create · AutoType</title>
+<title>Explore AutoType · All Features</title>
 <link rel="icon" href="assets/logo.png">
 <link rel="stylesheet" href="styles.css?v=20261008-mobile-hotfix">
 </head>
-<body data-page="create">
-
+<body data-page="explore">
 <header class="topbar">
   <div class="container topbar-inner">
     <a class="brand" href="index.html">
@@ -60,24 +59,52 @@
   <a href="settings.html">Settings</a>
 </nav>
 
-
-<main class="container page">
-  <header class="platform-page-heading"><div><span class="section-kicker">CREATE</span><h1>Build a challenge</h1></div><a class="button button-secondary" href="play.html">Back to modes</a></header>
-  <div class="create-layout">
+<main class="container page explore-page">
+  <header class="platform-page-heading">
+    <div><span class="section-kicker">AUTOTYPE DIRECTORY</span><h1>Explore every feature</h1>
+      <p>Everything in one place, organized by what you want to do. You don't need to memorize the navigation menus.</p>
+    </div>
+  </header>
+  <div class="explore-grid">
     <section class="platform-section">
-      <div class="form-group"><label class="label" for="customSentence">Challenge sentence</label><textarea class="textarea create-sentence-input" id="customSentence" maxlength="240" placeholder="Try: you're probably going to guess this wrong"></textarea><div class="help"><span id="charCount">0</span>/240 · at least two words</div></div>
-      <div class="form-group"><label class="label" for="predictorMode">Predictor behavior</label><select class="select" id="predictorMode"><option value="classic">Word</option><option value="context">Context</option><option value="sentence">Sentence</option><option value="evil">Evil</option></select></div>
-      <button class="button button-primary" id="startCustom">Start challenge</button>
+      <div class="platform-section-head"><div><span class="section-kicker">PLAY</span><h2>Games and challenges</h2></div></div>
+      <div class="explore-links">
+        <a href="play.html">Typing modes <span>Word, Context, Sentence and Evil</span></a>
+        <a href="play.html?mode=daily">Daily Challenge <span>One shared target each day</span></a>
+        <a href="plinko.html">Plinko Arcade <span>Free ball-drop point challenge</span></a>
+        <a href="create.html">Custom sentences <span>Create and test a sentence</span></a>
+        <a href="tournaments.html">Tournaments <span>Join and track competitive events</span></a>
+      </div>
     </section>
-    <aside class="platform-section create-preview-panel">
-      <span class="section-kicker">PREVIEW</span><h2>Target</h2>
-      <div class="custom-target-preview" id="customPreviewText">Your sentence will appear here.</div>
-      <div class="create-preview-rule"></div>
-      <span class="section-kicker">PREDICTOR</span><strong id="customPreviewMode">Word mode</strong><p id="customPreviewDescription">Only the current word prefix influences the prediction.</p>
-    </aside>
+    <section class="platform-section">
+      <div class="platform-section-head"><div><span class="section-kicker">FRIENDS</span><h2>Social</h2></div></div>
+      <div class="explore-links">
+        <a href="friends.html">Friends and races <span>Find players and challenge friends</span></a>
+        <a href="chat.html">Messages <span>Friends-only private conversations</span></a>
+        <a href="notifications.html">Notifications <span>Friend requests and unread messages</span></a>
+        <a href="leaderboard.html">Leaderboards <span>Check competitive placements</span></a>
+      </div>
+    </section>
+    <section class="platform-section">
+      <div class="platform-section-head"><div><span class="section-kicker">YOU</span><h2>Progress and customization</h2></div></div>
+      <div class="explore-links">
+        <a href="profile.html">My Profile <span>Avatar, status, badges and showcases</span></a>
+        <a href="achievements.html">Achievements <span>Unlock milestones and rewards</span></a>
+        <a href="stats.html">Statistics <span>See your game performance</span></a>
+        <a href="shop.html">Shop and cosmetics <span>Equip items you've earned</span></a>
+        <a href="settings.html">Settings <span>Accessibility, shortcuts and account options</span></a>
+      </div>
+    </section>
+    <section class="platform-section">
+      <div class="platform-section-head"><div><span class="section-kicker">LEARN</span><h2>Help and ideas</h2></div></div>
+      <div class="explore-links">
+        <a href="how-to.html">How to Play <span>Gameplay, keyboard and scoring guide</span></a>
+        <a href="predictions.html">Prediction Lab <span>Suggest and vote on completions</span></a>
+        <a href="feedback.html">Beta Feedback <span>Report bugs and suggest improvements</span></a>
+      </div>
+    </section>
   </div>
 </main>
-
 
 <footer class="footer">
   <div class="container footer-inner">
@@ -85,33 +112,10 @@
   </div>
 </footer>
 <div class="toast"></div>
-
 <script src="backend-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="backend.js?v=20261008-variety-ux"></script>
 <script src="core.js?v=20261008-variety-ux"></script>
-
-<script>
-document.addEventListener("DOMContentLoaded",async()=>{
-  await AutoType.ready();
-  const descriptions={classic:"Only the current word prefix influences the prediction.",context:"The previous completed word helps rank the next guess.",sentence:"Context plus a visible prediction for the rest of the sentence.",evil:"Wrong-but-plausible words and slang are deliberately prioritized."};
-  const names={classic:"Word mode",context:"Context mode",sentence:"Sentence mode",evil:"Evil mode"};
-  function preview(){
-    charCount.textContent=customSentence.value.length;
-    customPreviewText.textContent=customSentence.value.trim()||"Your sentence will appear here.";
-    customPreviewMode.textContent=names[predictorMode.value];
-    customPreviewDescription.textContent=descriptions[predictorMode.value];
-  }
-  customSentence.addEventListener("input",preview);
-  predictorMode.addEventListener("change",preview);
-  startCustom.addEventListener("click",()=>{
-    const s=customSentence.value.toLowerCase().replace(/[^a-z0-9' ]+/g," ").replace(/\s+/g," ").trim();
-    if(s.split(" ").filter(Boolean).length<2){AutoType.toast("Use at least two words.");return}
-    location.href=`play.html?mode=custom&predictor=${encodeURIComponent(predictorMode.value)}&sentence=${encodeURIComponent(s)}`;
-  });
-  preview();
-});
-</script>
 
 </body>
 </html>
