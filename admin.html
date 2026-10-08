@@ -537,6 +537,42 @@ document.addEventListener("DOMContentLoaded",async()=>{
       });
     }
 
+    function renderOnlineBadges(){
+      const list=document.querySelector("#customRolesList");list.replaceChildren();
+      if(!roleConfig.badges.length){
+        const p=document.createElement("p");p.className="empty";p.textContent="No display roles yet. Create Beta Tester above.";
+        list.appendChild(p);return;
+      }
+      for(const badge of roleConfig.badges){
+        const row=document.createElement("div");row.className="admin-badge-row";
+        const sample=document.createElement("strong");sample.className="user-role-badge";
+        sample.textContent=badge.name;sample.style.setProperty("--badge-color",badge.color);
+        const count=document.createElement("span");count.className="help";
+        count.textContent=roleConfig.assignments.filter(x=>x.role_id===badge.id).length+" players";
+        const remove=document.createElement("button");remove.className="button button-quiet";remove.type="button";
+        remove.textContent="Delete";
+        remove.addEventListener("click",async()=>{
+          if(!confirm("Delete the "+badge.name+" badge and remove it from all players?"))return;
+          remove.disabled=true;
+          try{
+            await AutoTypeBackend.developerDeleteBadge(badge.id);
+            AutoType.toast("Role badge deleted.");await refreshOnlineAdmin();
+          }catch(error){AutoType.toast(error.message);remove.disabled=false;}
+        });
+        row.append(sample,count,remove);list.appendChild(row);
+      }
+    }
+    document.querySelector("#createRoleForm").addEventListener("submit",async e=>{
+      e.preventDefault();
+      const button=e.currentTarget.querySelector('button[type="submit"]');button.disabled=true;
+      try{
+        await AutoTypeBackend.developerCreateBadge(newRoleName.value,newRoleColor.value);
+        newRoleName.value="";
+        AutoType.toast("Role badge created.");await refreshOnlineAdmin();
+      }catch(error){AutoType.toast(error.message);}
+      finally{button.disabled=false;}
+    });
+
     function renderOnlinePayments(){
       const m=maps();
       const labels={
