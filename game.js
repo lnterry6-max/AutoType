@@ -645,7 +645,7 @@ AutoType.ready().then(async()=>{
   function handleMobileText(raw){
     if(!$("results").hidden)return;
     for(const char of raw){
-      if(char===" "||char==="\\n"){lock();continue;}
+      if(/\s/.test(char)){lock();continue;}
       if(/^[a-zA-Z']$/.test(char)||char==="’"){
         typeLetter(char==="’"?"'":char);
       }
