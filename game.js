@@ -1,5 +1,6 @@
 
 AutoType.ready().then(async()=>{
+  const extra=window.AutoTypeContentPack||{standard:[],evil:[],words:[]};
   const sentences=[
     "the moon looked bright over the quiet city","we found a tiny note under the old table",
     "my friend brought fresh coffee before class today","the rain made every street shine at night",
@@ -52,6 +53,7 @@ AutoType.ready().then(async()=>{
     "the new keyboard had a completely different sound","the app remembered a setting that everyone forgot changing",
     "our table shook whenever somebody bumped the floor","the first snow melted before the afternoon was over"
   ];
+  sentences.push(...extra.standard);
   const evilSentences=[
     "bro really thought the first guess was gonna work","lowkey that answer was way too obvious",
     "nah the autocomplete is actually trolling right now","that guess was so random it almost felt personal",
@@ -59,8 +61,9 @@ AutoType.ready().then(async()=>{
     "my last guess was cooked before i finished typing","the autocomplete keeps yapping instead of helping",
     "we were locked in until the ai chose the weirdest word","bro picked the most cursed word possible"
   ];
+  evilSentences.push(...extra.evil);
   const common=("the be to of and a in that have i it for not on with he as you do at this but his by from they we say her she or an will my one all would there their what so up out if about who get which go me when make can like time no just him know take people into year your good some could them see other than then now look only come its over think also back after use two how our work first well way even new want because these give day most us is are was were moon bright quiet city found tiny note under old table friend brought fresh coffee before class today rain made every street shine night often remember moment feel left blue jacket beside front door idea start strange question last train arrived midnight small choices change shape opened window heard birds outside team finished project lunch little dog waited patiently gate music next room filled hallway feels something teacher wrote three examples board took long road home dinner player gets chance solve puzzle computer guessed wrong word again warm light glowed through kitchen sometimes simplest answer best expected sound came behind wall game became harder correct watched lights disappear across river able above accept account across action actually add afternoon already always amazing answer any anyone anything appear apple area around arrive art ask away awesome bag ball basically battery beautiful become begin behind believe better big black block book box bring browser build building bus button buy call camera car care carry case change charger chat check choice click close cloud code color continue cool corner course create crowd current dark data decide desk different door down drive early easy eat else empty end enough every example fast few file final find finish floor food full fun give glass great green group guess happen hard head hear help here high image important inside instead internet keep key keyboard kind know large late learn leave level light line load loud map maybe menu message minute move name need never next nothing number open orange outside page paper park part phone photo picture place play point pretty problem question quick random read ready real really remember restart result right road route same school screen second sentence setting short show simple small someone something song still stop street student study talk tell text thing think three together tomorrow turn type update version video wait walk website week weird white window world write zero notification playlist presentation tracking prototype microphone headphones controller scoreboard shortcut assignment courtyard pavement printer package railing speaker marker sticker laptop vending elevator library entrance balloon storm cinematic delivery reflection challenge predictor").split(" ");
-  const extended=[...new Set(common)];
+  const extended=[...new Set([...common,...extra.words])];
   const evilWords=["aura","bet","bro","bruh","bussin","cap","cooked","crashout","cursed","delulu","fam","fire","fr","goated","glaze","locked","lowkey","mid","nah","npc","rizz","slay","sus","valid","vibe","wild","yap","yeet","trolling","chill","chaos","unhinged","cooking"];
 
   const contractions=[
@@ -131,12 +134,12 @@ AutoType.ready().then(async()=>{
     if(race){mode="race";predictorMode=race.mode||"context";fixed=true}
   }else if(tournamentId){
     mode="tournament";
-    predictorMode="context";
+    predictorMode="classic";
     fixed=true;
   }
 
   if(mode==="custom"){predictorMode=params.get("predictor")||"classic";fixed=true}
-  if(mode==="daily"){predictorMode="context";fixed=true}
+  if(mode==="daily"){predictorMode="classic";fixed=true}
 
   if(!mode){
     $("modePicker").hidden=false;$("gameArea").hidden=true;return;
@@ -195,7 +198,7 @@ AutoType.ready().then(async()=>{
     if(!pref)return[];
     const prev=index?words[index-1]:null;
     let base=[...suggestionsFor(pref),...extended,...sentenceVocabulary,...contractions,...sharedSuggestions.map(s=>s.word)];
-    if(["context","sentence","evil"].includes(predictorMode)&&prev&&nextWord[prev]){
+    if(predictorMode==="context"&&prev&&nextWord[prev]){
       base=[...suggestionsFor(pref),...nextWord[prev],...base];
     }
     if(predictorMode==="evil")base=[...evilWords.filter(w=>w.startsWith(pref)),...base];
@@ -207,12 +210,33 @@ AutoType.ready().then(async()=>{
     return matches;
   }
 
+  // Context mode stays sentence-aware. Other modes deliberately vary their guesses.
+  // A stable round/word/prefix hash keeps displayed suggestions from jumping on each render,
+  // while still producing very different guesses across prompts and words.
+  function guessScore(word,pref){
+    const key=sentence+"|"+predictorMode+"|"+index+"|"+pref+"|"+word;
+    let hash=2166136261;
+    for(let i=0;i<key.length;i++){
+      hash^=key.charCodeAt(i);
+      hash=Math.imul(hash,16777619);
+    }
+    return hash>>>0;
+  }
   function rankedCandidates(pref){
     const list=candidates(pref);
     if(!list.length)return[];
     const fresh=list.filter(word=>!recentGuesses.includes(word));
     const seen=list.filter(word=>recentGuesses.includes(word));
-    return fresh.length?[...fresh,...seen]:list;
+    if(predictorMode==="context")return fresh.length?[...fresh,...seen]:list;
+    const shuffled=arr=>arr.slice().sort((a,b)=>guessScore(a,pref)-guessScore(b,pref));
+    const ranked=[...shuffled(fresh),...shuffled(seen)];
+    // Evil prefers a surprise wrong guess but still allows eventual completion.
+    if(predictorMode==="evil"&&ranked.length>1){
+      const wrong=ranked.filter(w=>w!==words[index]);
+      const correct=ranked.filter(w=>w===words[index]);
+      return [...wrong,...correct];
+    }
+    return ranked;
   }
 
   function rememberGuess(word){
@@ -259,7 +283,9 @@ AutoType.ready().then(async()=>{
     if(settings.showPrediction===false||!["sentence","evil"].includes(predictorMode)||!index)return"";
     let prev=words[index-1],out=[];
     for(let i=index;i<words.length;i++){
-      const opts=nextWord[prev]||extended;const n=opts[0]||"the";out.push(n);prev=n;
+      const opts=nextWord[prev]||extended;
+      const n=(predictorMode==="context"?opts[0]:opts[guessScore(String(i),prev)%opts.length])||"the";
+      out.push(n);prev=n;
     }
     return `Prediction: ${words.slice(0,index).join(" ")} ${out.join(" ")}`;
   }
@@ -573,14 +599,24 @@ AutoType.ready().then(async()=>{
     $("progress").style.width="100%";
   }
 
+  const confirmKey=settings.confirmKey==="Enter"?"Enter":" ";
+  const eraseKey=settings.eraseKey==="Delete"?"Delete":"Backspace";
+  const predictionKey=settings.predictionKey==="F4"?"F4":"F2";
   document.addEventListener("keydown",e=>{
     if(e.ctrlKey||e.metaKey||e.altKey||!$("results").hidden)return;
-    if(/^[a-zA-Z']$/.test(e.key) || e.key==="’"){
+    // Never intercept editing keys while a player is using an input or button.
+    if(e.target?.closest?.("input,textarea,select,button,[contenteditable]"))return;
+    if(e.key===predictionKey){
       e.preventDefault();
-      typeLetter(e.key==="’" ? "'" : e.key);
+      const panel=document.querySelector(".prediction-details");
+      if(panel)panel.open=!panel.open;
+      return;
     }
-    else if(e.key==="Backspace"){e.preventDefault();backspace()}
-    else if(e.key===" "||e.key==="Enter"){e.preventDefault();lock()}
+    if(e.key===eraseKey){e.preventDefault();backspace();return;}
+    if(e.key===confirmKey){e.preventDefault();lock();return;}
+    if(/^[a-zA-Z']$/.test(e.key)||e.key==="’"){
+      e.preventDefault();typeLetter(e.key==="’"?"'":e.key);
+    }
   });
   async function resetVerifiedRound(){
     try{

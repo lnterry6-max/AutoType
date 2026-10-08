@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Settings · AutoType</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="styles.css?v=20261008-personalization">
+<link rel="stylesheet" href="styles.css?v=20261008-variety-ux">
 </head>
 <body data-page="">
 
@@ -24,12 +24,8 @@
       <details class="nav-more">
         <summary>More</summary>
         <div class="nav-more-menu">
-          <a href="create.html" data-nav="create">Create</a>
           <a href="predictions.html" data-nav="predictions">Prediction Lab</a>
-          <a href="achievements.html" data-nav="achievements">Achievements</a>
           <a href="leaderboard.html" data-nav="leaderboard">Leaderboard</a>
-          <a href="stats.html" data-nav="stats">Stats</a>
-          <a href="plinko.html" data-nav="plinko">Plinko Arcade</a>
           <a href="how-to.html" data-nav="help">How to Play</a>
           <a href="settings.html" data-nav="settings">Settings</a>
         </div>
@@ -37,6 +33,7 @@
     </nav>
     <div class="nav-spacer"></div>
     <a class="header-messages-link" data-nav="messages" href="chat.html" aria-label="Messages"><span aria-hidden="true">✉</span><span class="header-messages-text">Messages</span></a>
+    <a class="header-notifications-link" data-nav="notifications" href="notifications.html" aria-label="Notifications"><span aria-hidden="true">🔔</span><span class="header-notifications-text">Alerts</span><span class="nav-notifications-count" hidden></span></a>
     <a class="header-feedback-link" data-nav="feedback" href="feedback.html">✎ Feedback</a>
     <div class="nav-currency" id="navCurrency" hidden></div>
     <button class="mobile-toggle" id="mobileToggle" aria-label="Open navigation">☰</button>
@@ -50,16 +47,13 @@
   <a data-nav="feedback" href="feedback.html">Send feedback</a>
   <a href="index.html">Home</a>
   <a href="play.html">Play</a>
-  <a href="plinko.html" data-nav="plinko">Plinko Arcade</a>
   <a href="tournaments.html">Tournaments</a>
   <a href="shop.html">Shop</a>
   <a href="friends.html">Friends</a>
   <a href="chat.html" data-nav="messages">Messages</a>
-  <a href="create.html">Create</a>
+  <a href="notifications.html" data-nav="notifications">Notifications</a>
   <a href="predictions.html">Prediction Lab</a>
-  <a href="achievements.html">Achievements</a>
   <a href="leaderboard.html">Leaderboard</a>
-  <a href="stats.html">Stats</a>
   <a href="how-to.html">How to Play</a>
   <a href="settings.html">Settings</a>
 </nav>
@@ -118,6 +112,30 @@
         <label class="list-row" style="grid-template-columns:1fr auto"><span><strong>Typing animations</strong></span><input type="checkbox" id="animations"></label>
         <label class="list-row" style="grid-template-columns:1fr auto"><span><strong>Reduced motion</strong></span><input type="checkbox" id="reducedMotion"></label>
         <label class="list-row" style="grid-template-columns:1fr auto"><span><strong>Sentence predictions</strong></span><input type="checkbox" id="sentencePredictions"></label>
+      </div>
+      <div class="shortcut-settings">
+        <h3 class="section-title">Typing shortcuts</h3>
+        <p class="help">Customize your typing-game controls. Letters are still used for clues.</p>
+        <div class="shortcut-settings-grid">
+          <label class="label" for="confirmKeySetting">Confirm current word
+            <select class="select" id="confirmKeySetting">
+              <option value="Space">Space</option>
+              <option value="Enter">Enter</option>
+            </select>
+          </label>
+          <label class="label" for="eraseKeySetting">Erase extra AI letters
+            <select class="select" id="eraseKeySetting">
+              <option value="Backspace">Backspace</option>
+              <option value="Delete">Delete</option>
+            </select>
+          </label>
+          <label class="label" for="predictionKeySetting">Toggle prediction queue
+            <select class="select" id="predictionKeySetting">
+              <option value="F2">F2</option>
+              <option value="F4">F4</option>
+            </select>
+          </label>
+        </div>
       </div>
     </section>
     <div class="divider"></div>
@@ -233,8 +251,8 @@
 
 <script src="backend-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="backend.js?v=20261008-personalization"></script>
-<script src="core.js?v=20261008-personalization"></script>
+<script src="backend.js?v=20261008-variety-ux"></script>
+<script src="core.js?v=20261008-variety-ux"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded",async()=>{
@@ -270,6 +288,12 @@ document.addEventListener("DOMContentLoaded",async()=>{
   animations.checked=s.animations!==false;
   reducedMotion.checked=!!s.reducedFx;
   sentencePredictions.checked=s.showPrediction!==false;
+  const confirmKeySetting=document.querySelector("#confirmKeySetting");
+  const eraseKeySetting=document.querySelector("#eraseKeySetting");
+  const predictionKeySetting=document.querySelector("#predictionKeySetting");
+  confirmKeySetting.value=s.confirmKey==="Enter"?"Enter":"Space";
+  eraseKeySetting.value=s.eraseKey==="Delete"?"Delete":"Backspace";
+  predictionKeySetting.value=s.predictionKey==="F4"?"F4":"F2";
   const highContrastSetting=document.querySelector("#highContrastSetting");
   const textScaleSetting=document.querySelector("#textScaleSetting");
   highContrastSetting.checked=!!s.highContrast;
@@ -388,11 +412,15 @@ document.addEventListener("DOMContentLoaded",async()=>{
     persistSettings({
       animations:animations.checked,
       reducedFx:reducedMotion.checked,
-      showPrediction:sentencePredictions.checked
+      showPrediction:sentencePredictions.checked,
+      confirmKey:confirmKeySetting.value,
+      eraseKey:eraseKeySetting.value,
+      predictionKey:predictionKeySetting.value
     });
     AutoType.toast(account?.online?"Settings synced.":"Settings saved.");
   }
-  [animations,reducedMotion,sentencePredictions].forEach(x=>x.addEventListener("change",saveGameplay));
+  [animations,reducedMotion,sentencePredictions,confirmKeySetting,eraseKeySetting,predictionKeySetting]
+    .forEach(x=>x.addEventListener("change",saveGameplay));
   switchBtn?.addEventListener("click",()=>{
     if(account?.online)location.href="account.html?switch=1";
     else AutoType.openSwitchModal();
