@@ -2,7 +2,7 @@ name: Deploy AutoType to GitHub Pages
 
 on:
   push:
-    branches: ["main"]
+    branches: ["beta-friends"]
   workflow_dispatch:
 
 permissions:

@@ -65,12 +65,14 @@
     </div>
     <div class="shop-v3-wallet" id="shopWallet">
       <button class="shop-wallet-item shop-wallet-coins" id="getCoinsButton" type="button" title="Get Coins">
-        <span>◉</span><strong id="shopCoins">0</strong><small>Coins · Get more</small>
+        <span>◉</span><strong id="shopCoins">0</strong><small>Coins · Beta</small>
       </button>
       <a href="tournaments.html" class="shop-wallet-item"><span>◆</span><strong id="shopTickets">0</strong><small>Tickets</small></a>
       <button class="shop-wallet-item" data-shop-view-jump="crates" type="button"><span>▣</span><strong id="shopCrateTokens">0</strong><small>Crate Tokens</small></button>
     </div>
   </header>
+
+  <aside class="friends-beta-banner" aria-label="Beta shop notice"><strong>FRIENDS BETA</strong><span>Coin-pack checkout is disabled during testing. Earn coins by playing; no real-money purchases are available here.</span></aside>
 
   <section class="equipped-strip" id="shopEquippedStrip" hidden>
     <div class="equipped-strip-head">
@@ -565,6 +567,12 @@ document.addEventListener("DOMContentLoaded",async()=>{
 
   async function renderCoinPacks(){
     if(!coinPackGrid)return;
+    if(window.AUTOTYPE_FRIENDS_BETA){
+      coinPackGrid.innerHTML='<div class="empty">Coin-pack checkout is turned off during the friends beta. Earn coins by playing and exploring game modes.</div>';
+      if(paymentStatusLine)paymentStatusLine.textContent='No payments during the beta.';
+      if(paymentModeBadge)paymentModeBadge.hidden=true;
+      return;
+    }
     coinPackGrid.innerHTML=`<div class="empty">Loading…</div>`;
     paymentStatusLine.textContent="";
     paymentModeBadge.hidden=true;

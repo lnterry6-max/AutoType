@@ -88,6 +88,7 @@
       email:cleanEmail,
       password,
       options:{
+        emailRedirectTo:new URL("account.html",location.href).href,
         data:{
           username:cleanUsername,
           display_name:String(displayName||cleanUsername).trim()
