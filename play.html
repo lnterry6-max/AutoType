@@ -108,6 +108,7 @@
   </section>
 
   <section class="game-page" id="gameArea" hidden>
+    <div class="mobile-round-stage" id="mobileRoundStage">
     <div class="game-head">
       <div class="game-mode"><span>Mode</span><strong id="modeName">Word</strong></div>
       <div class="game-stats">
@@ -136,21 +137,22 @@
       </div>
       <div class="type-line"><div class="typing-trail" id="typingTrail"></div><div class="cursor"></div><div class="typed" id="typedPrefix">_</div><div class="key-help" id="keyboardHint">SPACE lock · BACKSPACE erase</div></div>
       <div class="mobile-game-controls" id="mobileGameControls">
-        <label for="mobileTypingInput">Mobile typing</label>
+        <label for="mobileTypingInput">Type your clue</label>
         <button type="button" class="button button-primary mobile-start-button" id="mobileStartButton">Tap to start typing <span aria-hidden="true">⌨</span></button>
         <input id="mobileTypingInput" class="input mobile-typing-input" type="text" inputmode="text"
           enterkeyhint="done" autocapitalize="off" autocomplete="off" autocorrect="off"
           spellcheck="false" aria-label="Type AutoType clues using your phone keyboard"
-          placeholder="Tap here to open the keyboard">
+          placeholder="Type a letter…">
         <div class="mobile-typing-actions">
           <button type="button" class="button button-secondary" id="mobileEraseButton">⌫ Erase AI</button>
           <button type="button" class="button button-primary" id="mobileLockButton">Lock word ↵</button>
         </div>
-        <p class="help">Type clues with your phone keyboard. Use Erase AI to remove wrong guesses and Lock word when the autocomplete matches the target.</p>
+        <p class="help">Erase incorrect guesses. Lock the word when it matches.</p>
       </div>
       <div class="message" id="message">Type one letter. AutoType will fill the rest.</div>
       <div class="progress"><i id="progress"></i></div>
     </div>
+    </div><!-- mobile-round-stage -->
 
     <details class="score-explainer" id="scoreExplainer">
       <summary><span>ⓘ How points work</span> <strong id="scoreNextWord">Up to 120 points for this word</strong></summary>
