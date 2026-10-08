@@ -142,6 +142,8 @@ document.addEventListener("DOMContentLoaded",async()=>{
       AutoTypeBackend.publicBadgesFor(profile.id)
     ]);
     $("playerView").hidden=false;
+    const accent=/^#[0-9a-f]{6}$/i.test(profile.profile_accent||"")?profile.profile_accent:"#4BA6D8";
+    document.querySelector(".player-hero")?.style.setProperty("--profile-accent",accent);
     $("playerName").textContent=profile.display_name||profile.username;
     $("playerHandle").textContent="@"+profile.username;
     $("playerBio").textContent=profile.bio||"No bio yet.";
