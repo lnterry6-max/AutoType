@@ -126,7 +126,7 @@ def main() -> int:
     ]
     special_pages = {"404.html", "backend-test.html"}
     # Daily Mix CSS must be cache-busted on both screens when its layout changes.
-    mix_stylesheet_version = "styles.css?v=20261008-per-mode-crates-v1"
+    mix_stylesheet_version = "styles.css?v=20261008-beta-polish-v1"
     mix_script_version = "daily-mix.js?v=20261008-daily-mix-v2"
 
     for page in html_files:
@@ -164,6 +164,15 @@ def main() -> int:
                 ):
                     fail(f"{page.name}: missing persistent header shortcut to {header_url}", issues)
 
+        # Every beta page should expose the same reliable, concise footer.
+        if page.name not in special_pages:
+            footer = re.search(r'<footer class="footer">([\\s\\S]*?)</footer>', text)
+            if not footer or 'class="footer-beta"' not in footer.group(1):
+                fail(f"{page.name}: missing shared beta footer", issues)
+            elif any(f'href="{dest}"' not in footer.group(1)
+                     for dest in ("how-to.html", "explore.html", "feedback.html")):
+                fail(f"{page.name}: missing footer navigation shortcut", issues)
+
         if page.name in {"index.html", "play.html"}:
             if mix_stylesheet_version not in text:
                 fail(f"{page.name}: Daily Mix CSS cache version is outdated", issues)
@@ -173,7 +182,7 @@ def main() -> int:
         if page.name == "shop.html":
             for required in (
                 'shop-rotation.js?v=20261008-et-limited',
-                'styles.css?v=20261008-per-mode-crates-v1',
+                'styles.css?v=20261008-beta-polish-v1',
                 'id="shopDailyGrid"', 'id="shopRotationClock"',
                 'href="profile.html#inventory"',
             ):
@@ -206,16 +215,18 @@ def main() -> int:
                     fail(f"play.html: missing mobile/scoring control #{required_id}", issues)
             if 'type="text" inputmode="text"' not in text:
                 fail("play.html: native mobile keyboard input is missing", issues)
+            if 'id="mobileRoundStage"' not in text:
+                fail("play.html: keyboard-safe mobile round stage is missing", issues)
 
         if page.name == "profile.html":
             for expected in ('id="inventory"', 'inventoryAccordion.open=true',
-                             'styles.css?v=20261008-per-mode-crates-v1'):
+                             'styles.css?v=20261008-beta-polish-v1'):
                 if expected not in text:
                     fail(f"profile.html: missing inventory accordion detail {expected}", issues)
             if 'id="developerPanel"' in text:
                 fail("Developer controls must live in Admin Console, not Profile", issues)
         if page.name == "admin.html":
-            if 'backend.js?v=20261008-per-mode-crates-v1' not in text:
+            if 'backend.js?v=20261008-beta-polish-v1' not in text:
                 fail("Admin level code is not cache-busted", issues)
             if 'achievements:m.achievements[profile.id]||{}' not in text:
                 fail("Admin player levels are ignoring achievements", issues)
@@ -224,7 +235,7 @@ def main() -> int:
         # mixing old cached components with new HTML markup.
         for path_or_script in ("styles.css", "core.js", "backend.js"):
             for match in re.finditer(re.escape(path_or_script) + r'\?v=([^"]+)', text):
-                if match.group(1) != "20261008-per-mode-crates-v1":
+                if match.group(1) != "20261008-beta-polish-v1":
                     fail(f"{page.name}: stale shared asset build {match.group(0)}", issues)
 
         # Check cross-page fragment targets, including Inventory deep links.
@@ -262,6 +273,23 @@ def main() -> int:
                 check_node(temp, issues)
             finally:
                 temp.unlink(missing_ok=True)
+
+    # Mobile shell and focus handling must stay paired with the shared styles.
+    mobile_core = (ROOT / "core.js").read_text(encoding="utf-8")
+    mobile_game = (ROOT / "game.js").read_text(encoding="utf-8")
+    mobile_styles = (ROOT / "styles.css").read_text(encoding="utf-8")
+    for label, present in (
+        ("grouped site drawer", 'class="mobile-nav-group"' in mobile_core),
+        ("menu dismissal", 'aria-expanded' in mobile_core and 'mobile-nav-scrim' in mobile_core),
+        ("accessible active menu route", 'aria-current="page"' in mobile_core),
+        ("visible target during keyboard entry", 'mobile-keyboard-active' in mobile_game
+            and '--mobile-vv-height' in mobile_game),
+        ("native keyboard without page scrolling", 'preventScroll:true' in mobile_game
+            and 'strip.scrollLeft' in mobile_game),
+        ("fixed in-game typing stage", '.mobile-keyboard-active .mobile-round-stage' in mobile_styles),
+    ):
+        if not present:
+            fail(f"Mobile beta regression: missing {label}", issues)
 
     calls: set[str] = set()
     for path in [*html_files, ROOT / "game.js"]:
