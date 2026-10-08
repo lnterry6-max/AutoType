@@ -1259,9 +1259,92 @@
       });
     });
 
+    // The mobile menu is built from a single route directory on every page.
+    // Keep the static links in each HTML file as a no-JS fallback.
     const mobBtn=document.querySelector("#mobileToggle");
     const mobNav=document.querySelector("#mobileNav");
-    mobBtn?.addEventListener("click",()=>mobNav?.classList.toggle("open"));
+    if(mobBtn&&mobNav){
+      const isActive=(href,key)=>active===key||(location.pathname.split("/").pop()||"index.html")===href;
+      const menuSections=[
+        {label:"Main",links:[
+          ["Home","index.html","home"],["Play","play.html","play"],
+          ["Shop","shop.html","shop"],["Friends","friends.html","friends"],
+          ["Tournaments","tournaments.html","tournaments"]
+        ]},
+        {label:"Social",links:[
+          ["Messages","chat.html","messages"],["Notifications","notifications.html","notifications"],
+          ["Leaderboard","leaderboard.html","leaderboard"]
+        ]},
+        {label:"Your profile",links:[
+          ["My profile","profile.html","profile"],["Stats","stats.html","stats"],
+          ["Achievements","achievements.html","achievements"],["Settings","settings.html","settings"],
+          ["Account","account.html","account"]
+        ]},
+        {label:"Explore",links:[
+          ["How to play","how-to.html","help"],["All features","explore.html","explore"],
+          ["Prediction Lab","predictions.html","predictions"],["Custom game","create.html","create"],
+          ["Plinko","plinko.html","plinko"],["Send feedback",feedbackUrl,"feedback"]
+        ]}
+      ];
+      if(isStaff(a))menuSections[2].links.push(["Admin Console","admin.html","admin"]);
+      const linkMarkup=([label,href,key])=>{
+        const current=isActive(href,key);
+        return `<a href="${escapeHTML(href)}" data-nav="${key}"${current?' class="active" aria-current="page"':""}>${escapeHTML(label)}</a>`;
+      };
+      mobNav.innerHTML=`
+        <div class="mobile-nav-header"><div><strong>AutoType</strong><span>Beta navigation</span></div>
+          <button type="button" class="mobile-nav-close" aria-label="Close menu">×</button></div>
+        ${menuSections.map((section,i)=>i===0
+          ?`<div class="mobile-nav-primary">${section.links.map(linkMarkup).join("")}</div>`
+          :`<details class="mobile-nav-group"${section.links.some(l=>isActive(l[1],l[2]))?" open":""}>
+              <summary>${escapeHTML(section.label)} <span>${section.links.length}</span></summary>
+              <div class="mobile-nav-links">${section.links.map(linkMarkup).join("")}</div>
+            </details>`).join("")}
+        <div class="mobile-nav-bottom">AutoType · Beta</div>`;
+      mobBtn.setAttribute("aria-controls","mobileNav");
+      mobBtn.setAttribute("aria-expanded","false");
+      mobNav.setAttribute("aria-label","Site navigation");
+      mobNav.setAttribute("aria-hidden","true");
+      const scrim=document.createElement("div");
+      scrim.className="mobile-nav-scrim";
+      scrim.hidden=true;
+      mobNav.before(scrim);
+      const closeMenu=(restoreFocus=false)=>{
+        mobNav.classList.remove("open");
+        document.body.classList.remove("mobile-nav-open");
+        scrim.hidden=true;
+        mobBtn.setAttribute("aria-expanded","false");
+        mobBtn.setAttribute("aria-label","Open navigation");
+        mobNav.setAttribute("aria-hidden","true");
+        if(restoreFocus)mobBtn.focus({preventScroll:true});
+      };
+      const openMenu=()=>{
+        document.querySelector("#accountDropdown")?.setAttribute("hidden","");
+        document.querySelector("#accountMenuButton")?.classList.remove("open");
+        mobNav.classList.add("open");
+        document.body.classList.add("mobile-nav-open");
+        scrim.hidden=false;
+        mobBtn.setAttribute("aria-expanded","true");
+        mobBtn.setAttribute("aria-label","Close navigation");
+        mobNav.setAttribute("aria-hidden","false");
+        mobNav.querySelector(".mobile-nav-close")?.focus({preventScroll:true});
+      };
+      mobBtn.addEventListener("click",()=>mobNav.classList.contains("open")?closeMenu(true):openMenu());
+      mobNav.querySelector(".mobile-nav-close")?.addEventListener("click",()=>closeMenu(true));
+      mobNav.addEventListener("click",e=>{if(e.target.closest("a"))closeMenu()});
+      scrim.addEventListener("click",()=>closeMenu(true));
+      document.addEventListener("keydown",e=>{
+        if(!mobNav.classList.contains("open"))return;
+        if(e.key==="Escape"){e.preventDefault();closeMenu(true);return;}
+        if(e.key==="Tab"){
+          const focusables=[...mobNav.querySelectorAll('a,button,summary')].filter(el=>el.getClientRects().length);
+          const first=focusables[0],last=focusables[focusables.length-1];
+          if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}
+          else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}
+        }
+      });
+      window.addEventListener("resize",()=>{if(window.innerWidth>820)closeMenu()});
+    }
   }
 
   function bytesToBase64(bytes){
