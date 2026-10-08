@@ -59,6 +59,16 @@ def main() -> int:
         if js.exists():
             check_node(js, issues)
 
+    canonical_more = [
+        "predictions.html", "leaderboard.html", "how-to.html", "settings.html", "explore.html"
+    ]
+    canonical_mobile = [
+        "feedback.html", "index.html", "play.html", "tournaments.html", "shop.html",
+        "friends.html", "chat.html", "notifications.html", "predictions.html",
+        "leaderboard.html", "how-to.html", "settings.html", "explore.html"
+    ]
+    special_pages = {"404.html", "backend-test.html"}
+
     for page in html_files:
         text = page.read_text(encoding="utf-8")
         parser = PageParser()
@@ -68,6 +78,41 @@ def main() -> int:
             fail(f"{page.name}: missing <title>", issues)
         if not parser.has_viewport:
             fail(f"{page.name}: missing viewport meta tag", issues)
+
+        # All shared headers must have the same features, without a "lost" More tab.
+        if page.name not in special_pages:
+            more_match = re.search(
+                r'<div class="nav-more-menu">([\\s\\S]*?)</div>', text
+            )
+            mobile_match = re.search(
+                r'<nav class="mobile-nav" id="mobileNav">([\\s\\S]*?)</nav>', text
+            )
+            for label, match, expected in (
+                ("More", more_match, canonical_more),
+                ("mobile", mobile_match, canonical_mobile),
+            ):
+                actual = re.findall(r'href="([^"]+)"', match.group(1)) if match else []
+                if actual != expected:
+                    fail(
+                        f"{page.name}: {label} navigation drift: expected {expected}, got {actual}",
+                        issues,
+                    )
+            for header_url in ("chat.html", "notifications.html", "feedback.html"):
+                if not re.search(
+                    r'class="header-[^"]+-link"[^>]*href="' + re.escape(header_url) + r'"',
+                    text,
+                ):
+                    fail(f"{page.name}: missing persistent header shortcut to {header_url}", issues)
+
+        if page.name == "play.html":
+            for required_id in (
+                "mobileStartButton", "mobileTypingInput", "mobileEraseButton",
+                "mobileLockButton", "scoreExplainer", "scoreNextWord"
+            ):
+                if required_id not in parser.ids:
+                    fail(f"play.html: missing mobile/scoring control #{required_id}", issues)
+            if 'type="text" inputmode="text"' not in text:
+                fail("play.html: native mobile keyboard input is missing", issues)
 
         duplicates = sorted({value for value in parser.ids if parser.ids.count(value) > 1})
         if duplicates:
