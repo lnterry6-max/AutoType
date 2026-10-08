@@ -175,7 +175,10 @@
       keyCost:1,
       categories:["Arena Skins","Game FX"],
       odds:{Common:30,Uncommon:32,Rare:22,Epic:13,Legendary:3}
-    }
+    },
+    {id:"pixel_supply_pack",name:"Pixel Pop Pack",description:"Guaranteed Pixel Pop banner. See exactly what you'll unlock.",keyCost:1,categories:["Banners"],odds:{},guaranteedItemId:"banner_pixelpop"},
+    {id:"mint_supply_pack",name:"Mint Motion Pack",description:"Guaranteed Mint Flash typing trail.",keyCost:1,categories:["Typing Trails"],odds:{},guaranteedItemId:"trail_mintflash"},
+    {id:"star_supply_pack",name:"Starbound Pack",description:"Guaranteed Cosmic Glow frame.",keyCost:1,categories:["Frames"],odds:{},guaranteedItemId:"frame_cosmicglow"}
   ];
 
   const defaultTournamentDefs = [
@@ -492,14 +495,20 @@
     if(!crate)throw new Error("Crate not found.");
     if((a.wallet.crateKeys||0)<crate.keyCost)throw new Error("You need an earned Crate Token.");
 
-    const pool=shopCatalog.filter(item=>item.price>0&&!item.collectionOnly&&!item.earnedOnly&&crate.categories.includes(item.category));
-    if(!pool.length)throw new Error("This crate has no rewards.");
-
-    const rarity=rollCrateRarity(crate,pool);
-    const rarityPool=pool.filter(item=>item.rarity===rarity);
-    const unownedInRarity=rarityPool.filter(item=>!a.wallet.owned.includes(item.id));
-    const candidates=unownedInRarity.length?unownedInRarity:rarityPool;
-    const item=candidates[Math.floor(Math.random()*candidates.length)];
+    let item;
+    if(crate.guaranteedItemId){
+      item=shopCatalog.find(entry=>entry.id===crate.guaranteedItemId);
+      if(!item)throw new Error("Fixed pack item is unavailable.");
+      if(a.wallet.owned.includes(item.id))throw new Error("You already own this pack's cosmetic.");
+    }else{
+      const pool=shopCatalog.filter(entry=>entry.price>0&&!entry.collectionOnly&&!entry.earnedOnly&&crate.categories.includes(entry.category));
+      if(!pool.length)throw new Error("This crate has no rewards.");
+      const rarity=rollCrateRarity(crate,pool);
+      const rarityPool=pool.filter(entry=>entry.rarity===rarity);
+      const unownedInRarity=rarityPool.filter(entry=>!a.wallet.owned.includes(entry.id));
+      const candidates=unownedInRarity.length?unownedInRarity:rarityPool;
+      item=candidates[Math.floor(Math.random()*candidates.length)];
+    }
     if(!item)throw new Error("Could not choose a reward.");
 
     a.wallet.crateKeys-=crate.keyCost;
