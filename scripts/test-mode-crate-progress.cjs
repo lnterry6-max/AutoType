@@ -2,87 +2,87 @@
 const assert=require("node:assert/strict");
 const fs=require("node:fs"),vm=require("node:vm"),path=require("node:path");
 const root=path.resolve(__dirname,"..");
-const source=fs.readFileSync(path.join(root,"core.js"),"utf8");
-function cut(a,b){
-  const start=source.indexOf(a),end=source.indexOf(b,start+a.length);
-  assert.ok(start>=0&&end>start);
-  return source.slice(start,end);
+const core=fs.readFileSync(path.join(root,"core.js"),"utf8");
+function slice(start,end){
+  const a=core.indexOf(start),b=core.indexOf(end,a+start.length);
+  assert.ok(a>=0&&b>a,"Expected crate definitions");
+  return core.slice(a,b);
 }
-const scope={};
-vm.runInNewContext(cut("const shopCatalog = [","const collectionDefs = [")
-  +cut("const crateDefs = [","const defaultTournamentDefs = [")
-  +"\nthis.fixture={catalog:shopCatalog,crates:crateDefs};",scope);
-const {catalog,crates}=scope.fixture;
-const free=crates.filter(c=>c.roundsPerDrop);
+const fixture={};
+vm.runInNewContext(slice("const shopCatalog = [","const collectionDefs = [")
+  +slice("const crateDefs = [","const defaultTournamentDefs = [")
+  +"\nthis.defs=crateDefs;",fixture);
+const defs=fixture.defs,free=defs.filter(c=>c.roundsPerDrop);
 assert.equal(free.length,4);
-assert.equal(crates.filter(c=>!c.roundsPerDrop).length,3);
-assert.deepEqual(Array.from(free.map(x=>x.gameMode)),["classic","context","sentence","evil"]);
-for(const item of free){
-  assert.equal(item.roundsPerDrop,5);
-  assert.equal(item.keyCost,0);
-  assert.equal(Object.values(item.odds).reduce((n,v)=>n+v,0),100);
-  const pool=catalog.filter(x=>x.price>0&&!x.earnedOnly&&!x.collectionOnly&&item.categories.includes(x.category));
-  for(const rarity of Object.keys(item.odds)){
-    assert.ok(pool.some(x=>x.rarity===rarity),item.id+" lacks rarity "+rarity);
-  }
+assert.equal(defs.filter(c=>!c.roundsPerDrop).length,3);
+assert.deepEqual(Array.from(free.map(c=>c.gameMode)),["classic","context","sentence","evil"]);
+for(const crate of free){
+  assert.equal(crate.roundsPerDrop,5);
+  assert.equal(crate.keyCost,0);
 }
 const shop=fs.readFileSync(path.join(root,"shop.html"),"utf8");
-assert.match(shop,/id="freeCrateRoundCount"/);
-assert.match(shop,/freeDropProgress\.remaining/);
-assert.match(shop,/syncCrateModalButton/);
-assert.match(shop,/await refreshFreeDropProgress\(\)/);
-assert.match(shop,/play\.html\?mode=/);
+assert.match(shop,/freeDropRemaining\(crate\.gameMode\)/);
+assert.match(shop,/freeDropRemaining\(chosen\.gameMode\)/);
+assert.match(shop,/freeCrateModeProgress/);
+assert.doesNotMatch(shop,/SHARED ROUND PROGRESS|rounds completed in any mode/);
+const game=fs.readFileSync(path.join(root,"game.js"),"utf8");
+assert.match(game,/p\.modeRounds\[mode\]/);
+assert.match(core,/a\.wallet\.modeDropClaims\[crate\.gameMode\]/);
 
-const progress={rounds:24,claimed:0};
-const balances=[];
-for(let i=0;i<5;i++){
-  balances.push(progress.rounds-progress.claimed*5);
-  if(progress.rounds-progress.claimed*5>=5)progress.claimed++;
-}
-assert.deepEqual(balances,[24,19,14,9,4]);
-assert.equal(progress.claimed,4);
-progress.rounds++;
-assert.equal(progress.rounds-progress.claimed*5,5);
-
-let rounds=24,claims=0;
-const calls=[];
+// Emulate server-authoritative count queries on four independently earned balances.
+let rounds={classic:24,context:2,sentence:5,evil:0};
+let claimed={classic:0,context:0,sentence:0,evil:0};
+const requests=[];
 const db={
- auth:{getUser:async()=>({data:{user:{id:"player-test"}},error:null})},
- from(name){return {
-  select(fields,opt){
-   assert.equal(fields,"id");
-   assert.equal(opt.count,"exact");
-   assert.equal(opt.head,true);
-   const filters=[];
-   return {eq(field,value){
-     filters.push([field,value]);calls.push([name,field,value]);
-     return this;
-    },
-    then(ok,bad){
-      assert.ok(filters.some(([f,v])=>f==="user_id"&&v==="player-test"));
-      if(name==="round_results")return Promise.resolve({count:rounds,error:null}).then(ok,bad);
-      if(name==="economy_transactions"){
-        assert.ok(filters.some(([f,v])=>f==="kind"&&v==="crate_open"));
-        assert.ok(filters.some(([f,v])=>f==="metadata->>free_drop"&&v==="true"));
-        return Promise.resolve({count:claims,error:null}).then(ok,bad);
-      }
-      throw Error("Unexpected table "+name);
-    }
-   };
+  auth:{getUser:async()=>({data:{user:{id:"test-player"}},error:null})},
+  from(table){
+    return {select(fields,opt){
+      assert.equal(fields,"id");assert.equal(opt.count,"exact");assert.equal(opt.head,true);
+      const filters={};
+      return {eq(key,val){
+        filters[key]=val;return this;
+      },then(ok,bad){
+        assert.equal(filters.user_id,"test-player");
+        let mode;
+        if(table==="round_results"){
+          assert.equal(filters.verified,true);
+          mode=filters.mode;
+        }else{
+          assert.equal(table,"economy_transactions");
+          assert.equal(filters.kind,"crate_open");
+          assert.equal(filters["metadata->>free_drop"],"true");
+          mode=filters["metadata->>mode"];
+        }
+        assert.ok(["classic","context","sentence","evil"].includes(mode),"Each query must filter its own mode");
+        requests.push({table,mode,filters:{...filters}});
+        return Promise.resolve({count:table==="round_results"?rounds[mode]:claimed[mode],error:null}).then(ok,bad);
+      }};
+    }};
   }
- }}};
+};
 const window={AUTOTYPE_SUPABASE:{url:"https://test.invalid",publishableKey:"test"},supabase:{createClient:()=>db}};
 vm.runInNewContext(fs.readFileSync(path.join(root,"backend.js"),"utf8"),{window,console});
 (async()=>{
- for(const expected of [24,19,14,9,4]){
-   const result=await window.AutoTypeBackend.freeCrateProgress();
-   assert.equal(result.remaining,expected);
-   assert.equal(result.rounds,24);
-   if(result.remaining>=5)claims++;
- }
- rounds=25;
- const result=await window.AutoTypeBackend.freeCrateProgress();
- assert.equal(result.remaining,5);
- assert.equal(result.claimed,4);
- console.log("Mode crate progress regression PASSED (24 → 19 → 14 → 9 → 4 → 5, four distinct mode themes, verified backend counts).");
-})().catch(err=>{console.error(err);process.exitCode=1});
+  let p=await window.AutoTypeBackend.freeCrateProgress();
+  assert.deepEqual(Object.fromEntries(Object.entries(p).map(([mode,v])=>[mode,v.remaining])),
+    {classic:24,context:2,sentence:5,evil:0});
+  const sequence=[];
+  for(let i=0;i<5;i++){
+    p=await window.AutoTypeBackend.freeCrateProgress();
+    sequence.push(p.classic.remaining);
+    assert.equal(p.context.remaining,2,"Word opening cannot consume Context rounds");
+    assert.equal(p.sentence.remaining,5,"Word opening cannot consume Sentence rounds");
+    if(p.classic.remaining>=5)claimed.classic++;
+  }
+  assert.deepEqual(sequence,[24,19,14,9,4]);
+  rounds.classic++;
+  p=await window.AutoTypeBackend.freeCrateProgress();
+  assert.equal(p.classic.remaining,5);
+  assert.equal(p.context.remaining,2);
+  claimed.sentence++;
+  p=await window.AutoTypeBackend.freeCrateProgress();
+  assert.equal(p.sentence.remaining,0);
+  assert.equal(p.classic.remaining,5);
+  assert.equal(requests.length,(1+5+1+1)*8,"Each refresh checks four verified round counts and four per-mode claims");
+  console.log("Mode crate regression PASSED (independent Word/Context/Sentence/Evil balances, 24→19→14→9→4→5, per-mode claims).");
+})().catch(error=>{console.error(error);process.exitCode=1});

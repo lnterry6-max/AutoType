@@ -542,6 +542,10 @@ AutoType.ready().then(async()=>{
     }else{
       const p=AutoType.currentProfile();
       p.rounds++;
+      if(["classic","context","sentence","evil"].includes(mode)){
+        p.modeRounds={classic:0,context:0,sentence:0,evil:0,...(p.modeRounds||{})};
+        p.modeRounds[mode]=(Number(p.modeRounds[mode])||0)+1;
+      }
       p.words+=words.length;
       p.erased+=erased;
       p.bestErasedRound=Math.max(p.bestErasedRound||0,erased);
