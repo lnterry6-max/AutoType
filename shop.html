@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Shop · AutoType</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="styles.css?v=20261008-daily-shop">
+<link rel="stylesheet" href="styles.css?v=20261008-et-limited">
 </head>
 <body data-page="shop">
 <header class="topbar">
@@ -85,34 +85,18 @@
   </section>
 
   <nav class="shop-v3-tabs" id="shopMainTabs">
-    <button class="active" data-shop-view="featured">Featured</button>
-    <button data-shop-view="cosmetics">Cosmetics</button>
+    <button class="active" data-shop-view="featured">Daily Shop</button>
     <button data-shop-view="crates">Crates <span id="crateTabCount">0</span></button>
+    <a class="shop-locker-link" href="profile.html#inventory">My Inventory →</a>
   </nav>
 
   <section class="shop-view" id="shopFeaturedView">
-    <div class="shop-daily-banner"><div><span class="section-kicker">NEW EVERY DAY · MIDNIGHT UTC</span><h2>Daily Drop</h2><p>Six rotating picks and a featured collection. Owned cosmetics are always yours to keep.</p></div><div class="shop-daily-timer"><span>NEXT REFRESH</span><strong id="shopRotationClock">--:--:--</strong><small id="shopRotationDate">Daily rotation</small></div></div>
-    <div class="shop-v3-section-head"><div><span class="section-kicker">24-HOUR SPOTLIGHT</span><h2>Today's picks</h2></div><button class="shop-text-button" data-open-cosmetics type="button">Browse all cosmetics →</button></div>
+    <div class="shop-daily-banner"><div><span class="section-kicker">DAILY DROP · 12:00 AM EASTERN</span><h2>Daily Shop</h2><p>Six cosmetics and one collection available today. A new lineup appears at midnight New England time (EST/EDT). Your purchased items stay in Inventory.</p></div><div class="shop-daily-timer"><span>NEXT EASTERN RESET</span><strong id="shopRotationClock">--:--:--</strong><small id="shopRotationDate">Midnight ET</small></div></div>
+    <div class="shop-v3-section-head"><div><span class="section-kicker">TODAY'S DIRECT PURCHASES</span><h2>Today's six cosmetics</h2></div><span class="shop-stock-note">Only today's selection can be purchased</span></div>
     <div class="shop-grid shop-v3-grid shop-daily-grid" id="shopDailyGrid"></div>
     <div class="shop-v3-section-head"><div><span class="section-kicker">FEATURED COLLECTION</span><h2>Today's set</h2></div></div>
     <div class="featured-collection" id="featuredCollection"></div>
-
-    <div class="shop-v3-section-head">
-      <div><span class="section-kicker">KNOWN CONTENTS · FIXED PRICE</span><h2>All collections</h2></div>
-    </div>
-    <div class="collection-grid" id="collectionGrid"></div>
-
-    <p class="shop-rotation-note">No need to rush: the entire cosmetic catalog is always available under Cosmetics, and collections list exactly what you receive.</p>
-  </section>
-
-  <section class="shop-view" id="shopCosmeticsView" hidden>
-    <div class="shop-v3-section-head">
-      <div><span class="section-kicker">COSMETICS</span><h2>Cosmetics</h2></div>
-      <a href="profile.html#inventory">Inventory →</a>
-    </div>
-    <div class="cosmetic-family-tabs" id="cosmeticFamilyTabs"></div>
-    <div class="shop-grid shop-v3-grid" id="shopGrid"></div>
-  </section>
+    <p class="shop-rotation-note">Previously purchased cosmetics remain in <a href="profile.html#inventory">My Inventory</a> and can be equipped any time. Other shop items return in later rotations.</p>
 
   <section class="shop-view" id="shopCratesView" hidden>
     <div class="shop-v3-section-head">
@@ -177,15 +161,13 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="backend.js?v=20261008-level-consistency"></script>
 <script src="core.js?v=20261008-daily-shop"></script>
-<script src="shop-rotation.js?v=20261008-daily-shop"></script>
+<script src="shop-rotation.js?v=20261008-et-limited"></script>
 <script>
 document.addEventListener("DOMContentLoaded",async()=>{
   await AutoType.ready();
   const account=AutoType.currentAccount();
   const rarityColors={Default:"#8b949e",Common:"#8b949e",Uncommon:"#55b982",Rare:"#4aa9ff",Epic:"#b178ff",Legendary:"#e3b94e"};
-  const familyNames=["All","Profile","Arena Skins","Typing FX","Victory FX"];
   let activeView="featured";
-  let activeFamily="All";
   let selectedCrateId=null;
   let opening=false;
 
@@ -196,8 +178,6 @@ document.addEventListener("DOMContentLoaded",async()=>{
     if(item.slot==="result")return "Victory FX";
     return item.category;
   };
-
-  const purchasableItems=()=>AutoType.shopCatalog.filter(item=>item.price>0&&!item.collectionOnly&&!item.earnedOnly);
 
   function renderWallet(){
     const wallet=AutoType.currentWallet();
@@ -398,29 +378,14 @@ document.addEventListener("DOMContentLoaded",async()=>{
   }
 
   function renderFeatured(){
-    const rotation=AutoTypeShopRotation.rotate(AutoTypeShopRotation.dayKey(),AutoType.shopCatalog,AutoType.collectionDefs);
-    const featured=rotation.featured,rest=rotation.others;
-    featuredCollection.innerHTML=featured?collectionCard(featured,true):"";
-    collectionGrid.innerHTML=rest.map(c=>collectionCard(c)).join("");
+    const rotation=AutoTypeShopRotation.currentOffers(AutoType.shopCatalog,AutoType.collectionDefs);
+    featuredCollection.innerHTML=rotation.featured?collectionCard(rotation.featured,true):"";
     shopDailyGrid.innerHTML=rotation.items.map(itemCard).join("");
     bindItemActions(shopDailyGrid);
     bindCollectionActions(featuredCollection);
-    bindCollectionActions(collectionGrid);
     startCollectionPreviews();
 
     updateRotationClock();
-  }
-
-  function renderCosmetics(){
-    cosmeticFamilyTabs.innerHTML=familyNames.map(name=>`<button class="${activeFamily===name?"active":""}" data-family="${name}">${name}</button>`).join("");
-    cosmeticFamilyTabs.querySelectorAll("[data-family]").forEach(button=>button.addEventListener("click",()=>{
-      activeFamily=button.dataset.family;
-      renderCosmetics();
-    }));
-
-    const list=purchasableItems().filter(item=>activeFamily==="All"||familyForItem(item)===activeFamily);
-    shopGrid.innerHTML=list.map(itemCard).join("");
-    bindItemActions(shopGrid);
   }
 
   function cratePool(crate){
@@ -495,7 +460,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
       opening=false;
       openCrateButton.disabled=false;
       renderWallet();
-      renderCosmetics();
+      renderFeatured();
     },5050);
   }
 
@@ -528,7 +493,6 @@ document.addEventListener("DOMContentLoaded",async()=>{
     activeView=view;
     shopMainTabs.querySelectorAll("[data-shop-view]").forEach(button=>button.classList.toggle("active",button.dataset.shopView===view));
     shopFeaturedView.hidden=view!=="featured";
-    shopCosmeticsView.hidden=view!=="cosmetics";
     shopCratesView.hidden=view!=="crates";
     if(view==="featured")startCollectionPreviews();
     else stopCollectionPreviews();
@@ -539,7 +503,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
   function updateRotationClock(){
     const now=new Date();
     if(shopRotationClock)shopRotationClock.textContent=AutoTypeShopRotation.countdown(now);
-    if(shopRotationDate)shopRotationDate.textContent="Resets "+AutoTypeShopRotation.nextReset(now).toLocaleDateString(undefined,{month:"short",day:"numeric",timeZone:"UTC"});
+    if(shopRotationDate)shopRotationDate.textContent="Resets at 12:00 AM ET";
     const current=AutoTypeShopRotation.dayKey(now);
     if(current!==renderedDay){renderedDay=current;renderAll();}
   }
@@ -548,12 +512,10 @@ document.addEventListener("DOMContentLoaded",async()=>{
     renderWallet();
     renderEquipped();
     renderFeatured();
-    renderCosmetics();
     renderCrates();
   }
 
   shopMainTabs.querySelectorAll("[data-shop-view]").forEach(button=>button.addEventListener("click",()=>setView(button.dataset.shopView)));
-  document.querySelectorAll("[data-open-cosmetics]").forEach(button=>button.addEventListener("click",()=>setView("cosmetics")));
   openCrateButton.addEventListener("click",openSelectedCrate);
   function closeCrateModal(){
     if(opening)return;
