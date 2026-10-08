@@ -342,31 +342,7 @@ Deno.serve(async(req:Request)=>{
 
       case "admin_restore_tournaments":
         await requireDeveloper();
-        {
-          const rows=[
-            {
-              id:"11111111-1111-4111-8111-111111111111",slug:"daily_open",name:"Daily Open",
-              description:"A free-entry daily bracket for anyone who wants a competitive run.",status:"open",
-              entry_type:"free",entry_cost:0,reward_coins:300,reward_crate_tokens:1,reward_title:"Daily Champion",
-              max_players:32,schedule_label:"Daily",created_by:user.id
-            },
-            {
-              id:"22222222-2222-4222-8222-222222222222",slug:"ranked_circuit",name:"Ranked Circuit",
-              description:"Earn Tournament Tickets through regular play, then use one to register.",status:"open",
-              entry_type:"ticket",entry_cost:1,reward_coins:800,reward_crate_tokens:2,reward_title:"Circuit Winner",
-              max_players:16,schedule_label:"Friday",created_by:user.id
-            },
-            {
-              id:"33333333-3333-4333-8333-333333333333",slug:"weekend_championship",name:"Weekend Championship",
-              description:"The larger weekend event with higher cosmetic and coin rewards.",status:"open",
-              entry_type:"ticket",entry_cost:2,reward_coins:1500,reward_crate_tokens:3,reward_title:"Weekend Champion",
-              max_players:16,schedule_label:"Saturday",created_by:user.id
-            }
-          ];
-          const {data,error}=await admin.from("tournaments").upsert(rows,{onConflict:"id"}).select();
-          if(error)throw error;
-          return json(data);
-        }
+        return json(await rpc("autotype_reset_builtin_tournaments",{p_actor:user.id}));
 
       case "admin_reset_player":
         await requireDeveloper();

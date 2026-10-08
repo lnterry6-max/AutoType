@@ -830,6 +830,56 @@
     return true;
   }
 
+  async function publicAchievementsFor(userId){
+    const db=getClient();
+    if(!db)return [];
+    const {data,error}=await db.from("user_achievements").select("achievement_id,unlocked_at").eq("user_id",userId);
+    if(error)throw error;
+    return data||[];
+  }
+
+  async function publicPlayerStats(userId){
+    const db=getClient();
+    if(!db)return null;
+    const {data,error}=await db.from("player_stats")
+      .select("rounds,words,verified_best_score,best_streak,total_score,tournament_wins")
+      .eq("user_id",userId).maybeSingle();
+    if(error)throw error;
+    return data;
+  }
+
+  async function reportPlayer(reportedUserId,reason,details){
+    const db=getClient(),current=await user();
+    if(!db||!current)throw new Error("Sign in to report a player.");
+    if(!["harassment","spam","inappropriate","other"].includes(reason))throw new Error("Choose a reason.");
+    if(!reportedUserId||current.id===reportedUserId)throw new Error("Choose a different player.");
+    const message=String(details||"").trim();
+    if(message.length<10||message.length>1500)throw new Error("Report must be 10–1500 characters.");
+    const {error}=await db.from("player_reports").insert({
+      reporter_id:current.id,reported_user_id:reportedUserId,reason,details:message
+    });
+    if(error)throw error;
+    return true;
+  }
+
+  async function playerReportsInbox(){
+    const db=getClient();
+    if(!db)throw new Error("Supabase is unavailable.");
+    const {data,error}=await db.from("player_reports")
+      .select("id,reporter_id,reported_user_id,reason,details,status,created_at")
+      .order("created_at",{ascending:false}).limit(100);
+    if(error)throw error;
+    return data||[];
+  }
+
+  async function updatePlayerReportStatus(id,status){
+    const db=getClient();
+    if(!db)throw new Error("Supabase is unavailable.");
+    if(!["new","reviewed","resolved"].includes(status))throw new Error("Invalid status.");
+    const {error}=await db.from("player_reports").update({status}).eq("id",id);
+    if(error)throw error;
+  }
+
   window.AutoTypeBackend={
     version:"20261003-10",
     configured,
@@ -871,6 +921,11 @@
     predictionsSnapshot,
     activeAnnouncement,
     publicProfileByUsername,
+    publicAchievementsFor,
+    publicPlayerStats,
+    reportPlayer,
+    playerReportsInbox,
+    updatePlayerReportStatus,
     startRound,
     recordRound,
     purchaseItem,
