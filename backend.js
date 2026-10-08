@@ -135,7 +135,7 @@
     const current=await user();
     if(!db||!current)throw new Error("Sign in first.");
     const allowed={};
-    for(const key of ["display_name","bio","avatar_url","favorite_modes","profile_accent"]){
+    for(const key of ["display_name","bio","avatar_url","favorite_modes","profile_accent","status_message","showcase_achievements"]){
       if(key in patch)allowed[key]=patch[key];
     }
     const {data,error}=await db
@@ -214,7 +214,10 @@
       backgroundDim:"background_dim",
       backgroundLuminance:"background_luminance",
       highContrast:"high_contrast",
-      textScale:"text_scale"
+      textScale:"text_scale",
+      confirmKey:"confirm_key",
+      eraseKey:"erase_key",
+      predictionKey:"prediction_key"
     };
     for(const [front,back] of Object.entries(map)){
       if(front in patch)allowed[back]=patch[front];
@@ -464,6 +467,8 @@
       avatarImage:profile.avatar_url||"",
       favoriteModes:Array.isArray(profile.favorite_modes)?profile.favorite_modes:(mirror?.favoriteModes||[]),
       profileAccent:profile.profile_accent||"#4BA6D8",
+      statusMessage:profile.status_message||"",
+      showcaseAchievements:Array.isArray(profile.showcase_achievements)?profile.showcase_achievements:[],
       usernameChangedAt:profile.username_changed_at||null,
       friends:mirror?.friends||[],
       profile:localProfile,
@@ -477,12 +482,16 @@
         backgroundDim:Number(preferences.background_dim??64),
         backgroundLuminance:preferences.background_luminance==null?null:Number(preferences.background_luminance),
         highContrast:!!preferences.high_contrast,
-        textScale:Number(preferences.text_scale||100)
+        textScale:Number(preferences.text_scale||100),
+        confirmKey:preferences.confirm_key||"Space",
+        eraseKey:preferences.erase_key||"Backspace",
+        predictionKey:preferences.prediction_key||"F2"
       }:(mirror?.settings||{
         animations:true,reducedFx:false,showPrediction:true,
         backgroundType:"solid",backgroundColor:"#1f2328",
         backgroundImage:"",backgroundDim:64,backgroundLuminance:null,
-        highContrast:false,textScale:100
+        highContrast:false,textScale:100,
+        confirmKey:"Space",eraseKey:"Backspace",predictionKey:"F2"
       }),
       wallet:localWallet,
       role:["developer","admin"].includes(role)?role:"user"
@@ -581,7 +590,7 @@
     const db=getClient();
     if(!db)return [];
     const q=String(query||"").trim();
-    let request=db.from("profiles").select("id,username,display_name,bio,avatar_url,profile_accent,created_at").limit(Math.max(1,Math.min(30,Number(limit)||12)));
+    let request=db.from("profiles").select("id,username,display_name,bio,avatar_url,profile_accent,status_message,showcase_achievements,created_at").limit(Math.max(1,Math.min(30,Number(limit)||12)));
     if(q)request=request.or(`username.ilike.%${q}%,display_name.ilike.%${q}%`);
     const {data,error}=await request.order("username",{ascending:true});
     if(error)throw error;
@@ -944,6 +953,17 @@
     return result;
   }
 
+  async function markFriendMessagesRead(friendId){
+    return api("chat_mark_read",{friendId});
+  }
+  async function unreadFriendMessages(){
+    return api("chat_unread_summary",{});
+  }
+  async function socialNotificationsSnapshot(){
+    const [social,messages]=await Promise.all([friendsSnapshot(),unreadFriendMessages()]);
+    return {incoming:social.incoming||[],messages:messages||[]};
+  }
+
   window.AutoTypeBackend={
     version:"20261003-10",
     configured,
@@ -987,6 +1007,9 @@
     myInventory,
     hydrateLocalMirror,
     friendsSnapshot,
+    markFriendMessagesRead,
+    unreadFriendMessages,
+    socialNotificationsSnapshot,
     sendFriendMessage,
     friendChatHistory,
     blockFriendChat,
