@@ -3548,3 +3548,45 @@ body.high-contrast .help,body.high-contrast .eyebrow,body.high-contrast .label{
 .crate-theme-neon_nights_crate,.crate-theme-cosmic_crate,.crate-theme-color_shuffle_crate{
   border-color:rgba(119,150,190,.46)
 }
+
+
+/* Shared verified-round progress across all four free, mode-themed crates. */
+.crate-rounds-panel{
+  display:flex;align-items:center;justify-content:space-between;gap:22px;
+  padding:16px 19px;margin:12px 0 18px;
+  background:#253039;border:1px solid #465967;border-radius:10px
+}
+.crate-rounds-copy{display:flex;flex-direction:column;gap:5px}
+.crate-rounds-copy strong{font-size:22px;letter-spacing:-.035em;font-variant-numeric:tabular-nums}
+.crate-rounds-copy small{font-size:11px;color:var(--muted);line-height:1.4}
+.crate-rounds-meter{width:39%;display:flex;flex-direction:column;gap:6px}
+.crate-rounds-meter progress{
+  display:block;width:100%;height:10px;appearance:none;-webkit-appearance:none;
+  border:0;border-radius:8px;overflow:hidden;background:#17212b
+}
+.crate-rounds-meter progress::-webkit-progress-bar{background:#17212b;border-radius:8px}
+.crate-rounds-meter progress::-webkit-progress-value{background:linear-gradient(90deg,#238fc9,#72d9d1);border-radius:8px}
+.crate-rounds-meter progress::-moz-progress-bar{background:linear-gradient(90deg,#238fc9,#72d9d1);border-radius:8px}
+.crate-rounds-meter span{font-size:10px;color:var(--muted);text-align:right}
+.crate-grid-separator{
+  grid-column:1/-1;
+  margin:10px 0 0;
+  padding-top:13px;border-top:1px solid var(--border);
+  font-size:11px;font-weight:850;letter-spacing:.1em;color:#9bd7ef
+}
+.crate-play-mode{
+  display:inline-block;margin-top:10px;font-size:11px;font-weight:800;
+  text-decoration:none;color:#92d6ff
+}
+.crate-play-mode:hover,.crate-play-mode:focus-visible{text-decoration:underline}
+.crate-theme-evil_glitch_crate .crate-art{
+  background:radial-gradient(circle at 20% 75%,rgba(241,86,157,.25),transparent 38%),
+             linear-gradient(130deg,#241b36,#45204b 65%,#122b37);
+  border:1px solid rgba(213,111,194,.4)
+}
+.crate-theme-evil_glitch_crate .crate-box{background:rgba(24,18,36,.45);font-size:21px;color:#f4ebff}
+@media(max-width:760px){
+  .crate-rounds-panel{flex-direction:column;align-items:stretch;gap:12px;padding:14px}
+  .crate-rounds-meter{width:100%}
+  .crate-rounds-meter span{text-align:left}
+}
