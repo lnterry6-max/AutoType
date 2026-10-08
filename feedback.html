@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Feedback · AutoType</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="feedback">
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a class="brand" href="index.html">
+      <span class="brand-logo"><img src="assets/logo.png" alt="AutoType"></span>
+      <span>AutoType</span>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" data-nav="home">Home</a>
+      <a href="play.html" data-nav="play">Play</a>
+      <a href="tournaments.html" data-nav="tournaments">Tournaments</a>
+      <a href="shop.html" data-nav="shop">Shop</a>
+      <a href="friends.html" data-nav="friends">Friends</a>
+      <details class="nav-more">
+        <summary>More</summary>
+        <div class="nav-more-menu">
+          <a href="create.html" data-nav="create">Create</a>
+          <a href="predictions.html" data-nav="predictions">Prediction Lab</a>
+          <a href="achievements.html" data-nav="achievements">Achievements</a>
+          <a href="leaderboard.html" data-nav="leaderboard">Leaderboard</a>
+          <a href="stats.html" data-nav="stats">Stats</a>
+          <a href="how-to.html" data-nav="help">How to Play</a>
+          <a href="settings.html" data-nav="settings">Settings</a>
+        </div>
+      </details>
+    </nav>
+    <div class="nav-spacer"></div>
+    <div class="nav-currency" id="navCurrency" hidden></div>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Open navigation">☰</button>
+    <div class="nav-account">
+      <button class="account-button" id="accountMenuButton"></button>
+      <div class="account-dropdown" id="accountDropdown" hidden></div>
+    </div>
+  </div>
+</header>
+<nav class="mobile-nav" id="mobileNav">
+  <a href="index.html">Home</a>
+  <a href="play.html">Play</a>
+  <a href="tournaments.html">Tournaments</a>
+  <a href="shop.html">Shop</a>
+  <a href="friends.html">Friends</a>
+  <a href="create.html">Create</a>
+  <a href="predictions.html">Prediction Lab</a>
+  <a href="achievements.html">Achievements</a>
+  <a href="leaderboard.html">Leaderboard</a>
+  <a href="stats.html">Stats</a>
+  <a href="how-to.html">How to Play</a>
+  <a href="settings.html">Settings</a>
+</nav>
+
+<main class="container page feedback-page">
+  <header class="page-heading platform-page-heading">
+    <div class="eyebrow">FRIENDS BETA · HELP IMPROVE AUTOTYPE</div>
+    <h1>Share feedback</h1>
+    <p>Found a bug? Have an idea? Send a quick report directly to the AutoType developer.</p>
+  </header>
+  <div class="feedback-layout">
+    <section class="panel feedback-card" aria-labelledby="feedbackHeading">
+      <h2 id="feedbackHeading">Tell us what you think</h2>
+      <p class="feedback-copy">Your report goes to the developer's private inbox. You need an AutoType account to submit.</p>
+      <div id="feedbackSignIn" hidden>
+        <p class="feedback-status">Sign in first, then come back to submit your report.</p>
+        <a class="button button-primary" href="account.html">Sign in</a>
+      </div>
+      <form id="feedbackForm" hidden>
+        <div class="form-group">
+          <label class="label" for="feedbackCategory">Feedback type</label>
+          <select class="select" id="feedbackCategory" required>
+            <option value="bug">Bug report</option>
+            <option value="idea">Feature suggestion</option>
+            <option value="other">General feedback</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="label" for="feedbackMessage">What happened, or what would you like to see?</label>
+          <textarea class="textarea feedback-message" id="feedbackMessage" minlength="10" maxlength="2000" placeholder="Describe what you noticed, and the steps to reproduce it if it's a bug…" required></textarea>
+          <p class="help">10–2000 characters. Don't include passwords, payment details, or anyone's private information.</p>
+        </div>
+        <p class="feedback-status" id="feedbackStatus" role="status" aria-live="polite"></p>
+        <button class="button button-primary" id="feedbackSubmit" type="submit">Send feedback</button>
+      </form>
+      <div class="feedback-success" id="feedbackSuccess" hidden role="status">
+        <h2>Thanks for helping!</h2>
+        <p class="feedback-copy">Your feedback was saved and is ready for the developer to review.</p>
+        <button class="button button-secondary" id="feedbackAgain" type="button">Send another report</button>
+      </div>
+    </section>
+    <aside class="panel feedback-guidance">
+      <h3>What helps the most?</h3>
+      <p><strong>Bug reports:</strong> tell us which page you were on, what you clicked, and what happened.</p>
+      <p><strong>Feature ideas:</strong> describe how the change would make the game more fun or easier to use.</p>
+      <p><strong>Anything else:</strong> tell us what you enjoy and what could work better.</p>
+    </aside>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <span>AutoType · Competitive autocomplete typing</span>
+  </div>
+</footer>
+<div class="toast"></div>
+<script src="backend-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="backend.js?v=20261003-10"></script>
+<script src="core.js?v=20261008-feedback"></script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded",async()=>{
+  await AutoType.ready();
+  const form=document.querySelector("#feedbackForm");
+  const signin=document.querySelector("#feedbackSignIn");
+  const status=document.querySelector("#feedbackStatus");
+  const success=document.querySelector("#feedbackSuccess");
+  const submit=document.querySelector("#feedbackSubmit");
+  const params=new URLSearchParams(location.search);
+  const source=params.get("from")||"feedback.html";
+  const pagePath=/^[a-z0-9_-]+\.html$/i.test(source)?source:"feedback.html";
+  if(!AutoType.currentAccount()?.online){
+    signin.hidden=false;
+    return;
+  }
+  form.hidden=false;
+  form.addEventListener("submit",async(event)=>{
+    event.preventDefault();
+    if(!form.reportValidity())return;
+    submit.disabled=true;
+    status.textContent="Sending your report…";
+    try{
+      await AutoTypeBackend.submitBetaFeedback({
+        category:document.querySelector("#feedbackCategory").value,
+        message:document.querySelector("#feedbackMessage").value,
+        pagePath
+      });
+      form.hidden=true;
+      success.hidden=false;
+      status.textContent="";
+      form.reset();
+    }catch(error){
+      status.textContent=error.message||"Could not send feedback. Please try again.";
+    }finally{submit.disabled=false;}
+  });
+  document.querySelector("#feedbackAgain").addEventListener("click",()=>{
+    success.hidden=true;
+    form.hidden=false;
+    document.querySelector("#feedbackMessage").focus();
+  });
+});
+</script>
+
+</body>
+</html>

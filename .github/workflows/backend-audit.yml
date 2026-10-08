@@ -4,7 +4,7 @@ on:
   push:
     branches: ["backend-foundation", "beta-friends"]
   pull_request:
-    branches: ["main", "backend-foundation"]
+    branches: ["main", "backend-foundation", "beta-friends"]
   workflow_dispatch:
 
 permissions:

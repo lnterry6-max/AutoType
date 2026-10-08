@@ -1049,6 +1049,28 @@
   function initShell(){
     applyAppearance();
     const active=document.body.dataset.page;
+    // Add a prominent Feedback shortcut to every beta page with the shared header.
+    const feedbackSource=location.pathname.split("/").pop()||"index.html";
+    const feedbackUrl="feedback.html?from="+encodeURIComponent(feedbackSource);
+    const headerSpacer=document.querySelector(".topbar-inner .nav-spacer");
+    if(headerSpacer && !document.querySelector(".header-feedback-link")){
+      const link=document.createElement("a");
+      link.href=feedbackUrl;
+      link.className="header-feedback-link";
+      link.textContent="✎ Feedback";
+      link.setAttribute("aria-label","Send beta feedback");
+      if(active==="feedback")link.classList.add("active");
+      headerSpacer.after(link);
+    }
+    const mobileNav=document.querySelector("#mobileNav");
+    if(mobileNav && !mobileNav.querySelector('[data-nav="feedback"]')){
+      const link=document.createElement("a");
+      link.href=feedbackUrl;
+      link.dataset.nav="feedback";
+      link.textContent="✎ Send feedback";
+      if(active==="feedback")link.classList.add("active");
+      mobileNav.appendChild(link);
+    }
     document.querySelectorAll("[data-nav]").forEach(a=>a.classList.toggle("active",a.dataset.nav===active));
     document.querySelectorAll(".nav-more").forEach(menu=>{
       menu.querySelector("summary")?.classList.toggle("active",!!menu.querySelector("a.active"));
