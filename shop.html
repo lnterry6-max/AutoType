@@ -105,7 +105,18 @@
       <div><span class="section-kicker">CRATES</span><h2>Crates</h2></div>
       <div class="crate-key-balance">▣ <strong id="crateKeyBalance">0</strong> tokens</div>
     </div>
-    <p class="shop-fixed-pack-note">The original crates use earned tokens. The new themed surprise drops are free, earned through completed rounds, with reward odds shown below. No purchases or wagers.</p>
+    <p class="shop-fixed-pack-note">The original crates use earned tokens. The four mode-themed surprise crates use rounds completed in any mode, with no purchase or token cost.</p>
+    <div class="crate-rounds-panel" aria-live="polite">
+      <div class="crate-rounds-copy">
+        <span class="section-kicker">FREE MODE CRATE PROGRESS</span>
+        <strong id="freeCrateRoundCount">Loading…</strong>
+        <small id="freeCrateRoundHint">Every 5 verified rounds unlocks one free crate. Unspent rounds carry over.</small>
+      </div>
+      <div class="crate-rounds-meter">
+        <progress id="freeCrateProgressBar" max="5" value="0" aria-label="Progress toward a free mode crate"></progress>
+        <span id="freeCrateRoundSubline">Your progress is shared between all four modes.</span>
+      </div>
+    </div>
     <div class="crate-grid" id="crateGrid"></div>
 
   </section>
@@ -173,6 +184,60 @@ document.addEventListener("DOMContentLoaded",async()=>{
   let activeView="featured";
   let selectedCrateId=null;
   let opening=false;
+  // All four mode crates share one verified-round balance.
+  // A 24-round balance displays 24/5, then 19/5 after one claim, and so on.
+  let freeDropProgress=null;
+
+  function freeDropRemaining(){
+    return freeDropProgress?Math.max(0,Number(freeDropProgress.remaining||0)):null;
+  }
+  function localFreeDropProgress(){
+    const current=AutoType.currentAccount();
+    const rounds=Math.max(0,Number(current?.profile?.rounds||0));
+    const claimed=Math.max(0,Number(current?.wallet?.freeDropClaims||0));
+    return {rounds,claimed,remaining:Math.max(0,rounds-claimed*5)};
+  }
+  function renderFreeCrateProgress(){
+    const remaining=freeDropRemaining();
+    freeCrateRoundCount.textContent=remaining===null?"Progress unavailable":remaining+" / 5 rounds";
+    freeCrateRoundHint.textContent=remaining===null
+      ?"Could not load round progress. Please refresh to retry."
+      :remaining>=5
+      ?"Ready to claim a free mode crate. Each claim uses 5 rounds."
+      :(5-remaining)+" more round"+(5-remaining===1?"":"s")+" to your next free crate.";
+    freeCrateProgressBar.value=remaining===null?0:Math.min(5,remaining);
+    freeCrateRoundSubline.textContent=freeDropProgress
+      ?freeDropProgress.rounds+" rounds completed · "+freeDropProgress.claimed+" free crates claimed"
+      :"Your progress is shared between all four mode crates.";
+    if(selectedCrateId)syncCrateModalButton();
+  }
+  async function refreshFreeDropProgress(){
+    try{
+      freeDropProgress=account?.online
+        ?await AutoTypeBackend.freeCrateProgress()
+        :localFreeDropProgress();
+    }catch(error){
+      freeDropProgress=null;
+      console.warn("Unable to sync free crate progress",error);
+    }
+    renderFreeCrateProgress();
+    renderCrates();
+  }
+  function syncCrateModalButton(){
+    const crate=AutoType.crateDefs.find(item=>item.id===selectedCrateId);
+    if(!crate||opening)return;
+    if(!crate.roundsPerDrop){
+      openCrateButton.disabled=false;
+      return;
+    }
+    const remaining=freeDropRemaining();
+    openCrateButton.disabled=remaining===null||remaining<crate.roundsPerDrop;
+    openCrateButton.textContent=remaining===null
+      ?"Progress unavailable"
+      :remaining>=crate.roundsPerDrop
+      ?"Claim free "+crate.modeLabel.toLowerCase()+" crate"
+      :(crate.roundsPerDrop-remaining)+" more rounds needed";
+  }
 
   const familyForItem=item=>{
     if(["title","banner","frame"].includes(item.slot))return "Profile";
@@ -396,22 +461,26 @@ document.addEventListener("DOMContentLoaded",async()=>{
   }
 
 
+
   function renderCrates(){
-    crateGrid.innerHTML=AutoType.crateDefs.map(crate=>{
+    const balance=freeDropRemaining();
+    crateGrid.innerHTML=AutoType.crateDefs.map((crate,index)=>{
       const free=Boolean(crate.roundsPerDrop);
       const count=cratePool(crate).length;
-      const suffix=free?"Free surprise · 5 completed rounds":"Open details · "+crate.keyCost+" ▣";
-      return `<article class="crate-card crate-theme-${crate.id}">
+      const progress=balance===null?"Progress unavailable":balance+" / "+crate.roundsPerDrop+" rounds available";
+      const suffix=free?(balance!==null&&balance>=crate.roundsPerDrop?"Open free mode crate":"View crate · "+progress):"Open details · "+crate.keyCost+" ▣";
+      return `${index===3?'<div class="crate-grid-separator">MODE CRATES · SHARED ROUND PROGRESS</div>':""}
+      <article class="crate-card crate-theme-${crate.id}">
         <div class="crate-art"><div class="crate-box">${free?"★":"AT"}</div><div class="crate-glow"></div></div>
-        ${free?'<span class="crate-free-label">FREE GAMEPLAY REWARD</span>':""}
+        ${free?'<span class="crate-free-label">'+AutoType.escapeHTML(crate.modeLabel)+' · FREE REWARD</span>':""}
         <h3>${AutoType.escapeHTML(crate.name)}</h3>
         <p>${AutoType.escapeHTML(crate.description)}</p>
         <p class="crate-pool-note">${count} possible cosmetics · ${crate.categories.map(category=>AutoType.escapeHTML(category)).join(" · ")}</p>
         <div class="crate-odds">${Object.entries(crate.odds).map(([rarity,odds])=>`<span style="--rarity:${rarityColors[rarity]}"><i></i>${rarity} ${odds}%</span>`).join("")}</div>
         <button class="button button-secondary" data-view-crate="${crate.id}">${suffix}</button>
+        ${free?'<a class="crate-play-mode" href="play.html?mode='+encodeURIComponent(crate.gameMode)+'">Play '+AutoType.escapeHTML(crate.modeLabel.replace(" MODE","").toLowerCase())+' mode →</a>':""}
       </article>`;
     }).join("");
-
     crateGrid.querySelectorAll("[data-view-crate]").forEach(button=>button.addEventListener("click",()=>showCrate(button.dataset.viewCrate)));
   }
 
@@ -420,8 +489,9 @@ document.addEventListener("DOMContentLoaded",async()=>{
     const crate=AutoType.crateDefs.find(c=>c.id===id);
     if(!crate)return;
     crateOpeningName.textContent=crate.name;
-    openCrateButton.textContent=crate.roundsPerDrop?"Claim free surprise drop":"Open crate · "+crate.keyCost+" ▣";
+    openCrateButton.textContent=crate.roundsPerDrop?"Checking round progress…":"Open crate · "+crate.keyCost+" ▣";
     crateOpeningModal.hidden=false;
+    syncCrateModalButton();
     document.body.classList.add("crate-modal-open");
     crateReveal.hidden=true;
     crateReveal.innerHTML="";
@@ -470,15 +540,19 @@ document.addEventListener("DOMContentLoaded",async()=>{
         <small>${result.duplicate?`Duplicate · +${result.compensation} coins`:`Added to inventory`}</small>
       </div>`;
       opening=false;
-      openCrateButton.disabled=false;
       renderWallet();
       renderFeatured();
+      renderFreeCrateProgress();
+      renderCrates();
+      syncCrateModalButton();
     },5050);
   }
 
   async function openSelectedCrate(){
-    if(opening||!selectedCrateId)return;
+    if(opening||!selectedCrateId||openCrateButton.disabled)return;
     if(!account){location.href="account.html";return}
+    const chosen=AutoType.crateDefs.find(entry=>entry.id===selectedCrateId);
+    if(chosen?.roundsPerDrop&&(freeDropRemaining()===null||freeDropRemaining()<chosen.roundsPerDrop))return;
     try{
       opening=true;
       openCrateButton.disabled=true;
@@ -493,10 +567,11 @@ document.addEventListener("DOMContentLoaded",async()=>{
       }else{
         result=AutoType.openCrate(selectedCrateId);
       }
+      await refreshFreeDropProgress();
       animateCrateResult(result);
     }catch(e){
       opening=false;
-      openCrateButton.disabled=false;
+      syncCrateModalButton();
       AutoType.toast(e.message);
     }
   }
@@ -657,6 +732,8 @@ document.addEventListener("DOMContentLoaded",async()=>{
 
   renderAll();
   setView(location.hash==="#crates"?"crates":"featured");
+  await refreshFreeDropProgress();
+  window.addEventListener("pageshow",()=>{refreshFreeDropProgress()});
   await handlePaymentReturn();
 });
 </script>
