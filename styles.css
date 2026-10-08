@@ -3045,3 +3045,46 @@ body.theme-light .chat-report-dialog{background:#fff;color:#171a1d}
 @media (max-width:1020px){
   .mobile-nav{max-height:calc(100vh - 64px);overflow-y:auto}
 }
+
+
+/* Always-visible Messages action, independent of the navigation menu. */
+.topbar-inner .header-messages-link{
+  display:inline-flex!important;align-items:center;justify-content:center;gap:7px;flex:0 0 auto;
+  min-height:35px;padding:7px 12px;border:1px solid var(--border);border-radius:7px;
+  background:var(--surface-2);color:var(--text);font-size:12px;font-weight:750;
+  white-space:nowrap;text-decoration:none;
+}
+.topbar-inner .header-messages-link:hover,
+.topbar-inner .header-messages-link.active{
+  border-color:var(--blue);background:var(--surface-3);color:var(--text);
+}
+body.theme-light .topbar-inner .header-messages-link{
+  background:#f1f3f5;border-color:#d7dce1;color:#333940;
+}
+body.theme-light .topbar-inner .header-messages-link:hover,
+body.theme-light .topbar-inner .header-messages-link.active{
+  background:#e9f4fb;border-color:#5e94b5;color:#171a1d;
+}
+/* Avoid squeezing the main desktop navigation into a 1024–1250px header. */
+@media (min-width:821px) and (max-width:1250px){
+  .main-nav{display:none}
+  .mobile-toggle{display:block}
+  .topbar-inner{gap:12px}
+  .nav-currency{display:none!important}
+  .mobile-nav{
+    position:fixed;top:64px;left:0;right:0;z-index:59;
+    background:var(--surface);border-bottom:1px solid var(--border);
+    padding:7px 16px;
+  }
+  .mobile-nav.open{display:grid}
+  .mobile-nav a{padding:11px;border-radius:6px;color:#d6dade;font-size:14px}
+  .mobile-nav a:hover{background:var(--surface-2)}
+}
+@media(max-width:600px){
+  .topbar-inner{gap:9px}
+  .nav-account .account-name,.nav-account .chevron{display:none}
+}
+@media(max-width:420px){
+  .topbar-inner .header-messages-link{min-width:36px;padding:7px 9px}
+  .header-messages-text{display:none}
+}
