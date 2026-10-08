@@ -92,7 +92,28 @@
     </aside>
     <div>
       <details class="platform-section profile-edit-disclosure" id="profileEditor"><summary>Edit profile</summary><div class="profile-edit-body">
-        <div class="form-group"><label class="label">Display name</label><input class="input" id="displayName"></div>
+        <div class="form-group">
+          <label class="label" for="displayName">Display name</label>
+          <input class="input" id="displayName" maxlength="40">
+          <p class="help">This can be different from your unique username.</p>
+        </div>
+        <section class="profile-rename-panel" id="profileRenamePanel" hidden>
+          <label class="label" for="newUsername">Change username</label>
+          <div class="profile-rename-controls">
+            <input class="input" id="newUsername" maxlength="24" minlength="3" autocomplete="off" spellcheck="false" placeholder="New username">
+            <button type="button" class="button button-secondary" id="saveUsername" disabled>Change username</button>
+          </div>
+          <p class="help" id="usernameAvailability" aria-live="polite">Username changes are free, once every 14 days.</p>
+          <p class="help" id="usernameCooldown"></p>
+        </section>
+        <div class="form-group profile-accent-editor">
+          <label class="label" for="profileAccent">Profile accent color</label>
+          <div class="profile-accent-choices">
+            <input type="color" id="profileAccent" value="#4ba6d8" aria-label="Choose a profile accent color">
+            <span id="profileAccentPreview" class="profile-accent-swatch">My profile color</span>
+          </div>
+          <p class="help">Adds a color accent to your public profile, without changing your equipped banner.</p>
+        </div>
         <div class="form-group"><label class="label">Bio</label><textarea class="textarea" id="bio" maxlength="180"></textarea><div class="help"><span id="bioCount">0</span>/180</div></div>
         <div class="form-group"><label class="label">Favorite modes</label><div class="tag-row" id="favoriteModes"></div></div>
         <button class="button button-primary" id="saveProfile">Save profile</button>
@@ -169,10 +190,19 @@
 document.addEventListener("DOMContentLoaded",async()=>{
   await AutoType.ready();
   const a=AutoType.currentAccount(),p=AutoType.currentProfile();
+  const $=id=>document.getElementById(id);
   const target=a||{id:"guest",displayName:"Guest",bio:"Local guest profile",favoriteModes:[],avatarImage:""};
   let pendingAvatarFile=null;
   let removeAvatarRequested=false;
   profileTitle.textContent=AutoType.accountName(target);displayName.value=target.displayName||"Guest";bio.value=target.bio||"";bioCount.textContent=bio.value.length;
+  const accentField=$("profileAccent");
+  accentField.value=/^#[0-9A-F]{6}$/i.test(a?.profileAccent||"")?a.profileAccent:"#4ba6d8";
+  const updateAccentPreview=()=>{
+    $("profileAccentPreview").style.setProperty("--profile-accent",accentField.value);
+    profileBannerDisplay.style.borderColor=accentField.value;
+  };
+  accentField.addEventListener("input",updateAccentPreview);
+  updateAccentPreview();
 
   if(a){
     if(a.online&&a.supabaseUserId){
@@ -189,6 +219,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
     const banner=AutoType.equippedItem("banner",a);
     const title=AutoType.equippedItem("title",a);
     profileBannerDisplay.style.background=banner?.css||"var(--surface)";
+    profileBannerDisplay.style.borderColor=accentField.value;
     profileEquippedTitle.textContent=title?.value||"";
     profileWallet.hidden=false;
     profileWallet.innerHTML=`<span>◉ ${wallet.coins||0} coins</span><span>◆ ${wallet.tickets||0} tickets</span><span>▣ ${wallet.crateKeys||0} tokens</span>${AutoType.isDeveloper(a)?`<span class="dev-wallet-tag">DEV</span>`:""}`;
@@ -425,6 +456,59 @@ document.addEventListener("DOMContentLoaded",async()=>{
     finally{removeImage.disabled=false}
   });
 
+  // Usernames are account identifiers; the server enforces availability and cooldown.
+  if(a?.online){
+    $("profileRenamePanel").hidden=false;
+    const renameInput=$("newUsername"),changeButton=$("saveUsername"),feedback=$("usernameAvailability");
+    renameInput.value=a.username||"";
+    const changedAt=a.usernameChangedAt?new Date(a.usernameChangedAt):null;
+    const next=changedAt?new Date(changedAt.getTime()+14*24*60*60*1000):null;
+    const canRename=!next||Date.now()>=next.getTime();
+    $("usernameCooldown").textContent=canRename
+      ?"You can change your username now. Friendships, stats, and cosmetics are preserved."
+      :"Next username change available "+next.toLocaleDateString()+".";
+    renameInput.disabled=!canRename;
+    let verification=0,validated="";
+    async function validateUsername(){
+      const round=++verification;
+      validated="";changeButton.disabled=true;
+      const proposed=renameInput.value.trim();
+      if(!canRename)return;
+      if(!/^[A-Za-z0-9_]{3,24}$/.test(proposed)){
+        feedback.textContent="Use 3–24 letters, numbers, or underscores.";
+        return;
+      }
+      feedback.textContent="Checking availability…";
+      try{
+        const result=await AutoTypeBackend.checkUsernameAvailable(proposed);
+        if(round!==verification)return;
+        feedback.textContent=result.reason;
+        if(result.available){
+          validated=proposed;changeButton.disabled=false;
+        }
+      }catch(error){if(round===verification)feedback.textContent="Couldn't check availability. Try again.";}
+    }
+    let debounce;
+    renameInput.addEventListener("input",()=>{
+      clearTimeout(debounce);verification++;validated="";changeButton.disabled=true;
+      feedback.textContent="Type a username to check availability.";
+      debounce=setTimeout(validateUsername,350);
+    });
+    changeButton.addEventListener("click",async()=>{
+      if(!canRename||validated!==renameInput.value.trim())return;
+      if(!confirm("Change your unique username to @"+validated+"? You can change it again after 14 days. Existing profile links using your old username will stop working."))return;
+      changeButton.disabled=true;
+      try{
+        const result=await AutoTypeBackend.changeUsername(validated);
+        AutoType.toast("Username changed to @"+result.username+".");
+        location.reload();
+      }catch(error){
+        feedback.textContent=error.message||"Username change failed.";
+        changeButton.disabled=true;
+      }
+    });
+  }
+
   saveProfile.addEventListener("click",async()=>{
     if(!a)return;
     saveProfile.disabled=true;
@@ -437,7 +521,8 @@ document.addEventListener("DOMContentLoaded",async()=>{
         await AutoTypeBackend.updateMyProfile({
           display_name:name,
           bio:cleanBio,
-          favorite_modes:modes
+          favorite_modes:modes,
+          profile_accent:accentField.value
         });
         await AutoTypeBackend.hydrateLocalMirror();
       }else{
@@ -445,7 +530,8 @@ document.addEventListener("DOMContentLoaded",async()=>{
           displayName:name,
           bio:cleanBio,
           avatarImage:target.avatarImage||"",
-          favoriteModes:modes
+          favoriteModes:modes,
+          profileAccent:accentField.value
         });
       }
 
