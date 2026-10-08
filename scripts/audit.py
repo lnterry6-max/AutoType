@@ -187,6 +187,17 @@ def main() -> int:
                     fail("Limited shop still exposes full catalog: "+removed, issues)
 
         if page.name == "play.html":
+            mode_grid = re.search(r'<div class="mode-card-grid">([\s\S]*?)</div>\s*<div class="special-mode-strip">', text)
+            if not mode_grid:
+                fail("play.html: missing mode selection grid", issues)
+            else:
+                first_tile = re.search(r'<a class="([^"]+)"[^>]*>', mode_grid.group(1))
+                if not first_tile or "surprise-mode" not in first_tile.group(1).split() or "plinko-mode" not in first_tile.group(1).split():
+                    fail("play.html: Surprise Me must lead the mode grid as a full-width Plinko-style tile", issues)
+                if len(re.findall(r'class="mode-tile[^"]*"', mode_grid.group(1))) != 6:
+                    fail("play.html: expected six mode selection tiles", issues)
+
+        if page.name == "play.html":
             for required_id in (
                 "mobileStartButton", "mobileTypingInput", "mobileEraseButton",
                 "mobileLockButton", "scoreExplainer", "scoreNextWord"
