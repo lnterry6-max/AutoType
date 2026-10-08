@@ -56,6 +56,15 @@ Deno.serve(async(req:Request)=>{
     }
 
     switch(action){
+      case "change_username": {
+        const proposed=String(payload.username||"").trim();
+        if(!/^[A-Za-z0-9_]{3,24}$/.test(proposed)){
+          throw new Error("Username must be 3–24 letters, numbers, or underscores.");
+        }
+        const reserved=new Set(["admin","administrator","developer","autotype","support","moderator","mod","staff","system","official","security","owner","root","help","helper"]);
+        if(reserved.has(proposed.toLowerCase()))throw new Error("This username is reserved.");
+        return json(await rpc("autotype_change_username",{p_user:user.id,p_new:proposed}));
+      }
       case "start_round":
         return json(await rpc("autotype_start_round",{
           p_user:user.id,
