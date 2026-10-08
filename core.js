@@ -1071,6 +1071,18 @@
       if(active==="feedback")link.classList.add("active");
       mobileNav.appendChild(link);
     }
+    // Messaging is available in the More menu and mobile navigation, not in a public room.
+    const moreMenu=document.querySelector(".nav-more-menu");
+    if(moreMenu&&!moreMenu.querySelector('a[href="chat.html"]')){
+      const link=document.createElement("a");link.href="chat.html";link.dataset.nav="messages";
+      link.textContent="Messages";if(active==="messages")link.classList.add("active");
+      moreMenu.appendChild(link);
+    }
+    if(mobileNav&&!mobileNav.querySelector('a[href="chat.html"]')){
+      const link=document.createElement("a");link.href="chat.html";link.dataset.nav="messages";
+      link.textContent="Messages";if(active==="messages")link.classList.add("active");
+      mobileNav.appendChild(link);
+    }
     document.querySelectorAll("[data-nav]").forEach(a=>a.classList.toggle("active",a.dataset.nav===active));
     document.querySelectorAll(".nav-more").forEach(menu=>{
       menu.querySelector("summary")?.classList.toggle("active",!!menu.querySelector("a.active"));
