@@ -628,6 +628,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
     });
 
     restoreTournamentsButton.addEventListener("click",async()=>{
+      if(!confirm("Reset built-in tournaments? Previous registrations and scores will be archived, unused entry tickets refunded, and everyone will be able to register again. Earned rewards and XP will not be reversed."))return;
       restoreTournamentsButton.disabled=true;
       try{
         await AutoTypeBackend.adminRestoreTournaments();
