@@ -158,7 +158,13 @@ document.addEventListener("DOMContentLoaded",async()=>{
       const friended=social?.friends?.some(f=>f.id===profile.id);
       const pending=social?.outgoing?.some(r=>r.receiver_id===profile.id);
       const incoming=social?.incoming?.some(r=>r.sender_id===profile.id);
-      if(friended)addAction("Friends ✓",()=>{}, "button-secondary").disabled=true;
+      if(friended){
+        addAction("Friends ✓",()=>{}, "button-secondary").disabled=true;
+        const messageLink=document.createElement("a");
+        messageLink.href="chat.html?u="+encodeURIComponent(profile.username);
+        messageLink.className="button button-primary";
+        messageLink.textContent="Message";actions.appendChild(messageLink);
+      }
       else if(pending)addAction("Friend request sent",()=>{}, "button-secondary").disabled=true;
       else if(incoming){
         const a=document.createElement("a");a.className="button button-secondary";a.href="friends.html";a.textContent="Respond to request";actions.appendChild(a);
