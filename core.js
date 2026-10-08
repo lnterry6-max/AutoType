@@ -1085,18 +1085,6 @@
       if(active==="feedback")link.classList.add("active");
       mobileNav.appendChild(link);
     }
-    // Messaging is available in the More menu and mobile navigation, not in a public room.
-    const moreMenu=document.querySelector(".nav-more-menu");
-    if(moreMenu&&!moreMenu.querySelector('a[href="chat.html"]')){
-      const link=document.createElement("a");link.href="chat.html";link.dataset.nav="messages";
-      link.textContent="Messages";if(active==="messages")link.classList.add("active");
-      moreMenu.appendChild(link);
-    }
-    if(mobileNav&&!mobileNav.querySelector('a[href="chat.html"]')){
-      const link=document.createElement("a");link.href="chat.html";link.dataset.nav="messages";
-      link.textContent="Messages";if(active==="messages")link.classList.add("active");
-      mobileNav.appendChild(link);
-    }
     document.querySelectorAll("[data-nav]").forEach(a=>a.classList.toggle("active",a.dataset.nav===active));
     document.querySelectorAll(".nav-more").forEach(menu=>{
       menu.querySelector("summary")?.classList.toggle("active",!!menu.querySelector("a.active"));
@@ -1133,6 +1121,29 @@
         navCurrency.hidden=true;
         navCurrency.innerHTML="";
       }
+    }
+    // Keep notifications out of the already compact More menu.
+    const notificationLink=document.querySelector(".header-notifications-link");
+    if(a?.online && notificationLink && window.AutoTypeBackend?.socialNotificationsSnapshot){
+      const badge=notificationLink.querySelector(".nav-notifications-count");
+      const updateNotifications=async()=>{
+        if(document.hidden)return;
+        try{
+          const notifications=await AutoTypeBackend.socialNotificationsSnapshot();
+          const count=(notifications.incoming||[]).length+
+            (notifications.messages||[]).reduce((sum,row)=>sum+Number(row.unread||0),0);
+          badge.hidden=count===0;
+          badge.textContent=count>9?"9+":String(count);
+          notificationLink.title=count?count+" new social notification"+(count===1?"":"s"):"No new notifications";
+        }catch(error){
+          badge.hidden=true;
+          console.warn("Could not refresh notifications",error);
+        }
+      };
+      updateNotifications();
+      const interval=setInterval(updateNotifications,45000);
+      window.addEventListener("pagehide",()=>clearInterval(interval),{once:true});
+      document.addEventListener("visibilitychange",()=>{if(!document.hidden)updateNotifications()});
     }
     const friendsNav=document.querySelector('[data-nav="friends"]');
     if(a&&friendsNav){
