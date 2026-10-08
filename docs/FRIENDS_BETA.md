@@ -1,6 +1,6 @@
 # AutoType Friends Beta
 
-This build is hosted from the `beta-friends` Git branch, not `main`.
+This build is hosted from the `beta-friends` Git branch, not `main`. The GitHub Actions deploy workflow runs on beta branch pushes. After switching repository Settings → Pages to GitHub Actions, a fresh commit triggers a new publish attempt.
 
 ## One-time setup for the owner
 
