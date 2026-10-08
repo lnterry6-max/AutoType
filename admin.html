@@ -65,28 +65,30 @@
 
 <main class="container page admin-page">
   <div id="adminDenied" class="platform-section admin-denied" hidden>
-    <h1>Developer access required</h1>
+    <h1>Admin or Developer access required</h1>
         <a class="button button-secondary" href="index.html">Return home</a>
   </div>
 
   <div id="adminConsole" hidden>
     <header class="admin-head">
-      <div><div class="eyebrow">Developer</div><h1>Admin Console</h1></div>
-      <div class="developer-badge">Developer mode</div>
+      <div><div class="eyebrow" id="staffRoleHeading">Developer</div><h1>Admin Console</h1></div>
+      <div class="developer-badge" id="staffRoleTag">Developer mode</div>
     </header>
 
     <section class="admin-metrics" id="adminMetrics"></section>
 
     <nav class="admin-tabs">
       <a href="#tournaments">Tournaments</a>
-      <a href="#players">Players</a>
-      <a href="#payments">Payments</a>
+      <a href="#players" data-developer-only>Players</a>
+      <a href="#roles" data-developer-only>Roles</a>
+      <a href="#myWalletAdmin" id="myWalletTab" hidden>My Wallet</a>
+      <a href="#payments" data-developer-only>Payments</a>
       <a href="#announcement">Announcement</a>
-      <a href="#moderation">Prediction Lab</a>
-      <a href="#feedback">Feedback</a>
+      <a href="#moderation" data-developer-only>Prediction Lab</a>
+      <a href="#feedback" data-developer-only>Feedback</a>
       <a href="#playerReports">Player Reports</a>
       <a href="#chatReports">Chat Reports</a>
-      <a href="#data">Data</a>
+      <a href="#data" data-developer-only>Data</a>
     </nav>
 
     <section class="admin-section" id="tournaments">
@@ -118,7 +120,7 @@
       <button class="button button-quiet" id="restoreTournamentsButton">Restore built-in tournaments</button>
     </section>
 
-    <section class="admin-section" id="players">
+    <section class="admin-section" id="players" data-developer-only>
       <div class="admin-section-head">
         <div><span class="section-kicker">PLAYERS</span><h2>Player Manager</h2></div>
         <input class="input admin-search" id="playerSearch" placeholder="Search username">
@@ -126,7 +128,29 @@
       <div class="admin-player-list" id="adminPlayerList"></div>
     </section>
 
-    <section class="admin-section" id="payments">
+    <section class="admin-section" id="roles" data-developer-only>
+      <div class="admin-section-head"><div><span class="section-kicker">DEVELOPER ONLY</span><h2>Custom role badges</h2></div></div>
+      <p class="help">Create visible titles such as Beta Tester. These are cosmetic labels and never grant Admin or Developer access. Assign them in Player Manager.</p>
+      <form id="createRoleForm" class="row-wrap">
+        <label class="label">Role name <input class="input" id="newRoleName" maxlength="28" placeholder="Beta Tester" required></label>
+        <label class="label">Badge color <input id="newRoleColor" type="color" value="#4ba6d8"></label>
+        <button class="button button-primary" type="submit">Create role</button>
+      </form>
+      <div class="admin-badge-roles" id="customRolesList"></div>
+    </section>
+
+    <section class="admin-section" id="myWalletAdmin" hidden>
+      <div class="admin-section-head"><div><span class="section-kicker">YOUR ACCOUNT</span><h2>My in-game wallet</h2></div></div>
+      <p class="help">As an Admin you can change your own AutoType balance only. No other players' wallets or payments are accessible.</p>
+      <form id="adminOwnWallet" class="admin-form-grid">
+        <label class="label">My coins <input class="input" id="myAdminCoins" type="number" min="0" max="999999999" required></label>
+        <label class="label">My tickets <input class="input" id="myAdminTickets" type="number" min="0" max="999999999" required></label>
+        <label class="label">My crate tokens <input class="input" id="myAdminTokens" type="number" min="0" max="999999999" required></label>
+        <button class="button button-primary" type="submit">Save my wallet</button>
+      </form>
+    </section>
+
+    <section class="admin-section" id="payments" data-developer-only>
       <div class="admin-section-head">
         <div><span class="section-kicker">STRIPE</span><h2>Payments</h2></div>
       </div>
@@ -140,12 +164,12 @@
       <div class="row-wrap"><button class="button button-primary" id="saveAnnouncement">Save announcement</button><button class="button button-quiet" id="clearAnnouncement">Clear</button></div>
     </section>
 
-    <section class="admin-section" id="moderation">
+    <section class="admin-section" id="moderation" data-developer-only>
       <div class="admin-section-head"><div><span class="section-kicker">UGC</span><h2>Prediction Lab Moderation</h2></div></div>
       <div class="admin-suggestion-list" id="adminSuggestionList"></div>
     </section>
 
-    <section class="admin-section" id="feedback">
+    <section class="admin-section" id="feedback" data-developer-only>
       <div class="admin-section-head">
         <div><span class="section-kicker">FRIENDS BETA</span><h2>Player Feedback</h2></div>
         <button class="button button-secondary" type="button" id="refreshFeedbackButton">Refresh feedback</button>
@@ -171,7 +195,7 @@
       <div class="admin-feedback-list" id="chatReportsList"><div class="empty">Loading reports…</div></div>
     </section>
 
-    <section class="admin-section" id="data">
+    <section class="admin-section" id="data" data-developer-only>
       <div class="admin-section-head"><div><span class="section-kicker">DATA</span><h2>Backup</h2></div></div>
       <button class="button button-secondary" id="exportBackupButton">Export JSON backup</button>
     </section>
@@ -201,16 +225,27 @@ document.addEventListener("DOMContentLoaded",async()=>{
     return;
   }
   const account=AutoType.currentAccount();
-  if(!account||!AutoType.isDeveloper(account)){
+  const remoteRole=account?.online?await AutoTypeBackend.myRole().catch(()=>null):null;
+  const isDeveloper=account?.online?remoteRole==="developer":AutoType.isDeveloper(account);
+  const isAdmin=account?.online&&remoteRole==="admin";
+  if(!account||(!isDeveloper&&!isAdmin)){
     adminDenied.hidden=false;
     return;
   }
   adminConsole.hidden=false;
+  if(isAdmin){
+    document.querySelector("#staffRoleHeading").textContent="Administration";
+    document.querySelector("#staffRoleTag").textContent="Admin mode";
+    document.querySelectorAll("[data-developer-only]").forEach(el=>{el.hidden=true;el.style.display="none";});
+    document.querySelector("#myWalletAdmin").hidden=false;
+    document.querySelector("#myWalletTab").hidden=false;
+  }
   const adminPaymentList=document.querySelector("#adminPaymentList");
   const adminFeedbackList=document.querySelector("#adminFeedbackList");
 
   if(account.online){
     let snapshot=null;
+    let roleConfig={badges:[],assignments:[]};
     let feedbackReports=[];
     let feedbackError="";
     let playerReports=[];
@@ -222,6 +257,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
 
     async function loadSnapshot(){
       snapshot=await AutoTypeBackend.adminSnapshot();
+      if(isDeveloper)roleConfig=await AutoTypeBackend.developerRoleSnapshot();
     }
 
     function maps(){
@@ -244,7 +280,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
         username:profile.username,
         displayName:profile.display_name||profile.username,
         avatarImage:profile.avatar_url||"",
-        role:role==="developer"||role==="admin"?"developer":"user",
+        role:role==="developer"?"developer":role==="admin"?"admin":"user",
         online:true,
         wallet:{
           coins:Number(wallet.coins||0),
@@ -713,18 +749,24 @@ document.addEventListener("DOMContentLoaded",async()=>{
     function renderOnlineAll(){
       renderOnlineMetrics();
       renderOnlineTournaments();
-      renderOnlinePlayers();
-      renderOnlinePayments();
+      if(isDeveloper){
+        renderOnlinePlayers();
+        renderOnlinePayments();
+        renderOnlineSuggestions();
+        renderOnlineBadges();
+        renderBetaFeedback();
+      }
       renderOnlineAnnouncement();
-      renderOnlineSuggestions();
-      renderBetaFeedback();
       renderPlayerReports();
       renderChatReports();
     }
 
     async function refreshOnlineAdmin(){
       await loadSnapshot();
-      await Promise.all([refreshBetaFeedback(),refreshPlayerReports(),refreshChatReports()]);
+      await Promise.all([
+        ...(isDeveloper?[refreshBetaFeedback()]:[]),
+        refreshPlayerReports(),refreshChatReports()
+      ]);
       renderOnlineAll();
     }
 
@@ -754,7 +796,28 @@ document.addEventListener("DOMContentLoaded",async()=>{
       finally{restoreTournamentsButton.disabled=false}
     });
 
-    playerSearch.addEventListener("input",renderOnlinePlayers);
+    if(isDeveloper)playerSearch.addEventListener("input",renderOnlinePlayers);
+
+    if(isAdmin){
+      const loadOwnWallet=async()=>{
+        const w=await AutoTypeBackend.myWallet();
+        myAdminCoins.value=Number(w?.coins||0);
+        myAdminTickets.value=Number(w?.tournament_tickets||0);
+        myAdminTokens.value=Number(w?.crate_tokens||0);
+      };
+      document.querySelector("#adminOwnWallet").addEventListener("submit",async e=>{
+        e.preventDefault();const b=e.currentTarget.querySelector('button[type="submit"]');b.disabled=true;
+        try{
+          await AutoTypeBackend.adminSetBalances(account.supabaseUserId,
+            Number(myAdminCoins.value),Number(myAdminTickets.value),Number(myAdminTokens.value));
+          await AutoTypeBackend.hydrateLocalMirror();
+          await loadOwnWallet();
+          AutoType.toast("Your in-game wallet was updated.");
+        }catch(error){AutoType.toast(error.message);}
+        finally{b.disabled=false;}
+      });
+      loadOwnWallet().catch(e=>AutoType.toast(e.message));
+    }
 
     saveAnnouncement.addEventListener("click",async()=>{
       saveAnnouncement.disabled=true;
