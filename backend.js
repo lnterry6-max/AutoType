@@ -478,7 +478,7 @@
         backgroundImage:"",backgroundDim:64,backgroundLuminance:null
       }),
       wallet:localWallet,
-      role:role==="developer"||role==="admin"?"developer":"user"
+      role:["developer","admin"].includes(role)?role:"user"
     };
 
     if(mirror)Object.assign(mirror,patch);
@@ -490,7 +490,7 @@
     // Compatibility bridge for the existing frontend shell.
     // The old UI requires both role==="developer" and developerAccountId===account.id.
     // The role itself is still sourced from Supabase user_roles.
-    if(role==="developer"||role==="admin"){
+    if(role==="developer"){
       localStore.developerAccountId=localId;
     }else if(localStore.developerAccountId===localId){
       localStore.developerAccountId=null;
@@ -901,6 +901,25 @@
     return api("admin_chat_report_status",{reportId,status});
   }
 
+  async function publicBadgesFor(userId){
+    const db=getClient();
+    if(!db)return [];
+    const {data:assigned,error}=await db.from("player_role_badges")
+      .select("role_id,assigned_at").eq("user_id",userId);
+    if(error)throw error;
+    if(!assigned?.length)return [];
+    const {data:badges,error:badgeError}=await db.from("role_badges")
+      .select("id,name,color").in("id",assigned.map(a=>a.role_id));
+    if(badgeError)throw badgeError;
+    return badges||[];
+  }
+  async function developerRoleSnapshot(){return api("developer_role_snapshot",{})}
+  async function developerCreateBadge(name,color){return api("developer_create_badge",{name,color})}
+  async function developerDeleteBadge(badgeId){return api("developer_delete_badge",{badgeId})}
+  async function developerAssignBadge(playerId,badgeId){return api("developer_assign_badge",{playerId,badgeId})}
+  async function developerRemoveBadge(playerId,badgeId){return api("developer_remove_badge",{playerId,badgeId})}
+  async function developerSetStaffRole(playerId,role){return api("developer_set_staff_role",{playerId,role})}
+
   window.AutoTypeBackend={
     version:"20261003-10",
     configured,
@@ -914,6 +933,13 @@
     myProfile,
     updateMyProfile,
     myRole,
+    publicBadgesFor,
+    developerRoleSnapshot,
+    developerCreateBadge,
+    developerDeleteBadge,
+    developerAssignBadge,
+    developerRemoveBadge,
+    developerSetStaffRole,
     submitBetaFeedback,
     betaFeedbackInbox,
     updateBetaFeedbackStatus,
