@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Messages · AutoType</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="styles.css?v=20261008-chat">
+</head>
+<body data-page="messages">
+
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a class="brand" href="index.html">
+      <span class="brand-logo"><img src="assets/logo.png" alt="AutoType"></span>
+      <span>AutoType</span>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" data-nav="home">Home</a>
+      <a href="play.html" data-nav="play">Play</a>
+      <a href="tournaments.html" data-nav="tournaments">Tournaments</a>
+      <a href="shop.html" data-nav="shop">Shop</a>
+      <a href="friends.html" data-nav="friends">Friends</a>
+      <details class="nav-more">
+        <summary>More</summary>
+        <div class="nav-more-menu">
+          <a href="create.html" data-nav="create">Create</a>
+          <a href="predictions.html" data-nav="predictions">Prediction Lab</a>
+          <a href="achievements.html" data-nav="achievements">Achievements</a>
+          <a href="leaderboard.html" data-nav="leaderboard">Leaderboard</a>
+          <a href="stats.html" data-nav="stats">Stats</a>
+          <a href="how-to.html" data-nav="help">How to Play</a>
+          <a href="settings.html" data-nav="settings">Settings</a>
+        </div>
+      </details>
+    </nav>
+    <div class="nav-spacer"></div>
+    <a class="header-feedback-link" data-nav="feedback" href="feedback.html">✎ Feedback</a>
+    <div class="nav-currency" id="navCurrency" hidden></div>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Open navigation">☰</button>
+    <div class="nav-account">
+      <button class="account-button" id="accountMenuButton"></button>
+      <div class="account-dropdown" id="accountDropdown" hidden></div>
+    </div>
+  </div>
+</header>
+<nav class="mobile-nav" id="mobileNav">
+  <a data-nav="feedback" href="feedback.html">Send feedback</a>
+  <a href="index.html">Home</a>
+  <a href="play.html">Play</a>
+  <a href="tournaments.html">Tournaments</a>
+  <a href="shop.html">Shop</a>
+  <a href="friends.html">Friends</a>
+  <a href="create.html">Create</a>
+  <a href="predictions.html">Prediction Lab</a>
+  <a href="achievements.html">Achievements</a>
+  <a href="leaderboard.html">Leaderboard</a>
+  <a href="stats.html">Stats</a>
+  <a href="how-to.html">How to Play</a>
+  <a href="settings.html">Settings</a>
+</nav>
+
+
+<main class="container page chat-page">
+  <header class="platform-page-heading">
+    <div><span class="section-kicker">FRIENDS ONLY</span><h1>Messages</h1>
+      <p class="chat-page-caption">Chat privately with accepted friends. You can block or report messages anytime.</p></div>
+    <a href="friends.html" class="button button-secondary">Manage friends</a>
+  </header>
+  <section class="chat-layout" id="chatApp" hidden>
+    <aside class="platform-section chat-sidebar">
+      <div class="platform-section-head"><div><span class="section-kicker">YOUR NETWORK</span><h2>Friends</h2></div></div>
+      <div id="chatFriends" class="chat-friends" aria-label="Choose a friend"></div>
+      <details class="chat-blocked">
+        <summary>Blocked players</summary>
+        <div id="chatBlockedList"></div>
+      </details>
+    </aside>
+    <section class="platform-section chat-panel" aria-label="Friend conversation">
+      <div class="chat-conversation-header">
+        <div><strong id="chatFriendName">Choose a friend</strong><small id="chatFriendHandle">Messages are only visible to participants.</small></div>
+        <button class="button button-quiet" id="chatBlock" type="button" hidden>Block</button>
+      </div>
+      <div class="chat-history" id="chatHistory" role="log" aria-live="off" aria-label="Recent chat messages">
+        <div class="empty">Choose a friend to start a conversation.</div>
+      </div>
+      <form id="chatCompose" class="chat-compose" hidden>
+        <label class="label" for="chatText">Write a message</label>
+        <div class="chat-compose-row">
+          <textarea id="chatText" class="textarea" maxlength="600" rows="2" required placeholder="Message a friend…"></textarea>
+          <button id="chatSend" class="button button-primary" type="submit">Send</button>
+        </div>
+        <p class="help" id="chatStatus" role="status" aria-live="polite">Don't share personal contact details or links. Messages are subject to reporting.</p>
+      </form>
+    </section>
+  </section>
+  <div class="panel panel-pad" id="chatSignIn" hidden>Sign in to chat with friends. <a href="account.html" class="text-link">Sign in or create an account</a></div>
+</main>
+
+<dialog id="chatReportDialog" class="chat-report-dialog" aria-labelledby="chatReportTitle">
+  <form method="dialog"><button class="chat-report-close" aria-label="Close report form">×</button></form>
+  <h2 id="chatReportTitle">Report a message</h2>
+  <p class="help">Reports include the selected message and your explanation. Only developers or moderators can review them.</p>
+  <form id="chatReportForm">
+    <div class="form-group"><label class="label" for="chatReportReason">Reason</label>
+      <select id="chatReportReason" class="select">
+        <option value="bullying">Bullying or harassment</option>
+        <option value="spam">Spam</option>
+        <option value="unsafe">Unsafe or inappropriate content</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="label" for="chatReportDetails">What happened?</label>
+      <textarea class="textarea" id="chatReportDetails" minlength="10" maxlength="1000" required placeholder="Tell us why you're reporting this message"></textarea>
+    </div>
+    <p class="help" id="chatReportStatus" role="status"></p>
+    <button class="button button-primary" id="chatReportSend" type="submit">Send report</button>
+  </form>
+</dialog>
+<footer class="footer">
+  <div class="container footer-inner">
+    <span>AutoType · Competitive autocomplete typing</span>
+  </div>
+</footer>
+<div class="toast"></div>
+
+<script src="backend-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="backend.js?v=20261008-chat"></script>
+<script src="core.js?v=20261008-chat"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded",async()=>{
+  await AutoType.ready();
+  const $=id=>document.getElementById(id);
+  const account=AutoType.currentAccount();
+  if(!account?.online){$("chatSignIn").hidden=false;return;}
+  $("chatApp").hidden=false;
+  const myId=account.supabaseUserId;
+  let friends=[],selected=null,blocked=[],reportMessageId=null,lastSignature="",loading=false;
+
+  function status(message){$("chatStatus").textContent=message;}
+  function empty(container,message){
+    container.replaceChildren();
+    const el=document.createElement("div");
+    el.className="empty";el.textContent=message;container.appendChild(el);
+  }
+  function action(label,handler,cls="button button-quiet"){
+    const btn=document.createElement("button");btn.type="button";btn.className=cls;btn.textContent=label;
+    btn.addEventListener("click",handler);
+    return btn;
+  }
+  async function loadFriends(){
+    const [snapshot,blocks]=await Promise.all([AutoTypeBackend.friendsSnapshot(),AutoTypeBackend.blockedChatPlayers()]);
+    friends=snapshot.friends||[];
+    blocked=blocks||[];
+    const wrap=$("chatFriends");wrap.replaceChildren();
+    if(!friends.length)empty(wrap,"No friends yet. Add a friend to start chatting.");
+    for(const f of friends){
+      const b=document.createElement("button");b.type="button";
+      b.className="chat-friend"+(selected?.id===f.id?" selected":"");
+      const name=document.createElement("strong");name.textContent=f.display_name||f.username;
+      const handle=document.createElement("small");handle.textContent="@"+f.username;
+      b.append(name,handle);
+      b.addEventListener("click",()=>chooseFriend(f));
+      wrap.appendChild(b);
+    }
+    const blockedWrap=$("chatBlockedList");blockedWrap.replaceChildren();
+    if(!blocked.length)empty(blockedWrap,"No blocked players.");
+    for(const p of blocked){
+      const row=document.createElement("div");row.className="chat-blocked-row";
+      const title=document.createElement("span");title.textContent="@"+p.username;
+      const unblock=action("Unblock",async()=>{
+        unblock.disabled=true;
+        try{
+          await AutoTypeBackend.blockFriendChat(p.id,false);
+          AutoType.toast("Unblocked. Send a new friend request to chat again.");
+          await loadFriends();
+        }catch(err){AutoType.toast(err.message);}
+        finally{unblock.disabled=false;}
+      });
+      row.append(title,unblock);blockedWrap.appendChild(row);
+    }
+  }
+  async function chooseFriend(friend){
+    selected=friend;lastSignature="";
+    $("chatFriendName").textContent=friend.display_name||friend.username;
+    $("chatFriendHandle").textContent="@"+friend.username+" · friends-only conversation";
+    $("chatCompose").hidden=false;$("chatBlock").hidden=false;
+    const url=new URL(location.href);url.searchParams.set("u",friend.username);history.replaceState(null,"",url);
+    await loadFriends();
+    await refreshMessages(true);
+    $("chatText").focus();
+  }
+  async function refreshMessages(force=false){
+    if(!selected||loading||document.hidden)return;
+    const person=selected,prev=lastSignature;
+    loading=true;
+    try{
+      const messages=await AutoTypeBackend.friendChatHistory(person.id);
+      if(!selected||person.id!==selected.id)return;
+      const signature=messages.map(m=>m.id).join(",");
+      if(signature===prev&&!force)return;
+      lastSignature=signature;
+      const area=$("chatHistory");
+      const pinned=force||area.scrollTop+area.clientHeight>=area.scrollHeight-80;
+      area.replaceChildren();
+      if(!messages.length)empty(area,"No messages yet. Say hello!");
+      for(const m of messages){
+        const outgoing=m.sender_id===myId;
+        const box=document.createElement("div");box.className="chat-bubble"+(outgoing?" own":" incoming");
+        const body=document.createElement("p");body.textContent=m.body;box.appendChild(body);
+        const meta=document.createElement("div");meta.className="chat-bubble-meta";
+        const time=document.createElement("small");time.textContent=new Date(m.created_at).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});meta.appendChild(time);
+        if(!outgoing){
+          const report=action("Report",()=>{
+            reportMessageId=m.id;$("chatReportStatus").textContent="";
+            $("chatReportDetails").value="";$("chatReportDialog").showModal();
+          },"chat-report-trigger");
+          meta.appendChild(report);
+        }
+        box.appendChild(meta);area.appendChild(box);
+      }
+      if(pinned)area.scrollTop=area.scrollHeight;
+      status("Don't share personal contact details or links. You can report or block anytime.");
+    }catch(err){
+      if(person.id===selected?.id){status(err.message||"Could not load messages.");}
+    }finally{loading=false;}
+  }
+  $("chatCompose").addEventListener("submit",async e=>{
+    e.preventDefault();
+    const to=selected,body=$("chatText").value.trim();
+    if(!to||!body)return;
+    const btn=$("chatSend");btn.disabled=true;status("Sending…");
+    try{
+      await AutoTypeBackend.sendFriendMessage(to.id,body);
+      $("chatText").value="";await refreshMessages(true);
+      status("Message sent.");
+    }catch(err){status(err.message||"Message not sent.");}
+    finally{btn.disabled=false;}
+  });
+  $("chatBlock").addEventListener("click",async()=>{
+    if(!selected||!confirm("Block @"+selected.username+"? You'll be removed as friends and unable to message each other until you unblock and add them again."))return;
+    const id=selected.id;$("chatBlock").disabled=true;
+    try{
+      await AutoTypeBackend.blockFriendChat(id,true);
+      selected=null;lastSignature="";
+      $("chatCompose").hidden=true;$("chatBlock").hidden=true;
+      $("chatFriendName").textContent="Choose a friend";$("chatFriendHandle").textContent="Messages are only visible to participants.";
+      empty($("chatHistory"),"Player blocked. You can unblock from the blocked players list.");
+      await loadFriends();AutoType.toast("Player blocked.");
+    }catch(e){AutoType.toast(e.message);}
+    finally{$("chatBlock").disabled=false;}
+  });
+  $("chatReportForm").addEventListener("submit",async e=>{
+    e.preventDefault();
+    if(!reportMessageId)return;
+    const btn=$("chatReportSend");btn.disabled=true;
+    $("chatReportStatus").textContent="Sending report…";
+    try{
+      await AutoTypeBackend.reportFriendMessage(reportMessageId,$("chatReportReason").value,$("chatReportDetails").value.trim());
+      $("chatReportDialog").close();AutoType.toast("Message reported privately.");
+      reportMessageId=null;
+    }catch(err){$("chatReportStatus").textContent=err.message||"Could not send report.";}
+    finally{btn.disabled=false;}
+  });
+  try{
+    await loadFriends();
+    const username=new URLSearchParams(location.search).get("u")?.toLowerCase();
+    const match=friends.find(f=>f.username.toLowerCase()===username);
+    if(match)await chooseFriend(match);
+  }catch(err){empty($("chatFriends"),"Could not load friends: "+err.message);}
+  setInterval(()=>refreshMessages(),12000);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden)refreshMessages(true);});
+});
+</script>
+</body>
+</html>

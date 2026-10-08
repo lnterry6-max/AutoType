@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Admin Console · AutoType</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="styles.css?v=20261008-social">
+<link rel="stylesheet" href="styles.css?v=20261008-chat">
 </head>
 <body data-page="admin">
 <header class="topbar">
@@ -81,6 +81,7 @@
       <a href="#moderation">Prediction Lab</a>
       <a href="#feedback">Feedback</a>
       <a href="#playerReports">Player Reports</a>
+      <a href="#chatReports">Chat Reports</a>
       <a href="#data">Data</a>
     </nav>
 
@@ -157,6 +158,15 @@
       <div class="admin-feedback-list" id="playerReportsList"><div class="empty">Loading reports…</div></div>
     </section>
 
+    <section class="admin-section" id="chatReports">
+      <div class="admin-section-head">
+        <div><span class="section-kicker">MODERATION</span><h2>Reported messages</h2></div>
+        <button class="button button-secondary" id="refreshChatReports" type="button">Refresh messages</button>
+      </div>
+      <p class="help">Only reported messages are shown here, not all private conversations.</p>
+      <div class="admin-feedback-list" id="chatReportsList"><div class="empty">Loading reports…</div></div>
+    </section>
+
     <section class="admin-section" id="data">
       <div class="admin-section-head"><div><span class="section-kicker">DATA</span><h2>Backup</h2></div></div>
       <button class="button button-secondary" id="exportBackupButton">Export JSON backup</button>
@@ -172,8 +182,8 @@
 <div class="toast"></div>
 <script src="backend-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="backend.js?v=20261008-social"></script>
-<script src="core.js?v=20261008-social"></script>
+<script src="backend.js?v=20261008-chat"></script>
+<script src="core.js?v=20261008-chat"></script>
 <script>
 document.addEventListener("DOMContentLoaded",async()=>{
   await AutoType.ready();
@@ -201,6 +211,8 @@ document.addEventListener("DOMContentLoaded",async()=>{
     let feedbackError="";
     let playerReports=[];
     let playerReportsError="";
+    let chatReports=[];
+    let chatReportsError="";
 
     const byId=(list,key="id")=>Object.fromEntries((list||[]).map(x=>[x[key],x]));
 
@@ -645,6 +657,55 @@ document.addEventListener("DOMContentLoaded",async()=>{
     }
     document.querySelector("#refreshPlayerReports")?.addEventListener("click",refreshPlayerReports);
 
+    function renderChatReports(){
+      const list=document.querySelector("#chatReportsList");if(!list)return;
+      list.replaceChildren();
+      if(chatReportsError){
+        const notice=document.createElement("div");notice.className="empty";notice.textContent=chatReportsError;
+        list.appendChild(notice);return;
+      }
+      if(!chatReports.length){
+        const empty=document.createElement("div");empty.className="empty";
+        empty.textContent="No messages have been reported.";list.appendChild(empty);return;
+      }
+      const profiles=maps().profiles;
+      for(const entry of chatReports){
+        const item=document.createElement("article");item.className="admin-feedback-item";
+        const label=document.createElement("strong");
+        const reporter=profiles[entry.reporter_id]?.username||"Player";
+        const sender=profiles[entry.sender_id]?.username||"Player";
+        label.textContent="@"+reporter+" reported a message from @"+sender+" · "+entry.reason;
+        const timestamp=document.createElement("small");timestamp.textContent=new Date(entry.created_at).toLocaleString();
+        const message=document.createElement("blockquote");message.className="admin-feedback-message";
+        message.textContent=entry.body_snapshot;
+        const context=document.createElement("p");context.className="admin-feedback-message";
+        context.textContent="Reason: "+entry.details;
+        const control=document.createElement("label");control.className="admin-feedback-control";control.textContent="Status ";
+        const select=document.createElement("select");select.className="select";
+        select.setAttribute("aria-label","Chat report status");
+        for(const name of ["new","reviewed","resolved"]){
+          const option=document.createElement("option");option.value=name;option.textContent=name[0].toUpperCase()+name.slice(1);
+          select.appendChild(option);
+        }
+        select.value=entry.status;
+        select.addEventListener("change",async()=>{
+          const previous=entry.status;select.disabled=true;
+          try{
+            await AutoTypeBackend.adminSetChatReportStatus(entry.id,select.value);
+            entry.status=select.value;AutoType.toast("Chat report status saved.");
+          }catch(error){select.value=previous;AutoType.toast(error.message||"Unable to update report");}
+          finally{select.disabled=false;}
+        });
+        control.appendChild(select);item.append(label,timestamp,message,context,control);list.appendChild(item);
+      }
+    }
+    async function refreshChatReports(){
+      try{chatReports=await AutoTypeBackend.adminChatReports();chatReportsError="";}
+      catch(error){chatReports=[];chatReportsError=error.message||"Unable to load chat reports";}
+      renderChatReports();
+    }
+    document.querySelector("#refreshChatReports")?.addEventListener("click",refreshChatReports);
+
     function renderOnlineAll(){
       renderOnlineMetrics();
       renderOnlineTournaments();
@@ -654,11 +715,12 @@ document.addEventListener("DOMContentLoaded",async()=>{
       renderOnlineSuggestions();
       renderBetaFeedback();
       renderPlayerReports();
+      renderChatReports();
     }
 
     async function refreshOnlineAdmin(){
       await loadSnapshot();
-      await Promise.all([refreshBetaFeedback(),refreshPlayerReports()]);
+      await Promise.all([refreshBetaFeedback(),refreshPlayerReports(),refreshChatReports()]);
       renderOnlineAll();
     }
 
