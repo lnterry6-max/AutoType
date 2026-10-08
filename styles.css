@@ -3517,3 +3517,34 @@ body.high-contrast .help,body.high-contrast .eyebrow,body.high-contrast .label{
 .fixed-pack-contents span,.fixed-pack-contents small{display:block;font-size:10px;color:var(--muted)}
 .fixed-pack-contents strong{display:block;margin:4px 0;font-size:13px}
 .shop-fixed-pack-note{color:var(--muted);font-size:11px;line-height:1.5;margin:0 0 13px}
+
+
+/* Distinct themed, free-to-earn cosmetic surprise drops. */
+.crate-free-label{
+  display:inline-block;margin-bottom:8px;
+  font-size:9px;letter-spacing:.07em;font-weight:850;color:#a5d6b9
+}
+.crate-pool-note{margin-top:9px;font-size:10px;line-height:1.55;color:var(--muted)}
+.crate-theme-neon_nights_crate .crate-art{
+  background:radial-gradient(circle at 20% 20%,rgba(67,237,204,.3),transparent 39%),
+             linear-gradient(140deg,#143c47,#123460 55%,#3d2759);
+  border:1px solid rgba(87,215,193,.29)
+}
+.crate-theme-cosmic_crate .crate-art{
+  background:radial-gradient(circle at 80% 12%,rgba(222,194,255,.4),transparent 28%),
+             linear-gradient(130deg,#0f182c,#202a65 55%,#3a244f);
+  border:1px solid rgba(173,155,251,.32)
+}
+.crate-theme-color_shuffle_crate .crate-art{
+  background:linear-gradient(135deg,#164d4e,#257da1 45%,#793e80 100%);
+  border:1px solid rgba(127,203,245,.35)
+}
+.crate-theme-neon_nights_crate .crate-box,
+.crate-theme-cosmic_crate .crate-box,
+.crate-theme-color_shuffle_crate .crate-box{
+  background:rgba(18,25,39,.5);color:#f5f7ff;
+  font-size:21px;box-shadow:0 2px 25px rgba(0,0,0,.1)
+}
+.crate-theme-neon_nights_crate,.crate-theme-cosmic_crate,.crate-theme-color_shuffle_crate{
+  border-color:rgba(119,150,190,.46)
+}
