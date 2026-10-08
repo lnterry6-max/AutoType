@@ -3088,3 +3088,60 @@ body.theme-light .topbar-inner .header-messages-link.active{
   .topbar-inner .header-messages-link{min-width:36px;padding:7px 9px}
   .header-messages-text{display:none}
 }
+
+
+/* Plinko: free arcade score mode; no coin or wallet interactions. */
+.plinko-page{max-width:1180px}
+.plinko-intro{display:flex;align-items:center;justify-content:space-between;gap:20px}
+.plinko-overview{display:flex;align-items:center;gap:14px;padding:15px 20px;margin-bottom:14px}
+.plinko-overview-mark{display:grid;place-items:center;flex:0 0 auto;width:46px;height:46px;font-size:25px;color:#c6ecff;background:#223e51;border:1px solid #356684;border-radius:10px}
+.plinko-overview strong{font-size:14px}
+.plinko-overview p{font-size:12px;color:var(--muted);margin:6px 0 0;line-height:1.5}
+.plinko-overview p strong{font-size:inherit}
+.plinko-arcade-flag{margin-left:auto;color:#9bd4f6;font-size:10px;letter-spacing:.08em;font-weight:850;white-space:nowrap}
+.plinko-layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(280px,.72fr);gap:16px;align-items:start}
+.plinko-cabinet{background:#101820;border:1px solid #344756;border-radius:12px;padding:12px;box-shadow:0 16px 34px rgba(0,0,0,.16)}
+.plinko-cabinet-top{display:flex;align-items:center;justify-content:space-between;gap:15px;color:#8bb4ca;font-size:10px;font-weight:850;letter-spacing:.09em;padding:5px 7px 12px}
+.plinko-live-label{color:#85ccae;white-space:nowrap}
+.plinko-live-label i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#64c99e;margin-right:5px}
+#plinkoBoard{display:block;width:100%;height:auto;aspect-ratio:720/750;border-radius:7px;touch-action:manipulation;cursor:crosshair}
+.plinko-board-help{color:#93a6b5;font-size:11px;text-align:center;line-height:1.5;margin:10px 2px 4px}
+.plinko-sidebar{display:grid;gap:14px}
+.plinko-sidebar .platform-section{margin:0}
+.plinko-main-score{border:1px solid var(--border);border-radius:8px;background:var(--surface-2);padding:17px;text-align:center}
+.plinko-main-score strong{display:block;color:var(--text);font-size:clamp(34px,4vw,48px);font-variant-numeric:tabular-nums;line-height:1.1}
+.plinko-main-score span{display:block;margin-top:5px;color:var(--muted);font-size:10px;letter-spacing:.11em;font-weight:850}
+.plinko-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+.plinko-stat-grid>div{padding:12px 10px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px}
+.plinko-stat-grid span{display:block;color:var(--muted);font-size:11px}
+.plinko-stat-grid strong{display:block;margin-top:5px;color:var(--text);font-size:24px;line-height:1.1;font-variant-numeric:tabular-nums}
+.plinko-status{min-height:38px;font-size:12px;line-height:1.5;color:var(--muted);margin:15px 0 0}
+.plinko-control-label{display:flex;justify-content:space-between;gap:8px;font-weight:700;font-size:13px;margin-bottom:14px}
+.plinko-control-label span{font-size:10px;color:var(--muted);font-weight:700}
+#plinkoAim{width:100%;accent-color:var(--blue);cursor:pointer;min-height:28px}
+.plinko-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px}
+.plinko-actions .button{font-size:13px;padding:12px 10px}
+.plinko-actions .button:disabled{opacity:.55;cursor:not-allowed}
+.plinko-controls .help{font-size:11px;line-height:1.55;margin-top:13px}
+.plinko-tips h2{margin:0 0 12px;font-size:16px}
+.plinko-tips p{font-size:12px;line-height:1.6;color:var(--muted);margin:0 0 10px}
+.plinko-tips p:last-child{margin-bottom:0}
+.plinko-live-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(min-width:1020px){.home-mode-grid:has(.home-mode-card.plinko-tile){grid-template-columns:repeat(5,minmax(0,1fr))}}
+@media(max-width:930px){.plinko-layout{grid-template-columns:1fr}.plinko-sidebar{grid-template-columns:repeat(2,minmax(0,1fr))}.plinko-tips{grid-column:1/-1}}
+@media(max-width:600px){.plinko-sidebar{grid-template-columns:1fr}.plinko-tips{grid-column:auto}.plinko-intro{display:block}.plinko-intro>a{margin-top:12px}.plinko-overview{align-items:flex-start}.plinko-arcade-flag{display:none}.plinko-cabinet{padding:6px}.plinko-cabinet-top{font-size:8px;padding:6px 6px 9px}}
+body.theme-light .plinko-overview-mark{background:#e6f4ff;color:#1877af;border-color:#a4d6ee}
+
+
+/* Plinko's Play menu tile fills the row rather than leaving an empty cell. */
+.mode-tile.plinko-mode{
+  grid-column:1/-1;
+  min-height:145px;
+  border-color:rgba(72,170,219,.4);
+  background:linear-gradient(112deg,rgba(0,162,255,.09),var(--surface) 55%);
+}
+.mode-tile.plinko-mode:hover{background:var(--surface-2);border-color:var(--blue)}
+.home-mode-card.plinko-tile{border-color:rgba(72,170,219,.42);background:linear-gradient(135deg,rgba(0,162,255,.1),#24292f 65%)}
+.home-mode-card.plinko-tile:hover{border-color:var(--blue)}
+body.theme-light .mode-tile.plinko-mode{background:linear-gradient(112deg,#e9f6fc,var(--surface) 65%)}
+body.theme-light .home-mode-card.plinko-tile{background:linear-gradient(112deg,#e9f6fc,#fff 70%)}
