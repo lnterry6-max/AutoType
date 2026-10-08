@@ -796,6 +796,40 @@
     return (data||[]).map(row=>({...row,best_score:Number(row.verified_best_score||0)}));
   }
 
+  async function submitBetaFeedback({category,message,pagePath}){
+    const db=getClient();
+    const current=await user();
+    if(!db||!current)throw new Error("Sign in to send beta feedback.");
+    if(!["bug","idea","other"].includes(category))throw new Error("Choose a feedback category.");
+    const body=String(message||"").trim();
+    if(body.length<10||body.length>2000)throw new Error("Feedback must be 10–2000 characters.");
+    const source=String(pagePath||"/").slice(0,200)||"/";
+    const {error}=await db.from("beta_feedback").insert({
+      user_id:current.id,category,message:body,page_path:source
+    });
+    if(error)throw error;
+    return true;
+  }
+
+  async function betaFeedbackInbox(){
+    const db=getClient();
+    if(!db)throw new Error("Supabase is not configured.");
+    const {data,error}=await db.from("beta_feedback")
+      .select("id,user_id,category,message,page_path,status,created_at")
+      .order("created_at",{ascending:false}).limit(100);
+    if(error)throw error;
+    return data||[];
+  }
+
+  async function updateBetaFeedbackStatus(id,status){
+    if(!["new","reviewed","resolved"].includes(status))throw new Error("Invalid feedback status.");
+    const db=getClient();
+    if(!db)throw new Error("Supabase is not configured.");
+    const {error}=await db.from("beta_feedback").update({status}).eq("id",id);
+    if(error)throw error;
+    return true;
+  }
+
   window.AutoTypeBackend={
     version:"20261003-10",
     configured,
@@ -809,6 +843,9 @@
     myProfile,
     updateMyProfile,
     myRole,
+    submitBetaFeedback,
+    betaFeedbackInbox,
+    updateBetaFeedbackStatus,
     myEquipped,
     myAchievements,
     myPreferences,
