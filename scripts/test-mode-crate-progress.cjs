@@ -71,7 +71,6 @@ const db={
    };
   }
  }}};
-};
 const window={AUTOTYPE_SUPABASE:{url:"https://test.invalid",publishableKey:"test"},supabase:{createClient:()=>db}};
 vm.runInNewContext(fs.readFileSync(path.join(root,"backend.js"),"utf8"),{window,console});
 (async()=>{

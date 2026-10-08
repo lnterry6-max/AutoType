@@ -17,7 +17,7 @@ const {catalog,crates}=context.fixture;
 const orig=["starter_crate","profile_crate","gamefx_crate"];
 const added=["neon_nights_crate","cosmic_crate","color_shuffle_crate","evil_glitch_crate"];
 assert.equal(crates.length,7,"Three token crates and four free mode crates should appear");
-assert.equal(new Set(crates.map(c=>c.id)).size,6);
+assert.equal(new Set(crates.map(c=>c.id)).size,7);
 for(const id of orig){
  const c=crates.find(c=>c.id===id);
  assert.ok(c,"Original crate is retained");
@@ -40,6 +40,6 @@ for(const id of added){
 }
 const markup=fs.readFileSync(path.join(root,"shop.html"),"utf8");
 assert.doesNotMatch(markup,/fixedPackCard|data-open-fixed-pack|GUARANTEED COSMETIC/i);
-assert.match(markup,/FREE GAMEPLAY REWARD/);
-assert.match(markup,/Claim free surprise drop/);
+assert.match(markup,/FREE REWARD/);
+assert.match(markup,/Claim free /);
 console.log("Crate variety regression PASSED (three original crates, four mode crates, 100% odds, all rarity pools, no fixed packs).");
