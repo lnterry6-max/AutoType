@@ -22,7 +22,9 @@ The `backend-foundation` branch uses Supabase as the shared backend for AutoType
 
 ## Migrations
 
-Migrations under `migrations/` are synced from the live AutoType Supabase project and should be applied in filename/version order for a fresh project.
+The first schema was applied manually, before Supabase migration tracking. Its original SQL is preserved at `supabase/bootstrap/001_backend_foundation.sql`. For a **brand-new database only**, execute this bootstrap once before running the files in `supabase/migrations/` in timestamp order.
+
+The numbered migration filenames now use the exact applied versions from Supabase migration history. Their historical SQL contents were not modified. On the existing AutoType project **never replay the bootstrap or run a database reset**. Confirm `supabase migration list` matches both sides before `supabase db push`. If it differs, investigate rather than automatically repairing history. Documentation: https://supabase.com/docs/reference/cli/supabase-migration-repair.
 
 ## Edge Functions
 
@@ -38,11 +40,15 @@ Requires a valid user JWT. Creates a Stripe Checkout Session from a server-defin
 
 Public webhook endpoint with JWT verification disabled because Stripe authenticates the request using the `Stripe-Signature` header. The function verifies the signature before crediting Coins.
 
+### refund-payment
+
+Authenticated refund gateway backed by Stripe and server-side payment adjustments.
+
 ### delete-account
 
 Authenticates the caller and deletes that caller's Supabase Auth account with the server-side admin client.
 
-`game-api`, `create-checkout-session`, and `delete-account` require valid user JWTs. `stripe-webhook` uses Stripe signature verification instead.
+`game-api`, `create-checkout-session`, `refund-payment`, and `delete-account` require valid user JWTs. `stripe-webhook` uses Stripe signature verification instead.
 
 For payment testing, configure `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and keep `STRIPE_LIVE_ENABLED=false`. Live Checkout is blocked unless that flag is explicitly set to `true`.
 
