@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Shop · AutoType</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="styles.css?v=20261008-per-mode-crates-v1">
+<link rel="stylesheet" href="styles.css?v=20261008-beta-polish-v1">
 </head>
 <body data-page="shop">
 <header class="topbar">
@@ -92,7 +92,7 @@
 
   <section class="shop-view" id="shopFeaturedView">
     <div class="shop-daily-banner"><div><span class="section-kicker">DAILY DROP · 12:00 AM EASTERN</span><h2>Daily Shop</h2><p>Six cosmetics and one collection available today. A new lineup appears at midnight New England time (EST/EDT). Your purchased items stay in Inventory.</p></div><div class="shop-daily-timer"><span>NEXT EASTERN RESET</span><strong id="shopRotationClock">--:--:--</strong><small id="shopRotationDate">Midnight ET</small></div></div>
-    <div class="shop-v3-section-head"><div><span class="section-kicker">TODAY'S DIRECT PURCHASES</span><h2>Today's six cosmetics</h2></div><span class="shop-stock-note">Only today's selection can be purchased</span></div>
+    <div class="shop-v3-section-head"><div><span class="section-kicker">TODAY'S DIRECT PURCHASES</span><h2>Today's six cosmetics</h2></div><span class="shop-stock-note">Today's selection only</span></div>
     <div class="shop-grid shop-v3-grid shop-daily-grid" id="shopDailyGrid"></div>
     <div class="shop-v3-section-head"><div><span class="section-kicker">FEATURED COLLECTION</span><h2>Today's set</h2></div></div>
     <div class="featured-collection" id="featuredCollection"></div>
@@ -166,14 +166,15 @@
 
 <footer class="footer">
   <div class="container footer-inner">
-    <span>AutoType · Competitive autocomplete typing</span>
+    <span><strong>AutoType</strong> <span class="footer-beta">BETA</span></span>
+    <div class="footer-links"><a href="how-to.html">How to play</a><a href="explore.html">Explore</a><a href="feedback.html">Feedback</a></div>
   </div>
 </footer>
 <div class="toast"></div>
 <script src="backend-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="backend.js?v=20261008-per-mode-crates-v1"></script>
-<script src="core.js?v=20261008-per-mode-crates-v1"></script>
+<script src="backend.js?v=20261008-beta-polish-v1"></script>
+<script src="core.js?v=20261008-beta-polish-v1"></script>
 <script src="shop-rotation.js?v=20261008-et-limited"></script>
 <script>
 document.addEventListener("DOMContentLoaded",async()=>{
