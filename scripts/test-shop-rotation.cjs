@@ -1,0 +1,15 @@
+"use strict";
+const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),path=require("node:path");
+const scope={};vm.runInNewContext(fs.readFileSync(path.join(__dirname,"..","shop-rotation.js"),"utf8"),scope);
+const api=scope.AutoTypeShopRotation;
+const catalog=["title","banner","frame","trail","arena","result"].flatMap(slot=>Array.from({length:5},(_,i)=>({id:slot+"_"+i,slot,price:100+i})));
+const sets=[{id:"one",items:[1]},{id:"two",items:[2]}];
+const d=api.rotate("2026-10-08",catalog,sets),e=api.rotate("2026-10-09",catalog,sets);
+assert.equal(d.items.length,6);assert.equal(new Set(d.items.map(x=>x.id)).size,6);
+assert.notEqual(d.items.map(x=>x.id).join(","),e.items.map(x=>x.id).join(","));
+assert.equal(d.items.map(x=>x.id).join(","),api.rotate("2026-10-08",catalog,sets).items.map(x=>x.id).join(","));
+assert.notEqual(d.featured.id,e.featured.id);
+assert.equal(api.countdown(new Date("2026-10-08T23:59:00Z")),"00:01:00");
+assert.equal(api.nextReset(new Date("2026-10-08T23:59:00Z")).toISOString(),"2026-10-09T00:00:00.000Z");
+assert.equal(api.rotate("2026-10-08",[],[]).items.length,0);
+console.log("Shop rotation regression PASSED (six categories, UTC clock, stable daily stock and collections).");

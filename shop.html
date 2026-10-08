@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Shop · AutoType</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="styles.css?v=20261008-mobile-hotfix">
+<link rel="stylesheet" href="styles.css?v=20261008-daily-shop">
 </head>
 <body data-page="shop">
 <header class="topbar">
@@ -91,18 +91,18 @@
   </nav>
 
   <section class="shop-view" id="shopFeaturedView">
+    <div class="shop-daily-banner"><div><span class="section-kicker">NEW EVERY DAY · MIDNIGHT UTC</span><h2>Daily Drop</h2><p>Six rotating picks and a featured collection. Owned cosmetics are always yours to keep.</p></div><div class="shop-daily-timer"><span>NEXT REFRESH</span><strong id="shopRotationClock">--:--:--</strong><small id="shopRotationDate">Daily rotation</small></div></div>
+    <div class="shop-v3-section-head"><div><span class="section-kicker">24-HOUR SPOTLIGHT</span><h2>Today's picks</h2></div><button class="shop-text-button" data-open-cosmetics type="button">Browse all cosmetics →</button></div>
+    <div class="shop-grid shop-v3-grid shop-daily-grid" id="shopDailyGrid"></div>
+    <div class="shop-v3-section-head"><div><span class="section-kicker">FEATURED COLLECTION</span><h2>Today's set</h2></div></div>
     <div class="featured-collection" id="featuredCollection"></div>
 
     <div class="shop-v3-section-head">
-      <div><span class="section-kicker">COLLECTIONS</span><h2>Collections</h2></div>
+      <div><span class="section-kicker">KNOWN CONTENTS · FIXED PRICE</span><h2>All collections</h2></div>
     </div>
     <div class="collection-grid" id="collectionGrid"></div>
 
-    <div class="shop-v3-section-head">
-      <div><span class="section-kicker">POPULAR</span><h2>Popular right now</h2></div>
-      <button class="shop-text-button" data-open-cosmetics type="button">Browse all cosmetics →</button>
-    </div>
-    <div class="popular-grid" id="popularGrid"></div>
+    <p class="shop-rotation-note">No need to rush: the entire cosmetic catalog is always available under Cosmetics, and collections list exactly what you receive.</p>
   </section>
 
   <section class="shop-view" id="shopCosmeticsView" hidden>
@@ -176,7 +176,8 @@
 <script src="backend-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="backend.js?v=20261008-level-consistency"></script>
-<script src="core.js?v=20261008-variety-ux"></script>
+<script src="core.js?v=20261008-daily-shop"></script>
+<script src="shop-rotation.js?v=20261008-daily-shop"></script>
 <script>
 document.addEventListener("DOMContentLoaded",async()=>{
   await AutoType.ready();
@@ -397,17 +398,17 @@ document.addEventListener("DOMContentLoaded",async()=>{
   }
 
   function renderFeatured(){
-    const [featured,...rest]=AutoType.collectionDefs;
-    featuredCollection.innerHTML=collectionCard(featured,true);
+    const rotation=AutoTypeShopRotation.rotate(AutoTypeShopRotation.dayKey(),AutoType.shopCatalog,AutoType.collectionDefs);
+    const featured=rotation.featured,rest=rotation.others;
+    featuredCollection.innerHTML=featured?collectionCard(featured,true):"";
     collectionGrid.innerHTML=rest.map(c=>collectionCard(c)).join("");
+    shopDailyGrid.innerHTML=rotation.items.map(itemCard).join("");
+    bindItemActions(shopDailyGrid);
     bindCollectionActions(featuredCollection);
     bindCollectionActions(collectionGrid);
     startCollectionPreviews();
 
-    const popularIds=["arena_terminal","trail_comet","banner_sunset"];
-    const popular=popularIds.map(id=>AutoType.shopCatalog.find(x=>x.id===id)).filter(Boolean);
-    popularGrid.innerHTML=popular.map(itemCard).join("");
-    bindItemActions(popularGrid);
+    updateRotationClock();
   }
 
   function renderCosmetics(){
@@ -534,6 +535,15 @@ document.addEventListener("DOMContentLoaded",async()=>{
     if(view==="crates")renderCrates();
   }
 
+  let renderedDay=AutoTypeShopRotation.dayKey();
+  function updateRotationClock(){
+    const now=new Date();
+    if(shopRotationClock)shopRotationClock.textContent=AutoTypeShopRotation.countdown(now);
+    if(shopRotationDate)shopRotationDate.textContent="Resets "+AutoTypeShopRotation.nextReset(now).toLocaleDateString(undefined,{month:"short",day:"numeric",timeZone:"UTC"});
+    const current=AutoTypeShopRotation.dayKey(now);
+    if(current!==renderedDay){renderedDay=current;renderAll();}
+  }
+  setInterval(updateRotationClock,1000);
   function renderAll(){
     renderWallet();
     renderEquipped();

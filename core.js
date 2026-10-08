@@ -98,7 +98,20 @@
     {id:"result_snap",slot:"result",category:"Game FX",name:"Snap Finish",price:350,rarity:"Common",effect:"snap"},
     {id:"result_default",slot:"result",category:"Game FX",name:"Default Finish",price:0,rarity:"Default",effect:"none"},
     {id:"result_burst",slot:"result",category:"Game FX",name:"Clean Burst",price:1000,rarity:"Epic",effect:"burst"},
-    {id:"result_neonstorm",slot:"result",category:"Game FX",name:"Neon Storm",price:1700,rarity:"Legendary",effect:"neon"}
+    {id:"result_neonstorm",slot:"result",category:"Game FX",name:"Neon Storm",price:1700,rarity:"Legendary",effect:"neon"},
+    {"id":"title_pixelpilot","slot":"title","category":"Titles","name":"Pixel Pilot","price":0,"rarity":"Epic","value":"Pixel Pilot","collectionOnly":true},
+    {"id":"title_starcaptain","slot":"title","category":"Titles","name":"Star Captain","price":0,"rarity":"Legendary","value":"Star Captain","collectionOnly":true},
+    {"id":"banner_pixelpop","slot":"banner","category":"Banners","name":"Pixel Pop","price":800,"rarity":"Rare","css":"linear-gradient(135deg,#155d5b,#227fb2 52%,#7c55cc)"},
+    {"id":"banner_starlight","slot":"banner","category":"Banners","name":"Starlight","price":950,"rarity":"Epic","css":"radial-gradient(circle at 78% 25%,rgba(255,232,166,.48),transparent 17%),linear-gradient(135deg,#10152c,#34346c 65%,#101c3a)"},
+    {"id":"frame_mintline","slot":"frame","category":"Frames","name":"Mint Line","price":550,"rarity":"Rare","color":"#63ddbb"},
+    {"id":"frame_cosmicglow","slot":"frame","category":"Frames","name":"Cosmic Glow","price":750,"rarity":"Epic","color":"#9b8aff"},
+    {"id":"trail_mintflash","slot":"trail","category":"Typing Trails","name":"Mint Flash","price":750,"rarity":"Rare","color":"#67e2b8","effect":"velocity"},
+    {"id":"trail_startrail","slot":"trail","category":"Typing Trails","name":"Star Trail","price":1150,"rarity":"Epic","color":"#c2aaff","effect":"comet"},
+    {"id":"arena_pixelscape","slot":"arena","category":"Arena Skins","name":"Pixelscape","price":1250,"rarity":"Epic","background":"linear-gradient(145deg,rgba(89,226,184,.15),transparent 50%),linear-gradient(180deg,#0f2734,#182b2d)","border":"#3a8d80","accent":"#68dbad","effect":"arcade"},
+    {"id":"arena_nightshift","slot":"arena","category":"Arena Skins","name":"Night Shift","price":1650,"rarity":"Legendary","background":"radial-gradient(circle at 80% 0%,rgba(161,130,255,.22),transparent 42%),linear-gradient(145deg,#16182c,#181b31 60%,#0e1421)","border":"#6c5c9a","accent":"#bd9aff","effect":"void"},
+    {"id":"predictor_pixelmint","slot":"predictor","category":"Game FX","name":"Pixel Mint","price":520,"rarity":"Uncommon","color":"#6bdcbb"},
+    {"id":"result_pixelburst","slot":"result","category":"Game FX","name":"Pixel Burst","price":1050,"rarity":"Epic","effect":"burst"},
+    {"id":"result_starflare","slot":"result","category":"Game FX","name":"Starflare","price":1550,"rarity":"Legendary","effect":"neon"}
   ];
 
 
@@ -133,7 +146,9 @@
       accent:"#d6b760",
       preview:"radial-gradient(circle at 75% 20%,rgba(227,185,78,.24),transparent 30%),linear-gradient(135deg,#101019,#352b56 60%,#14161c)",
       items:["title_voidwalker","banner_void","frame_glitch","arena_void","trail_gold","result_neonstorm"]
-    }
+    },
+    {"id":"pixel_pop_set","name":"Pixel Pop","tagline":"Colorful arcade energy for every sentence.","price":2850,"rarity":"Epic","accent":"#67dfbd","preview":"linear-gradient(135deg,#114751,#1c568e 60%,#61418d)","items":["title_pixelpilot","banner_pixelpop","frame_mintline","trail_mintflash","arena_pixelscape","result_pixelburst"]},
+    {"id":"starbound_set","name":"Starbound","tagline":"Cosmic colors and a dramatic finishing touch.","price":3500,"rarity":"Legendary","accent":"#b8a8ff","preview":"linear-gradient(135deg,#15152a,#32366b 65%,#211f44)","items":["title_starcaptain","banner_starlight","frame_cosmicglow","trail_startrail","arena_nightshift","result_starflare"]}
   ];
 
   const crateDefs = [
