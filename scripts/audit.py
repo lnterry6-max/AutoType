@@ -60,12 +60,12 @@ def main() -> int:
             check_node(js, issues)
 
     canonical_more = [
-        "predictions.html", "leaderboard.html", "how-to.html", "settings.html", "explore.html"
+        "predictions.html", "leaderboard.html", "how-to.html", "explore.html", "settings.html"
     ]
     canonical_mobile = [
         "feedback.html", "index.html", "play.html", "tournaments.html", "shop.html",
         "friends.html", "chat.html", "notifications.html", "predictions.html",
-        "leaderboard.html", "how-to.html", "settings.html", "explore.html"
+        "leaderboard.html", "how-to.html", "explore.html", "settings.html"
     ]
     special_pages = {"404.html", "backend-test.html"}
 
