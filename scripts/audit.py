@@ -166,7 +166,7 @@ def main() -> int:
 
         # Every beta page should expose the same reliable, concise footer.
         if page.name not in special_pages:
-            footer = re.search(r'<footer class="footer">([\\s\\S]*?)</footer>', text)
+            footer = re.search(r'<footer class="footer">([\s\S]*?)</footer>', text)
             if not footer or 'class="footer-beta"' not in footer.group(1):
                 fail(f"{page.name}: missing shared beta footer", issues)
             elif any(f'href="{dest}"' not in footer.group(1)
