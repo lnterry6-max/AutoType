@@ -82,10 +82,10 @@ def main() -> int:
         # All shared headers must have the same features, without a "lost" More tab.
         if page.name not in special_pages:
             more_match = re.search(
-                r'<div class="nav-more-menu">([\\s\\S]*?)</div>', text
+                r'<div class="nav-more-menu">(?s:.*?)</div>', text
             )
             mobile_match = re.search(
-                r'<nav class="mobile-nav" id="mobileNav">([\\s\\S]*?)</nav>', text
+                r'<nav class="mobile-nav" id="mobileNav">(?s:.*?)</nav>', text
             )
             for label, match, expected in (
                 ("More", more_match, canonical_more),
