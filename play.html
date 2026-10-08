@@ -118,7 +118,7 @@
     </div>
 
     <div class="panel arena">
-      <div class="combo-badge" id="comboBadge" hidden>Combo ×2</div>
+      <div class="combo-badge" id="comboBadge" hidden>Streak bonus</div>
       <div class="guess-row">
         <div>
           <div class="guess-label">Autocomplete</div>
@@ -126,11 +126,37 @@
         </div>
         <div class="word-count"><strong id="wordCount">1 / 1</strong><span>word</span></div>
       </div>
-      <div class="type-line"><div class="typing-trail" id="typingTrail"></div><div class="cursor"></div><div class="typed" id="typedPrefix">_</div><div class="key-help">SPACE lock · BACKSPACE erase</div></div>
+      <div class="type-line"><div class="typing-trail" id="typingTrail"></div><div class="cursor"></div><div class="typed" id="typedPrefix">_</div><div class="key-help" id="keyboardHint">SPACE lock · BACKSPACE erase</div></div>
+      <div class="mobile-game-controls" id="mobileGameControls">
+        <label for="mobileTypingInput">Mobile typing</label>
+        <button type="button" class="button button-primary mobile-start-button" id="mobileStartButton">Tap to start typing <span aria-hidden="true">⌨</span></button>
+        <input id="mobileTypingInput" class="input mobile-typing-input" type="text" inputmode="text"
+          enterkeyhint="done" autocapitalize="off" autocomplete="off" autocorrect="off"
+          spellcheck="false" aria-label="Type AutoType clues using your phone keyboard"
+          placeholder="Tap here to open the keyboard">
+        <div class="mobile-typing-actions">
+          <button type="button" class="button button-secondary" id="mobileEraseButton">⌫ Erase AI</button>
+          <button type="button" class="button button-primary" id="mobileLockButton">Lock word ↵</button>
+        </div>
+        <p class="help">Type clues with your phone keyboard. Use Erase AI to remove wrong guesses and Lock word when the autocomplete matches the target.</p>
+      </div>
       <div class="message" id="message">Type one letter. AutoType will fill the rest.</div>
       <div class="progress"><i id="progress"></i></div>
     </div>
 
+    <details class="score-explainer" id="scoreExplainer">
+      <summary><span>ⓘ How points work</span> <strong id="scoreNextWord">Up to 120 points for this word</strong></summary>
+      <div class="score-explainer-body">
+        <p>Each correctly locked word earns <strong>120 points with 1 clue</strong>. Every extra clue costs 20 points, down to a <strong>20-point minimum</strong>.</p>
+        <div class="score-table" aria-label="Word points by number of clue letters">
+          <span>1 clue <strong>120</strong></span><span>2 clues <strong>100</strong></span>
+          <span>3 clues <strong>80</strong></span><span>4 clues <strong>60</strong></span>
+          <span>5 clues <strong>40</strong></span><span>6+ clues <strong>20</strong></span>
+        </div>
+        <p><strong>Streak bonus:</strong> Each consecutive correct word adds 5 points to the next word, up to +30. An incorrect Lock attempt breaks that streak. Erasing extra AI letters doesn't directly reduce points; the clue count is what matters.</p>
+        <p><strong>Coins are separate:</strong> Finished rounds normally award 20 coins, +10 for no failed locks, +5 for a streak of at least five, +15 for Daily, and +75 for each newly unlocked achievement. These wallet rewards are separate from score and may require a successfully saved round.</p>
+      </div>
+    </details>
     <div class="game-actions">
       <div class="row"><button class="button button-quiet" id="restartBtn">Restart</button><button class="button button-secondary" id="newBtn">New sentence</button></div>
     </div>
@@ -143,6 +169,7 @@
     <section class="results" id="results" hidden>
       <div class="result-heading"><h2>Round complete</h2><span class="verified-result" id="verifiedResult" hidden></span></div>
       <div class="result-score" id="resultScore">0</div>
+      <p class="help result-score-caption">Word score = clue points + streak bonuses. Coins earned are shown separately below.</p>
       <div class="result-grid">
         <div class="result-box"><strong id="resultTime">0:00</strong><span>Time</span></div>
         <div class="result-box"><strong id="resultKeys">0</strong><span>Keys</span></div>
