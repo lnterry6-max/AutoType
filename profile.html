@@ -114,7 +114,15 @@
           </div>
           <p class="help">Adds a color accent to your public profile, without changing your equipped banner.</p>
         </div>
-        <div class="form-group"><label class="label">Bio</label><textarea class="textarea" id="bio" maxlength="180"></textarea><div class="help"><span id="bioCount">0</span>/180</div></div>
+        <div class="form-group"><label class="label" for="statusMessage">Profile status</label>
+          <input class="input" id="statusMessage" maxlength="110" placeholder="Building my next high score…">
+          <p class="help">A short public status. Don't share contact information.</p>
+        </div>
+        <div class="form-group"><label class="label" for="bio">Bio</label><textarea class="textarea" id="bio" maxlength="180"></textarea><div class="help"><span id="bioCount">0</span>/180</div></div>
+        <div class="form-group"><label class="label">Featured achievements</label>
+          <p class="help">Choose up to three unlocked achievements to highlight on your public profile.</p>
+          <div class="profile-showcase-options" id="showcaseOptions"></div>
+        </div>
         <div class="form-group"><label class="label">Favorite modes</label><div class="tag-row" id="favoriteModes"></div></div>
         <button class="button button-primary" id="saveProfile">Save profile</button>
       </div></details>
@@ -195,6 +203,26 @@ document.addEventListener("DOMContentLoaded",async()=>{
   let pendingAvatarFile=null;
   let removeAvatarRequested=false;
   profileTitle.textContent=AutoType.accountName(target);displayName.value=target.displayName||"Guest";bio.value=target.bio||"";bioCount.textContent=bio.value.length;
+  const statusField=document.querySelector("#statusMessage");
+  statusField.value=a?.statusMessage||"";
+  const showcaseContainer=document.querySelector("#showcaseOptions");
+  const chosenShowcase=new Set(a?.showcaseAchievements||[]);
+  const earned=AutoType.unlockedAchievements(p);
+  if(!earned.length){
+    const label=document.createElement("p");label.className="help";label.textContent="Unlock achievements while playing to showcase them here.";
+    showcaseContainer.appendChild(label);
+  }
+  for(const achievement of earned){
+    const tag=document.createElement("label");tag.className="showcase-option";
+    const checkbox=document.createElement("input");checkbox.type="checkbox";checkbox.value=achievement.id;checkbox.checked=chosenShowcase.has(achievement.id);
+    const name=document.createElement("span");name.textContent=achievement.icon+" "+achievement.name;
+    checkbox.addEventListener("change",()=>{
+      if(checkbox.checked&&showcaseContainer.querySelectorAll('input:checked').length>3){
+        checkbox.checked=false;AutoType.toast("You can showcase up to three achievements.");
+      }
+    });
+    tag.append(checkbox,name);showcaseContainer.appendChild(tag);
+  }
   const accentField=$("profileAccent");
   accentField.value=/^#[0-9A-F]{6}$/i.test(a?.profileAccent||"")?a.profileAccent:"#4ba6d8";
   const updateAccentPreview=()=>{
@@ -516,13 +544,17 @@ document.addEventListener("DOMContentLoaded",async()=>{
       const modes=[...favoriteModes.querySelectorAll(".selected")].map(x=>x.dataset.mode);
       const name=displayName.value.trim()||a.username;
       const cleanBio=bio.value.trim().slice(0,180);
+      const newStatus=statusField.value.trim().slice(0,110);
+      const showcase=[...showcaseContainer.querySelectorAll('input:checked')].map(input=>input.value);
 
       if(a.online){
         await AutoTypeBackend.updateMyProfile({
           display_name:name,
           bio:cleanBio,
           favorite_modes:modes,
-          profile_accent:accentField.value
+          profile_accent:accentField.value,
+          status_message:newStatus,
+          showcase_achievements:showcase
         });
         await AutoTypeBackend.hydrateLocalMirror();
       }else{
@@ -531,7 +563,9 @@ document.addEventListener("DOMContentLoaded",async()=>{
           bio:cleanBio,
           avatarImage:target.avatarImage||"",
           favoriteModes:modes,
-          profileAccent:accentField.value
+          profileAccent:accentField.value,
+          statusMessage:newStatus,
+          showcaseAchievements:showcase
         });
       }
 
