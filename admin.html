@@ -432,11 +432,37 @@ document.addEventListener("DOMContentLoaded",async()=>{
         const level=AutoType.levelInfo(a.profile).level;
         const role=m.roles[p.id]?.role||"player";
         return `<article class="admin-player-row" data-online-player="${p.id}">
-          <div class="admin-player-main">${AutoType.avatarMarkup(a,"avatar")}<div><strong>${AutoType.escapeHTML(AutoType.accountName(a))} ${["developer","admin"].includes(role)?'<span class="developer-mini">DEV</span>':""}</strong><small>@${AutoType.escapeHTML(p.username)} · LV ${level}</small></div></div>
+          <div class="admin-player-main">${AutoType.avatarMarkup(a,"avatar")}<div><strong>${AutoType.escapeHTML(AutoType.accountName(a))} ${["developer","admin"].includes(role)?'<span class="developer-mini">'+(role==="developer"?"DEV":"ADMIN")+'</span>':""}</strong><small>@${AutoType.escapeHTML(p.username)} · LV ${level}</small></div></div>
           <div class="admin-balance-fields">
             <label>Coins<input type="number" data-coins value="${a.wallet.coins}" min="0" max="999999999"></label>
             <label>Tickets<input type="number" data-tickets value="${a.wallet.tickets}" min="0" max="999999999"></label>
             <label>Crate Tokens<input type="number" data-keys value="${a.wallet.crateKeys}" min="0" max="999999999"></label>
+          </div>
+          <div class="admin-role-controls">
+            <div class="admin-role-control-group">
+              <label>Permission level</label>
+              <select class="select" data-staff-role ${role==="developer"?"disabled":""}>
+                <option value="player" ${role==="player"?"selected":""}>Player</option>
+                <option value="admin" ${role==="admin"?"selected":""}>Admin</option>
+                ${role==="developer"?'<option value="developer" selected>Developer (protected)</option>':""}
+              </select>
+              <button class="button button-secondary" data-save-staff-role ${role==="developer"?"disabled":""}>Update access</button>
+            </div>
+            <div class="admin-role-control-group">
+              <label>Display badge</label>
+              <select class="select" data-role-badge>
+                <option value="">Choose a badge…</option>
+                ${roleConfig.badges.map(b=>`<option value="${b.id}">${AutoType.escapeHTML(b.name)}</option>`).join("")}
+              </select>
+              <button class="button button-secondary" data-add-badge>Assign badge</button>
+            </div>
+            <div class="admin-assigned-badges">
+              ${roleConfig.assignments.filter(a=>a.user_id===p.id).map(a=>{
+                const badge=roleConfig.badges.find(b=>b.id===a.role_id);
+                if(!badge)return "";
+                return `<button class="admin-assigned-badge" style="--badge-color:${badge.color}" data-remove-badge="${badge.id}" title="Remove badge">${AutoType.escapeHTML(badge.name)} ×</button>`;
+              }).join("")}
+            </div>
           </div>
           <div class="admin-row-actions">
             <button class="button button-primary" data-online-save-player>Save balances</button>
@@ -448,6 +474,33 @@ document.addEventListener("DOMContentLoaded",async()=>{
 
       adminPlayerList.querySelectorAll(".admin-player-row").forEach(row=>{
         const id=row.dataset.onlinePlayer;
+        row.querySelector("[data-save-staff-role]")?.addEventListener("click",async e=>{
+          const button=e.currentTarget,role=row.querySelector("[data-staff-role]").value;
+          if(id===account.supabaseUserId)return AutoType.toast("You cannot change your own permission level.");
+          if(!confirm("Set this player's permission level to "+role+"?"))return;
+          button.disabled=true;
+          try{
+            await AutoTypeBackend.developerSetStaffRole(id,role);
+            AutoType.toast("Player permission updated.");await refreshOnlineAdmin();
+          }catch(error){AutoType.toast(error.message);button.disabled=false;}
+        });
+        row.querySelector("[data-add-badge]")?.addEventListener("click",async e=>{
+          const badgeId=row.querySelector("[data-role-badge]").value;
+          if(!badgeId)return AutoType.toast("Choose a badge first.");
+          e.currentTarget.disabled=true;
+          try{
+            await AutoTypeBackend.developerAssignBadge(id,badgeId);
+            AutoType.toast("Badge assigned.");await refreshOnlineAdmin();
+          }catch(error){AutoType.toast(error.message);e.currentTarget.disabled=false;}
+        });
+        row.querySelectorAll("[data-remove-badge]").forEach(button=>button.addEventListener("click",async()=>{
+          button.disabled=true;
+          try{
+            await AutoTypeBackend.developerRemoveBadge(id,button.dataset.removeBadge);
+            AutoType.toast("Badge removed.");await refreshOnlineAdmin();
+          }catch(error){AutoType.toast(error.message);button.disabled=false;}
+        }));
+
         row.querySelector("[data-online-save-player]").addEventListener("click",async e=>{
           e.currentTarget.disabled=true;
           try{
