@@ -188,6 +188,18 @@
       <div class="match-result" id="matchResult" hidden></div>
       <div class="achievement-unlocks" id="achievementUnlocks" hidden></div>
       <div class="daily-mix-result" id="dailyMixResult" hidden></div>
+      <section class="crate-rounds-panel" id="resultModeCrate" aria-label="Mode crate progress" hidden>
+        <div class="crate-rounds-copy">
+          <span class="section-kicker">YOUR NEXT MODE CRATE</span>
+          <strong id="resultModeCrateTitle">Word Mode Crate</strong>
+          <small id="resultModeCrateHint">Checking completed rounds…</small>
+        </div>
+        <div class="crate-rounds-meter">
+          <strong id="resultModeCrateCount" aria-live="polite">— / 5 rounds</strong>
+          <progress id="resultModeCrateMeter" value="0" max="5" aria-label="Completed rounds toward the matching mode crate"></progress>
+          <a class="text-link" href="shop.html#crates">View mode crates →</a>
+        </div>
+      </section>
       <div class="row-wrap"><button class="button button-primary" id="againBtn">Play again</button><a class="button button-secondary" data-surprise-mode href="play.html?mode=classic">Surprise Me →</a><a class="button button-secondary" href="play.html">Modes</a></div>
     </section>
   </section>
