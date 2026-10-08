@@ -581,7 +581,7 @@
     const db=getClient();
     if(!db)return [];
     const q=String(query||"").trim();
-    let request=db.from("profiles").select("id,username,display_name,bio,avatar_url,created_at").limit(Math.max(1,Math.min(30,Number(limit)||12)));
+    let request=db.from("profiles").select("id,username,display_name,bio,avatar_url,profile_accent,created_at").limit(Math.max(1,Math.min(30,Number(limit)||12)));
     if(q)request=request.or(`username.ilike.%${q}%,display_name.ilike.%${q}%`);
     const {data,error}=await request.order("username",{ascending:true});
     if(error)throw error;
