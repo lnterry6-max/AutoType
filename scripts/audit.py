@@ -116,6 +116,14 @@ def main() -> int:
         else:
             print(proc.stdout.strip())
 
+    post_round_test = ROOT / "scripts" / "test-post-round-crate.cjs"
+    if post_round_test.exists():
+        proc = subprocess.run(["node", str(post_round_test)], capture_output=True, text=True, timeout=20)
+        if proc.returncode:
+            fail("Post-round crate regression failed:\\n" + (proc.stderr.strip() or proc.stdout.strip()), issues)
+        else:
+            print(proc.stdout.strip())
+
     canonical_more = [
         "predictions.html", "leaderboard.html", "how-to.html", "explore.html", "settings.html"
     ]
@@ -196,6 +204,12 @@ def main() -> int:
                     fail("play.html: Surprise Me must lead the mode grid as a full-width Plinko-style tile", issues)
                 if len(re.findall(r'class="mode-tile[^"]*"', mode_grid.group(1))) != 6:
                     fail("play.html: expected six mode selection tiles", issues)
+
+        if page.name == "play.html":
+            for required in ("resultModeCrate", "resultModeCrateMeter",
+                             "resultModeCrateCount", "game.js?v=20261008-result-crate-progress-v1"):
+                if required not in text:
+                    fail(f"play.html: post-round crate feedback missing {required}", issues)
 
         if page.name == "play.html":
             for required_id in (
