@@ -645,6 +645,7 @@ AutoType.ready().then(async()=>{
   const mobileStart=$("mobileStartButton");
   const mobileErase=$("mobileEraseButton");
   const mobileLock=$("mobileLockButton");
+  const mobileClose=$("mobileKeyboardClose");
   const gameArena=document.querySelector("#gameArea .arena");
   // Put the active sentence, guess and *real* input in one compact viewport
   // when iOS/Android raises the virtual keyboard. The fixed stage prevents
@@ -668,6 +669,10 @@ AutoType.ready().then(async()=>{
     mobileStart.textContent="Keyboard ready";
   };
   mobileStart.addEventListener("click",focusMobileInput);
+  mobileClose?.addEventListener("click",()=>{
+    mobileInput.blur();
+    document.body.classList.remove("mobile-keyboard-active");
+  });
   mobileInput.addEventListener("focus",()=>{
     clearTimeout(mobileBlurTimer);
     document.body.classList.add("mobile-keyboard-active");
