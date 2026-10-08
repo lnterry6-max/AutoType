@@ -176,9 +176,30 @@
       categories:["Arena Skins","Game FX"],
       odds:{Common:30,Uncommon:32,Rare:22,Epic:13,Legendary:3}
     },
-    {id:"pixel_supply_pack",name:"Pixel Pop Pack",description:"Guaranteed Pixel Pop banner. See exactly what you'll unlock.",keyCost:1,categories:["Banners"],odds:{},guaranteedItemId:"banner_pixelpop"},
-    {id:"mint_supply_pack",name:"Mint Motion Pack",description:"Guaranteed Mint Flash typing trail.",keyCost:1,categories:["Typing Trails"],odds:{},guaranteedItemId:"trail_mintflash"},
-    {id:"star_supply_pack",name:"Starbound Pack",description:"Guaranteed Cosmic Glow frame.",keyCost:1,categories:["Frames"],odds:{},guaranteedItemId:"frame_cosmicglow"}
+    {
+      id:"neon_nights_crate",
+      name:"Neon Nights Crate",
+      description:"Bright banners, typing trails, and game effects.",
+      keyCost:1,
+      categories:["Banners","Typing Trails","Game FX"],
+      odds:{Common:33,Uncommon:29,Rare:22,Epic:13,Legendary:3}
+    },
+    {
+      id:"cosmic_crate",
+      name:"Cosmic Crate",
+      description:"Cosmic arenas, distinctive titles, and game effects.",
+      keyCost:1,
+      categories:["Titles","Arena Skins","Game FX"],
+      odds:{Common:32,Uncommon:30,Rare:22,Epic:13,Legendary:3}
+    },
+    {
+      id:"color_shuffle_crate",
+      name:"Color Shuffle Crate",
+      description:"A mix of banners, avatar frames, and typing trails.",
+      keyCost:1,
+      categories:["Banners","Frames","Typing Trails"],
+      odds:{Common:33,Uncommon:31,Rare:21,Epic:12,Legendary:3}
+    }
   ];
 
   const defaultTournamentDefs = [
