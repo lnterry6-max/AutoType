@@ -134,12 +134,12 @@ AutoType.ready().then(async()=>{
     if(race){mode="race";predictorMode=race.mode||"context";fixed=true}
   }else if(tournamentId){
     mode="tournament";
-    predictorMode="context";
+    predictorMode="classic";
     fixed=true;
   }
 
   if(mode==="custom"){predictorMode=params.get("predictor")||"classic";fixed=true}
-  if(mode==="daily"){predictorMode="context";fixed=true}
+  if(mode==="daily"){predictorMode="classic";fixed=true}
 
   if(!mode){
     $("modePicker").hidden=false;$("gameArea").hidden=true;return;
