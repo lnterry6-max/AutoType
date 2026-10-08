@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Explore AutoType · All Features</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="styles.css?v=20261008-variety-ux">
+</head>
+<body data-page="explore">
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a class="brand" href="index.html">
+      <span class="brand-logo"><img src="assets/logo.png" alt="AutoType"></span>
+      <span>AutoType</span>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" data-nav="home">Home</a>
+      <a href="play.html" data-nav="play">Play</a>
+      <a href="tournaments.html" data-nav="tournaments">Tournaments</a>
+      <a href="shop.html" data-nav="shop">Shop</a>
+      <a href="friends.html" data-nav="friends">Friends</a>
+      <details class="nav-more">
+        <summary>More</summary>
+        <div class="nav-more-menu">
+          <a href="predictions.html" data-nav="predictions">Prediction Lab</a>
+          <a href="leaderboard.html" data-nav="leaderboard">Leaderboard</a>
+          <a href="how-to.html" data-nav="help">How to Play</a>
+          <a href="settings.html" data-nav="settings">Settings</a>
+        </div>
+      </details>
+    </nav>
+    <div class="nav-spacer"></div>
+    <a class="header-messages-link" data-nav="messages" href="chat.html" aria-label="Messages"><span aria-hidden="true">✉</span><span class="header-messages-text">Messages</span></a>
+    <a class="header-notifications-link" data-nav="notifications" href="notifications.html" aria-label="Notifications"><span aria-hidden="true">🔔</span><span class="header-notifications-text">Alerts</span><span class="nav-notifications-count" hidden></span></a>
+    <a class="header-feedback-link" data-nav="feedback" href="feedback.html">✎ Feedback</a>
+    <div class="nav-currency" id="navCurrency" hidden></div>
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Open navigation">☰</button>
+    <div class="nav-account">
+      <button class="account-button" id="accountMenuButton"></button>
+      <div class="account-dropdown" id="accountDropdown" hidden></div>
+    </div>
+  </div>
+</header>
+<nav class="mobile-nav" id="mobileNav">
+  <a data-nav="feedback" href="feedback.html">Send feedback</a>
+  <a href="index.html">Home</a>
+  <a href="play.html">Play</a>
+  <a href="tournaments.html">Tournaments</a>
+  <a href="shop.html">Shop</a>
+  <a href="friends.html">Friends</a>
+  <a href="chat.html" data-nav="messages">Messages</a>
+  <a href="notifications.html" data-nav="notifications">Notifications</a>
+  <a href="predictions.html">Prediction Lab</a>
+  <a href="leaderboard.html">Leaderboard</a>
+  <a href="how-to.html">How to Play</a>
+  <a href="settings.html">Settings</a>
+</nav>
+
+<main class="container page explore-page">
+  <header class="platform-page-heading">
+    <div><span class="section-kicker">AUTOTYPE DIRECTORY</span><h1>Explore every feature</h1>
+      <p>Everything in one place, organized by what you want to do. You don't need to memorize the navigation menus.</p>
+    </div>
+  </header>
+  <div class="explore-grid">
+    <section class="platform-section">
+      <div class="platform-section-head"><div><span class="section-kicker">PLAY</span><h2>Games and challenges</h2></div></div>
+      <div class="explore-links">
+        <a href="play.html">Typing modes <span>Word, Context, Sentence and Evil</span></a>
+        <a href="play.html?mode=daily">Daily Challenge <span>One shared target each day</span></a>
+        <a href="plinko.html">Plinko Arcade <span>Free ball-drop point challenge</span></a>
+        <a href="create.html">Custom sentences <span>Create and test a sentence</span></a>
+        <a href="tournaments.html">Tournaments <span>Join and track competitive events</span></a>
+      </div>
+    </section>
+    <section class="platform-section">
+      <div class="platform-section-head"><div><span class="section-kicker">FRIENDS</span><h2>Social</h2></div></div>
+      <div class="explore-links">
+        <a href="friends.html">Friends and races <span>Find players and challenge friends</span></a>
+        <a href="chat.html">Messages <span>Friends-only private conversations</span></a>
+        <a href="notifications.html">Notifications <span>Friend requests and unread messages</span></a>
+        <a href="leaderboard.html">Leaderboards <span>Check competitive placements</span></a>
+      </div>
+    </section>
+    <section class="platform-section">
+      <div class="platform-section-head"><div><span class="section-kicker">YOU</span><h2>Progress and customization</h2></div></div>
+      <div class="explore-links">
+        <a href="profile.html">My Profile <span>Avatar, status, badges and showcases</span></a>
+        <a href="achievements.html">Achievements <span>Unlock milestones and rewards</span></a>
+        <a href="stats.html">Statistics <span>See your game performance</span></a>
+        <a href="shop.html">Shop and cosmetics <span>Equip items you've earned</span></a>
+        <a href="settings.html">Settings <span>Accessibility, shortcuts and account options</span></a>
+      </div>
+    </section>
+    <section class="platform-section">
+      <div class="platform-section-head"><div><span class="section-kicker">LEARN</span><h2>Help and ideas</h2></div></div>
+      <div class="explore-links">
+        <a href="how-to.html">How to Play <span>Gameplay, keyboard and scoring guide</span></a>
+        <a href="predictions.html">Prediction Lab <span>Suggest and vote on completions</span></a>
+        <a href="feedback.html">Beta Feedback <span>Report bugs and suggest improvements</span></a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <span>AutoType · Competitive autocomplete typing</span>
+  </div>
+</footer>
+<div class="toast"></div>
+<script src="backend-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="backend.js?v=20261008-variety-ux"></script>
+<script src="core.js?v=20261008-variety-ux"></script>
+
+</body>
+</html>
