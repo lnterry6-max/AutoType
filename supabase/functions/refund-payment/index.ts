@@ -38,7 +38,7 @@ Deno.serve(async(req:Request)=>{
     const {data:role,error:roleError}=await admin.from("user_roles")
       .select("role").eq("user_id",user.id).single();
     if(roleError)throw roleError;
-    if(!["developer","admin"].includes(role.role))return json({error:"Developer access required"},403);
+    if(role.role!=="developer")return json({error:"Developer access required"},403);
 
     const body=await req.json().catch(()=>({}));
     const orderId=String(body.orderId||"");
