@@ -8,6 +8,11 @@ Deno.serve(async(req:Request)=>{
   const stripeKey=Deno.env.get("STRIPE_SECRET_KEY")||"";
   const webhookSecret=Deno.env.get("STRIPE_WEBHOOK_SECRET")||"";
   if(!stripeKey||!webhookSecret)return new Response("Stripe webhook not configured",{status:503});
+  const liveEnabled=(Deno.env.get("STRIPE_LIVE_ENABLED")||"").toLowerCase()==="true";
+  const keyIsLive=stripeKey.startsWith("sk_live_");
+  const keyIsTest=stripeKey.startsWith("sk_test_");
+  if(!keyIsLive&&!keyIsTest)return new Response("Invalid Stripe API key mode",{status:503});
+  if(keyIsLive&&!liveEnabled)return new Response("Live webhook processing is not enabled",{status:503});
 
   const signature=req.headers.get("stripe-signature")||"";
   const body=await req.text();
@@ -20,6 +25,9 @@ Deno.serve(async(req:Request)=>{
   }catch(error){
     console.error("Stripe signature verification failed",error);
     return new Response("Bad signature",{status:400});
+  }
+  if(event.livemode!==keyIsLive){
+    return new Response("Stripe event environment mismatch",{status:400});
   }
 
   try{

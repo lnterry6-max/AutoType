@@ -24,6 +24,11 @@ Deno.serve(async(req:Request)=>{
     const stripeKey=Deno.env.get("STRIPE_SECRET_KEY")||"";
     const liveEnabled=(Deno.env.get("STRIPE_LIVE_ENABLED")||"").toLowerCase()==="true";
     const stripeMode=stripeKey.startsWith("sk_test_")?"test":stripeKey.startsWith("sk_live_")?"live":"off";
+    // Never trust browser-supplied return URLs for live checkout.
+    // The custom domain must have HTTPS before live payments can be enabled.
+    const liveOrigins=new Set(["https://auto-type.net","https://www.auto-type.net"]);
+    const requestOrigin=req.headers.get("origin")||"";
+    const permittedLiveOrigin=liveOrigins.has(requestOrigin);
 
     const userClient=createClient(url,anon,{global:{headers:{Authorization:auth}}});
     const token=auth.replace("Bearer ","");
@@ -32,7 +37,7 @@ Deno.serve(async(req:Request)=>{
 
     const body=await req.json().catch(()=>({}));
     if(body.action==="status"){
-      const configured=!!stripeKey&&(stripeMode==="test"||(stripeMode==="live"&&liveEnabled));
+      const configured=!!stripeKey&&(stripeMode==="test"||(stripeMode==="live"&&liveEnabled&&permittedLiveOrigin));
       return json({configured,mode:stripeMode,liveEnabled});
     }
     if(!stripeKey)return json({error:"Stripe test payments are not configured yet."},503);
@@ -40,14 +45,26 @@ Deno.serve(async(req:Request)=>{
       return json({error:"Live Stripe payments are locked until STRIPE_LIVE_ENABLED=true is set on the server."},503);
     }
     if(stripeMode==="off")return json({error:"Stripe secret key format is not recognized."},503);
+    if(stripeMode==="live"&&!permittedLiveOrigin){
+      return json({error:"Live payments require the secure AutoType website."},403);
+    }
 
     const packId=String(body.packId||"");
     const returnBase=String(body.returnBase||"");
-    const requestOrigin=req.headers.get("origin")||"";
     let base:URL;
     try{base=new URL(returnBase)}catch{return json({error:"Invalid return URL"},400)}
     if(!["http:","https:"].includes(base.protocol))return json({error:"Invalid return URL"},400);
     if(requestOrigin&&base.origin!==requestOrigin)return json({error:"Return URL origin mismatch"},400);
+    if(stripeMode==="live"&&(
+      base.protocol!=="https:"||
+      !liveOrigins.has(base.origin)||
+      base.origin!==requestOrigin||
+      base.pathname!=="/"||
+      base.username!==""||base.password!==""||
+      base.search!==""||base.hash!==""
+    )){
+      return json({error:"Live checkout must return to the AutoType HTTPS root."},400);
+    }
 
     const admin=createClient(url,service,{auth:{autoRefreshToken:false,persistSession:false}});
     const {data:order,error:orderError}=await admin.rpc("autotype_create_payment_order",{p_user:user.id,p_pack:packId});
