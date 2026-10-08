@@ -7,7 +7,8 @@
   const avatarPalette = ["#3b82c4","#a35d6a","#4a9b78","#8a6fc0","#c17a45","#697582","#3f8f9d","#9a7248"];
 
   const defaultProfile = {
-    bestScore:0, rounds:0, words:0, erased:0, bestStreak:0, fastest:null,
+    bestScore:0, rounds:0, modeRounds:{classic:0,context:0,sentence:0,evil:0},
+    words:0, erased:0, bestStreak:0, fastest:null,
     bestErasedRound:0, mindReaderCount:0, perfectRounds:0,
     totalKeys:0, totalErrors:0, totalScore:0,
     achievements:{mindReader:false,backspaceWarrior:false,perfectRead:false,marathon:false,century:false,comboKing:false},
@@ -44,7 +45,8 @@
       predictor:"predictor_default",
       result:"result_default"
     },
-    claims:{}
+    claims:{},
+    modeDropClaims:{classic:0,context:0,sentence:0,evil:0}
   };
 
   const shopCatalog = [
@@ -276,6 +278,7 @@
     s.guestProfile={...clone(defaultProfile),...(s.guestProfile||{})};
     s.guestProfile.achievements={...defaultProfile.achievements,...(s.guestProfile.achievements||{})};
     s.guestProfile.daily=s.guestProfile.daily||{};
+    s.guestProfile.modeRounds={...defaultProfile.modeRounds,...(s.guestProfile.modeRounds||{})};
     s.guestSettings={...clone(defaultSettings),...(s.guestSettings||{})};
     s.races=Array.isArray(s.races)?s.races:[];
     s.suggestions=Array.isArray(s.suggestions)?s.suggestions:[];
@@ -337,6 +340,7 @@
       a.profile={...clone(defaultProfile),...(a.profile||{})};
       a.profile.achievements={...defaultProfile.achievements,...(a.profile.achievements||{})};
       a.profile.daily=a.profile.daily||{};
+      a.profile.modeRounds={...defaultProfile.modeRounds,...(a.profile.modeRounds||{})};
       a.settings={...clone(defaultSettings),...(a.settings||{})};
       a.avatarImage=a.avatarImage||"";
       a.displayName=a.displayName||a.username;
@@ -531,8 +535,9 @@
     const crate=crateDefinition(crateId);
     if(!crate)throw new Error("Crate not found.");
     if(crate.roundsPerDrop){
-      const verifiedEquivalent=Math.max(0,Number(a.profile?.rounds||0));
-      const claimed=Math.max(0,Number(a.wallet.freeDropClaims||0));
+      const crateMode=crate.gameMode;
+      const verifiedEquivalent=Math.max(0,Number(a.profile?.modeRounds?.[crateMode]||0));
+      const claimed=Math.max(0,Number(a.wallet?.modeDropClaims?.[crateMode]||0));
       if(verifiedEquivalent<(claimed+1)*crate.roundsPerDrop){
         const remaining=Math.max(0,(claimed+1)*crate.roundsPerDrop-verifiedEquivalent);
         throw new Error("Complete "+remaining+" more round"+(remaining===1?"":"s")+" to unlock a free crate.");
@@ -559,7 +564,9 @@
 
     a.wallet.crateKeys-=crate.keyCost;
     if(crate.roundsPerDrop){
-      a.wallet.freeDropClaims=Math.max(0,Number(a.wallet.freeDropClaims||0))+1;
+      a.wallet.modeDropClaims={...defaultWallet.modeDropClaims,...(a.wallet.modeDropClaims||{})};
+      a.wallet.modeDropClaims[crate.gameMode]=
+        Math.max(0,Number(a.wallet.modeDropClaims[crate.gameMode]||0))+1;
     }
     let duplicate=false,compensation=0;
     if(a.wallet.owned.includes(item.id)){

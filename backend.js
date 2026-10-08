@@ -669,19 +669,24 @@
     const db=getClient();
     const current=await user();
     if(!db||!current)throw new Error("Sign in to sync verified crate progress.");
-    const [roundsResult,claimsResult]=await Promise.all([
-      db.from("round_results").select("id",{count:"exact",head:true})
-        .eq("user_id",current.id).eq("verified",true),
-      db.from("economy_transactions").select("id",{count:"exact",head:true})
-        .eq("user_id",current.id).eq("kind","crate_open")
-        .eq("metadata->>free_drop","true")
-    ]);
-    if(roundsResult.error)throw roundsResult.error;
-    if(claimsResult.error)throw claimsResult.error;
-    const rounds=Math.max(0,Number(roundsResult.count||0));
-    const claimed=Math.max(0,Number(claimsResult.count||0));
-    // Only unspent verified rounds count; the displayed numerator may exceed five.
-    return {rounds,claimed,remaining:Math.max(0,rounds-claimed*5)};
+    const modes=["classic","context","sentence","evil"];
+    // Only purchases tagged with the actual game mode spend that mode's rounds.
+    // Historical untagged claims predate separate mode balances and remain preserved.
+    const results=await Promise.all(modes.map(async mode=>{
+      const [roundResult,claimResult]=await Promise.all([
+        db.from("round_results").select("id",{count:"exact",head:true})
+          .eq("user_id",current.id).eq("verified",true).eq("mode",mode),
+        db.from("economy_transactions").select("id",{count:"exact",head:true})
+          .eq("user_id",current.id).eq("kind","crate_open")
+          .eq("metadata->>free_drop","true").eq("metadata->>mode",mode)
+      ]);
+      if(roundResult.error)throw roundResult.error;
+      if(claimResult.error)throw claimResult.error;
+      const rounds=Math.max(0,Number(roundResult.count||0));
+      const claimed=Math.max(0,Number(claimResult.count||0));
+      return [mode,{rounds,claimed,remaining:Math.max(0,rounds-claimed*5)}];
+    }));
+    return Object.fromEntries(results);
   }
   async function openCrate(crateId){return api("open_crate",{crateId})}
   async function equipItem(itemId){return api("equip_item",{itemId})}
