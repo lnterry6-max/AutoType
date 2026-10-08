@@ -116,7 +116,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
     function onlinePersonRow(profile,actions=""){
       const x=asPerson(profile);
       return `<div class="list-row friend-row">
-        <div class="person">${AutoType.avatarMarkup(x,"avatar")}<div class="person-copy"><strong>${AutoType.escapeHTML(AutoType.accountName(x))}</strong><span>${AutoType.escapeHTML(x.bio||`@${x.username}`)}</span></div></div>
+        <a class="person player-profile-link" href="player.html?u=${encodeURIComponent(x.username)}">${AutoType.avatarMarkup(x,"avatar")}<div class="person-copy"><strong>${AutoType.escapeHTML(AutoType.accountName(x))}</strong><span>${AutoType.escapeHTML(x.bio||`@${x.username}`)}</span></div></a>
         <div class="friend-actions">${actions}</div>
       </div>`;
     }
