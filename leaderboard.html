@@ -131,7 +131,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
       const level=AutoType.levelInfo(a.profile).level;
       return `<div class="leaderboard-row ${current.supabaseUserId===row.user_id?"me":""}">
         <span class="rank">${rank}</span>
-        <span class="leader-person">${AutoType.avatarMarkup(a,"avatar")}<span><strong>${AutoType.escapeHTML(AutoType.accountName(a))}</strong><small>LV ${level}</small></span></span>
+        <a class="leader-person player-profile-link" href="player.html?u=${encodeURIComponent(a.username)}">${AutoType.avatarMarkup(a,"avatar")}<span><strong>${AutoType.escapeHTML(AutoType.accountName(a))}</strong><small>LV ${level}</small></span></a>
         <strong class="leader-score">${Number(score||0).toLocaleString()}</strong>
       </div>`;
     }
