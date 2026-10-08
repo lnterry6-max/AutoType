@@ -665,6 +665,24 @@
   async function recordRound(payload){return api("round_complete",payload)}
   async function purchaseItem(itemId){return api("purchase_item",{itemId})}
   async function purchaseCollection(collectionId){return api("purchase_collection",{collectionId})}
+  async function freeCrateProgress(){
+    const db=getClient();
+    const current=await user();
+    if(!db||!current)throw new Error("Sign in to sync verified crate progress.");
+    const [roundsResult,claimsResult]=await Promise.all([
+      db.from("round_results").select("id",{count:"exact",head:true})
+        .eq("user_id",current.id).eq("verified",true),
+      db.from("economy_transactions").select("id",{count:"exact",head:true})
+        .eq("user_id",current.id).eq("kind","crate_open")
+        .eq("metadata->>free_drop","true")
+    ]);
+    if(roundsResult.error)throw roundsResult.error;
+    if(claimsResult.error)throw claimsResult.error;
+    const rounds=Math.max(0,Number(roundsResult.count||0));
+    const claimed=Math.max(0,Number(claimsResult.count||0));
+    // Only unspent verified rounds count; the displayed numerator may exceed five.
+    return {rounds,claimed,remaining:Math.max(0,rounds-claimed*5)};
+  }
   async function openCrate(crateId){return api("open_crate",{crateId})}
   async function equipItem(itemId){return api("equip_item",{itemId})}
   async function equipCollection(collectionId){return api("equip_collection",{collectionId})}
@@ -1087,6 +1105,7 @@
     purchaseItem,
     purchaseCollection,
     openCrate,
+    freeCrateProgress,
     equipItem,
     equipCollection,
     setSecurityQuestion,
