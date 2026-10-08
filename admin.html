@@ -78,6 +78,7 @@
       <a href="#announcement">Announcement</a>
       <a href="#moderation">Prediction Lab</a>
       <a href="#feedback">Feedback</a>
+      <a href="#playerReports">Player Reports</a>
       <a href="#data">Data</a>
     </nav>
 
@@ -146,6 +147,14 @@
       <div class="admin-feedback-list" id="adminFeedbackList"><div class="empty">Loading reports…</div></div>
     </section>
 
+    <section class="admin-section" id="playerReports">
+      <div class="admin-section-head">
+        <div><span class="section-kicker">MODERATION</span><h2>Player reports</h2></div>
+        <button class="button button-secondary" id="refreshPlayerReports" type="button">Refresh reports</button>
+      </div>
+      <div class="admin-feedback-list" id="playerReportsList"><div class="empty">Loading reports…</div></div>
+    </section>
+
     <section class="admin-section" id="data">
       <div class="admin-section-head"><div><span class="section-kicker">DATA</span><h2>Backup</h2></div></div>
       <button class="button button-secondary" id="exportBackupButton">Export JSON backup</button>
@@ -188,6 +197,8 @@ document.addEventListener("DOMContentLoaded",async()=>{
     let snapshot=null;
     let feedbackReports=[];
     let feedbackError="";
+    let playerReports=[];
+    let playerReportsError="";
 
     const byId=(list,key="id")=>Object.fromEntries((list||[]).map(x=>[x[key],x]));
 
@@ -596,6 +607,42 @@ document.addEventListener("DOMContentLoaded",async()=>{
 
     document.querySelector("#refreshFeedbackButton")?.addEventListener("click",refreshBetaFeedback);
 
+
+    function renderPlayerReports(){
+      const list=document.querySelector("#playerReportsList");
+      if(!list)return;
+      list.replaceChildren();
+      if(playerReportsError){const item=document.createElement("p");item.className="empty";item.textContent=playerReportsError;list.appendChild(item);return;}
+      if(!playerReports.length){const item=document.createElement("div");item.className="empty";item.textContent="No player reports yet.";list.appendChild(item);return;}
+      const profiles=maps().profiles;
+      for(const report of playerReports){
+        const tile=document.createElement("article");tile.className="admin-feedback-item";
+        const head=document.createElement("strong");
+        const reporter=profiles[report.reporter_id]?.username||"Player";
+        const target=profiles[report.reported_user_id]?.username||"Player";
+        head.textContent="@"+reporter+" reported @"+target+" · "+report.reason;
+        const note=document.createElement("small");note.textContent=new Date(report.created_at).toLocaleString();
+        const detail=document.createElement("p");detail.className="admin-feedback-message";detail.textContent=report.details;
+        const label=document.createElement("label");label.className="admin-feedback-control";label.textContent="Status ";
+        const select=document.createElement("select");select.className="select";select.setAttribute("aria-label","Player report status");
+        for(const name of ["new","reviewed","resolved"]){const op=document.createElement("option");op.value=name;op.textContent=name[0].toUpperCase()+name.slice(1);select.appendChild(op);}
+        select.value=report.status;
+        select.addEventListener("change",async()=>{
+          const previous=report.status;select.disabled=true;
+          try{await AutoTypeBackend.updatePlayerReportStatus(report.id,select.value);report.status=select.value;AutoType.toast("Report status saved.");}
+          catch(error){select.value=previous;AutoType.toast(error.message||"Could not update report");}
+          finally{select.disabled=false;}
+        });
+        label.appendChild(select);tile.append(head,note,detail,label);list.appendChild(tile);
+      }
+    }
+    async function refreshPlayerReports(){
+      try{playerReports=await AutoTypeBackend.playerReportsInbox();playerReportsError="";}
+      catch(error){playerReports=[];playerReportsError=error.message||"Unable to load reports";}
+      renderPlayerReports();
+    }
+    document.querySelector("#refreshPlayerReports")?.addEventListener("click",refreshPlayerReports);
+
     function renderOnlineAll(){
       renderOnlineMetrics();
       renderOnlineTournaments();
@@ -604,11 +651,12 @@ document.addEventListener("DOMContentLoaded",async()=>{
       renderOnlineAnnouncement();
       renderOnlineSuggestions();
       renderBetaFeedback();
+      renderPlayerReports();
     }
 
     async function refreshOnlineAdmin(){
       await loadSnapshot();
-      await refreshBetaFeedback();
+      await Promise.all([refreshBetaFeedback(),refreshPlayerReports()]);
       renderOnlineAll();
     }
 
