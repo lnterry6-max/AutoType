@@ -110,7 +110,7 @@ def main() -> int:
     ]
     special_pages = {"404.html", "backend-test.html"}
     # Daily Mix CSS must be cache-busted on both screens when its layout changes.
-    mix_stylesheet_version = "styles.css?v=20261008-daily-mix-v2"
+    mix_stylesheet_version = "styles.css?v=20261008-integrity-1"
     mix_script_version = "daily-mix.js?v=20261008-daily-mix-v2"
 
     for page in html_files:
@@ -157,7 +157,7 @@ def main() -> int:
         if page.name == "shop.html":
             for required in (
                 'shop-rotation.js?v=20261008-et-limited',
-                'styles.css?v=20261008-et-limited',
+                'styles.css?v=20261008-integrity-1',
                 'id="shopDailyGrid"', 'id="shopRotationClock"',
                 'href="profile.html#inventory"',
             ):
@@ -182,16 +182,41 @@ def main() -> int:
 
         if page.name == "profile.html":
             for expected in ('id="inventory"', 'inventoryAccordion.open=true',
-                             'styles.css?v=20261008-profile-accordion'):
+                             'styles.css?v=20261008-integrity-1'):
                 if expected not in text:
                     fail(f"profile.html: missing inventory accordion detail {expected}", issues)
             if 'id="developerPanel"' in text:
                 fail("Developer controls must live in Admin Console, not Profile", issues)
         if page.name == "admin.html":
-            if 'backend.js?v=20261008-admin-levels' not in text:
+            if 'backend.js?v=20261008-integrity-1' not in text:
                 fail("Admin level code is not cache-busted", issues)
             if 'achievements:m.achievements[profile.id]||{}' not in text:
                 fail("Admin player levels are ignoring achievements", issues)
+
+        # Keep all pages on the same live JS/CSS build, rather than silently
+        # mixing old cached components with new HTML markup.
+        for pattern in (r'href="styles\\.css\\?v=([^"]+)"',
+                        r'src="core\\.js\\?v=([^"]+)"',
+                        r'src="backend\\.js\\?v=([^"]+)"'):
+            match = re.search(pattern, text)
+            if match and match.group(1) != "20261008-integrity-1":
+                fail(f"{page.name}: stale shared asset build {match.group(0)}", issues)
+
+        # Check cross-page fragment targets, including Inventory deep links.
+        for ref in parser.refs:
+            if ".html#" not in ref or ref.startswith(("http://", "https://")):
+                continue
+            target_path, fragment = ref.split("#", 1)
+            target_path = target_path.split("?", 1)[0]
+            if (target_path,fragment) == ("shop.html","crates"):
+                continue  # JS-driven shop tab supports this hash without a static id.
+            if not target_path or not fragment:
+                continue
+            target_file = ROOT / target_path
+            if target_file.is_file():
+                target_html = target_file.read_text(encoding="utf-8")
+                if not re.search(r'\\bid=["\\\']'+re.escape(fragment)+r'["\\\']',target_html):
+                    fail(f"{page.name}: broken fragment link {ref}", issues)
 
         duplicates = sorted({value for value in parser.ids if parser.ids.count(value) > 1})
         if duplicates:
