@@ -3590,3 +3590,24 @@ body.high-contrast .help,body.high-contrast .eyebrow,body.high-contrast .label{
   .crate-rounds-meter{width:100%}
   .crate-rounds-meter span{text-align:left}
 }
+
+
+/* Separate mode-specific free crate progress, never a shared rounds wallet. */
+.crate-rounds-panel{align-items:flex-start}
+.crate-rounds-copy{flex:1;min-width:190px}
+.crate-rounds-copy strong{font-size:17px}
+.crate-mode-progress-grid{flex:2;min-width:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.crate-mode-progress-item{display:flex;flex-direction:column;gap:6px;padding:12px;background:rgba(0,0,0,.16);border:1px solid var(--border);border-radius:8px;min-width:0}
+.crate-mode-progress-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.crate-mode-progress-head strong{font-size:12px;font-weight:800}
+.crate-mode-progress-head span{font-size:10px;color:#96d5ef}
+.crate-mode-progress-amount{font-size:17px;font-weight:850;font-variant-numeric:tabular-nums}
+.crate-mode-progress-amount small,.crate-mode-progress-item>small{font-size:10px;color:var(--muted);font-weight:500}
+.crate-mode-progress-item progress,.crate-card-round-progress progress{display:block;width:100%;height:7px;appearance:none;-webkit-appearance:none;border:0;border-radius:5px;overflow:hidden;background:#16202a}
+.crate-mode-progress-item progress::-webkit-progress-bar,.crate-card-round-progress progress::-webkit-progress-bar{background:#16202a;border-radius:5px}
+.crate-mode-progress-item progress::-webkit-progress-value,.crate-card-round-progress progress::-webkit-progress-value{background:#6abfd9;border-radius:5px}
+.crate-mode-progress-item progress::-moz-progress-bar,.crate-card-round-progress progress::-moz-progress-bar{background:#6abfd9;border-radius:5px}
+.crate-card-round-progress{display:flex;flex-direction:column;gap:7px;margin:11px 0 4px;padding:10px;border-radius:7px;border:1px solid var(--border);background:rgba(0,0,0,.12)}
+.crate-card-round-progress strong{font-size:11px;color:#b5e7f8;font-variant-numeric:tabular-nums}
+@media(max-width:760px){.crate-mode-progress-grid{width:100%;flex:none}}
+@media(max-width:440px){.crate-mode-progress-grid{grid-template-columns:1fr 1fr}.crate-mode-progress-item{padding:9px}.crate-mode-progress-amount{font-size:15px}}
