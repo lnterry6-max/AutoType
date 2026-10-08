@@ -3502,3 +3502,18 @@ body.high-contrast .help,body.high-contrast .eyebrow,body.high-contrast .label{
 .inventory-accordion-body{margin-top:17px;border-top:1px solid var(--border);padding-top:15px}
 .inventory-quicklinks{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;font-size:11px;color:var(--muted)}
 @media(max-width:580px){.inventory-quicklinks{flex-direction:column;align-items:flex-start}.inventory-accordion-summary strong{font-size:15px}}
+
+
+/* Guaranteed, fixed-content cosmetic supply packs. */
+.fixed-pack-card{border-color:color-mix(in srgb,var(--rarity) 37%,var(--border));}
+.fixed-pack-art{
+  display:grid;place-items:center;min-height:110px;
+  background:linear-gradient(155deg,#26343c,#242930);border:1px solid var(--border);
+  border-radius:8px;margin-bottom:11px;padding:12px;overflow:hidden
+}
+.fixed-pack-art>div{max-width:100%;width:100%}
+.fixed-pack-label{font-size:9px;font-weight:850;letter-spacing:.07em;color:#a8d8be}
+.fixed-pack-contents{margin-top:auto;margin-bottom:11px;padding:9px;border:1px solid var(--border);border-radius:7px;background:var(--surface-2)}
+.fixed-pack-contents span,.fixed-pack-contents small{display:block;font-size:10px;color:var(--muted)}
+.fixed-pack-contents strong{display:block;margin:4px 0;font-size:13px}
+.shop-fixed-pack-note{color:var(--muted);font-size:11px;line-height:1.5;margin:0 0 13px}
