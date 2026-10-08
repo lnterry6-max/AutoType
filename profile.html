@@ -70,6 +70,7 @@
     <div>
       <span class="profile-equipped-title" id="profileEquippedTitle"></span>
       <h1 id="profileTitle">Guest</h1>
+      <div class="public-role-badges" id="myProfileBadges" aria-label="My role badges"></div>
     </div>
     <div class="profile-wallet" id="profileWallet" hidden></div>
   </section>
@@ -174,6 +175,16 @@ document.addEventListener("DOMContentLoaded",async()=>{
   profileTitle.textContent=AutoType.accountName(target);displayName.value=target.displayName||"Guest";bio.value=target.bio||"";bioCount.textContent=bio.value.length;
 
   if(a){
+    if(a.online&&a.supabaseUserId){
+      AutoTypeBackend.publicBadgesFor(a.supabaseUserId).then(badges=>{
+        const list=document.querySelector("#myProfileBadges");list.replaceChildren();
+        for(const badge of badges){
+          const item=document.createElement("span");item.className="user-role-badge";
+          item.textContent=badge.name;item.style.setProperty("--badge-color",badge.color);
+          list.appendChild(item);
+        }
+      }).catch(error=>console.warn("Could not load profile roles:",error));
+    }
     let wallet=AutoType.currentWallet();
     const banner=AutoType.equippedItem("banner",a);
     const title=AutoType.equippedItem("title",a);
