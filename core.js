@@ -178,30 +178,43 @@
     },
     {
       id:"neon_nights_crate",
-      name:"Neon Nights Crate",
-      description:"Bright banners, typing trails, and game effects.",
-      keyCost:0,
-      roundsPerDrop:5,
-      categories:["Banners","Typing Trails","Game FX"],
+      name:"Word Mode Crate",
+      description:"Neon-themed surprises inspired by Classic Word Mode.",
+      gameMode:"classic",
+      modeLabel:"WORD MODE",
+      keyCost:0,roundsPerDrop:5,
+      categories:["Titles","Banners","Frames"],
       odds:{Common:33,Uncommon:29,Rare:22,Epic:13,Legendary:3}
     },
     {
       id:"cosmic_crate",
-      name:"Cosmic Crate",
-      description:"Cosmic arenas, distinctive titles, and game effects.",
-      keyCost:0,
-      roundsPerDrop:5,
+      name:"Context Mode Crate",
+      description:"Cosmic arenas and game effects inspired by contextual predictions.",
+      gameMode:"context",
+      modeLabel:"CONTEXT MODE",
+      keyCost:0,roundsPerDrop:5,
       categories:["Titles","Arena Skins","Game FX"],
       odds:{Common:32,Uncommon:30,Rare:22,Epic:13,Legendary:3}
     },
     {
       id:"color_shuffle_crate",
-      name:"Color Shuffle Crate",
-      description:"A mix of banners, avatar frames, and typing trails.",
-      keyCost:0,
-      roundsPerDrop:5,
+      name:"Sentence Mode Crate",
+      description:"Colorful banners, frames, and trails inspired by sentence play.",
+      gameMode:"sentence",
+      modeLabel:"SENTENCE MODE",
+      keyCost:0,roundsPerDrop:5,
       categories:["Banners","Frames","Typing Trails"],
       odds:{Common:33,Uncommon:31,Rare:21,Epic:12,Legendary:3}
+    },
+    {
+      id:"evil_glitch_crate",
+      name:"Evil Mode Crate",
+      description:"Glitched effects and flashy colors inspired by Evil Mode.",
+      gameMode:"evil",
+      modeLabel:"EVIL MODE",
+      keyCost:0,roundsPerDrop:5,
+      categories:["Banners","Typing Trails","Game FX"],
+      odds:{Common:33,Uncommon:29,Rare:22,Epic:13,Legendary:3}
     }
   ];
 
@@ -521,7 +534,8 @@
       const verifiedEquivalent=Math.max(0,Number(a.profile?.rounds||0));
       const claimed=Math.max(0,Number(a.wallet.freeDropClaims||0));
       if(verifiedEquivalent<(claimed+1)*crate.roundsPerDrop){
-        throw new Error("Finish "+crate.roundsPerDrop+" more rounds toward each free surprise drop.");
+        const remaining=Math.max(0,(claimed+1)*crate.roundsPerDrop-verifiedEquivalent);
+        throw new Error("Complete "+remaining+" more round"+(remaining===1?"":"s")+" to unlock a free crate.");
       }
     }else if((a.wallet.crateKeys||0)<crate.keyCost){
       throw new Error("You need an earned Crate Token.");
