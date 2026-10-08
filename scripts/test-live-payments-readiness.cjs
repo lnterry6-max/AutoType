@@ -25,7 +25,7 @@ assert.match(webhook,/autotype_apply_stripe_refund/);
 assert.match(webhook,/autotype_apply_stripe_dispute/);
 assert.match(browser,/AUTOTYPE_FRIENDS_BETA=true/);
 assert.match(shop,/Coin-pack checkout is disabled during testing/);
-assert.match(docs,/must have a valid TLS certificate/);
+assert.match(docs,/has a valid TLS certificate/);
 assert.match(docs,/adult representative/);
 assert.match(docs,/Never allow real money or purchased coins to enter randomized reward crates/);
 for(const input of [checkout,webhook,browser]){
