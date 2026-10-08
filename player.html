@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Player · AutoType</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="styles.css?v=20261008-scoped-roles">
+<link rel="stylesheet" href="styles.css?v=20261008-personalization">
 </head>
 <body data-page="player">
 <header class="topbar">
@@ -118,8 +118,8 @@
 <div class="toast"></div>
 <script src="backend-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="backend.js?v=20261008-scoped-roles"></script>
-<script src="core.js?v=20261008-scoped-roles"></script>
+<script src="backend.js?v=20261008-personalization"></script>
+<script src="core.js?v=20261008-personalization"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded",async()=>{
@@ -142,6 +142,8 @@ document.addEventListener("DOMContentLoaded",async()=>{
       AutoTypeBackend.publicBadgesFor(profile.id)
     ]);
     $("playerView").hidden=false;
+    const accent=/^#[0-9a-f]{6}$/i.test(profile.profile_accent||"")?profile.profile_accent:"#4BA6D8";
+    document.querySelector(".player-hero")?.style.setProperty("--profile-accent",accent);
     $("playerName").textContent=profile.display_name||profile.username;
     $("playerHandle").textContent="@"+profile.username;
     $("playerBio").textContent=profile.bio||"No bio yet.";
