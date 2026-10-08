@@ -293,8 +293,14 @@ AutoType.ready().then(async()=>{
     $("target").innerHTML=words.map((w,i)=>`<span class="${i<index?"done":i===index?"current":"future"}">${AutoType.escapeHTML(w)}</span>`).join(" ");
     $("score").textContent=score;$("streak").textContent=streak;$("keys").textContent=keyCount;
     $("erasedCount").textContent=erased;
-    $("comboBadge").hidden=streak<2;
-    $("comboBadge").textContent=`Combo ×${Math.max(streak,2)}`;
+    const upcomingStreakBonus=Math.min(streak*5,30);
+    const activeClueCount=Math.max(1,cluesThisWord);
+    const currentBasePoints=Math.max(20,120-(activeClueCount-1)*20);
+    $("comboBadge").hidden=streak<1;
+    $("comboBadge").textContent="Streak bonus: +"+upcomingStreakBonus;
+    $("scoreNextWord").textContent="Current word: "+currentBasePoints+" base + "+upcomingStreakBonus+" streak";
+    $("keyboardHint").textContent=(settings.confirmKey==="Enter"?"ENTER":"SPACE")+" lock · "+
+      (settings.eraseKey==="Delete"?"DELETE":"BACKSPACE")+" erase";
     $("wordCount").textContent=`${Math.min(index+1,words.length)} / ${words.length}`;
     $("progress").style.width=`${index/words.length*100}%`;
     $("typedPrefix").textContent=prefix||"_";
@@ -317,7 +323,7 @@ AutoType.ready().then(async()=>{
 
       if(g===targetWord){
         $("guess").classList.add("guess-correct");
-        $("message").textContent=`Matched “${g}”. Press Space or Enter to lock it.`;
+        $("message").textContent=`Matched “${g}”. Press ${settings.confirmKey==="Enter"?"Enter":"Space"} to lock it, or tap Lock word.`;
         $("message").className="message good";
       }else if(wrongAI>0){
         const saved=correctAI>0?` AutoType got ${correctAI} next letter${correctAI===1?"":"s"} right—keep ${correctAI===1?"it":"them"}.`:"";
@@ -344,6 +350,9 @@ AutoType.ready().then(async()=>{
     sentence=newSentence;words=sentence.split(" ");index=0;prefix="";visible="";score=0;streak=0;maxStreak=0;keyCount=0;erased=0;errors=0;clueCounts=[];
     cluesThisWord=0;recentGuesses=[];justKeptAI=0;
     $("time").textContent="0:00";$("results").hidden=true;
+    $("mobileGameControls").hidden=false;
+    $("mobileTypingInput").value="";
+    $("mobileStartButton").textContent="Tap to start typing ⌨";
     if($("verifiedResult"))$("verifiedResult").hidden=true;
     render()
   }
@@ -597,7 +606,79 @@ AutoType.ready().then(async()=>{
 
     $("results").hidden=false;
     $("progress").style.width="100%";
+    $("mobileGameControls").hidden=true;
+    $("mobileTypingInput").blur();
   }
+
+  // A real, visible text input is required to summon iOS/Android virtual keyboards.
+  // Mobile keyboards cannot be opened reliably without a direct user gesture.
+  const mobileInput=$("mobileTypingInput");
+  const mobileStart=$("mobileStartButton");
+  const mobileErase=$("mobileEraseButton");
+  const mobileLock=$("mobileLockButton");
+  const gameArena=document.querySelector("#gameArea .arena");
+  const focusMobileInput=()=>{
+    if(!$("results").hidden)return;
+    mobileInput.focus({preventScroll:true});
+    mobileStart.textContent="Keyboard ready · type a clue";
+  };
+  mobileStart.addEventListener("click",focusMobileInput);
+  mobileInput.addEventListener("focus",()=>{
+    mobileStart.textContent="Keyboard ready · type a clue";
+  });
+  mobileInput.addEventListener("blur",()=>{
+    mobileStart.textContent="Tap to open keyboard ⌨";
+  });
+  gameArena.addEventListener("click",e=>{
+    if(e.target.closest("button,input,textarea,select,a,summary,details"))return;
+    if(matchMedia("(pointer:coarse)").matches)focusMobileInput();
+  });
+  mobileErase.addEventListener("click",()=>{
+    backspace();
+    focusMobileInput();
+  });
+  mobileLock.addEventListener("click",()=>{
+    lock();
+    if($("results").hidden)focusMobileInput();
+  });
+  let mobileComposing=false;
+  function handleMobileText(raw){
+    if(!$("results").hidden)return;
+    for(const char of raw){
+      if(char===" "||char==="\\n"){lock();continue;}
+      if(/^[a-zA-Z']$/.test(char)||char==="’"){
+        typeLetter(char==="’"?"'":char);
+      }
+      if(!$("results").hidden)break;
+    }
+  }
+  // Keep the input empty: typing is processed by the existing game state machine.
+  // Avoid iOS autocorrection and accidental whole-sentence paste.
+  mobileInput.addEventListener("beforeinput",e=>{
+    if(e.inputType==="insertFromPaste"||e.inputType==="insertFromDrop"){
+      e.preventDefault();mobileInput.value="";
+      return;
+    }
+    if(e.inputType?.startsWith("delete")){
+      e.preventDefault();backspace();
+    }
+  });
+  mobileInput.addEventListener("keydown",e=>{
+    if(e.key==="Backspace"||e.key==="Delete"){e.preventDefault();backspace();}
+    if(e.key==="Enter"||e.key===" "){e.preventDefault();lock();}
+  });
+  mobileInput.addEventListener("compositionstart",()=>{mobileComposing=true;});
+  mobileInput.addEventListener("compositionend",()=>{
+    mobileComposing=false;
+    const typed=mobileInput.value;mobileInput.value="";
+    handleMobileText(typed);
+  });
+  mobileInput.addEventListener("input",e=>{
+    if(mobileComposing||e.isComposing)return;
+    const typed=mobileInput.value;mobileInput.value="";
+    if(e.inputType==="insertFromPaste"||e.inputType==="insertFromDrop")return;
+    handleMobileText(typed);
+  });
 
   const confirmKey=settings.confirmKey==="Enter"?"Enter":" ";
   const eraseKey=settings.eraseKey==="Delete"?"Delete":"Backspace";
