@@ -209,7 +209,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
 
       friendsList.innerHTML=social.friends.length?social.friends.map(x=>onlinePersonRow(
         x,
-        `<button class="button button-secondary" data-online-race="${x.id}">Race</button><button class="button button-quiet" data-online-remove="${x.id}">Remove</button>`
+        `<a class="button button-primary" href="chat.html?u=${encodeURIComponent(x.username)}">Message</a><button class="button button-secondary" data-online-race="${x.id}">Race</button><button class="button button-quiet" data-online-remove="${x.id}">Remove</button>`
       )).join(""):`<div class="empty">No friends yet.</div>`;
 
       friendsList.querySelectorAll("[data-online-remove]").forEach(b=>b.addEventListener("click",async()=>{
