@@ -21,7 +21,9 @@
     backgroundColor:"#1f2328",
     backgroundImage:"",
     backgroundDim:64,
-    backgroundLuminance:null
+    backgroundLuminance:null,
+    highContrast:false,
+    textScale:100
   };
 
   const defaultWallet = {
@@ -979,6 +981,9 @@
     document.body.classList.toggle("theme-dark",!useLightUI);
     document.body.classList.toggle("reduced-motion",!!s.reducedFx);
     document.body.classList.toggle("animations-off",s.animations===false);
+    document.body.classList.toggle("high-contrast",!!s.highContrast);
+    const scale=[100,115,130].includes(Number(s.textScale))?Number(s.textScale):100;
+    document.documentElement.style.setProperty("--ui-zoom",String(scale)+"%");
 
     const cursor=equippedItem("cursor",account);
     const predictor=equippedItem("predictor",account);
