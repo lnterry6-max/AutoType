@@ -85,13 +85,25 @@
         <div><span>A–Z</span><strong>Type clue</strong></div>
         <div><span>'</span><strong>Apostrophe</strong></div>
         <div><span>Backspace</span><strong>Erase AI / prefix</strong></div>
-        <div><span>Space / Enter</span><strong>Lock word</strong></div>
+        <div><span>Space or Enter*</span><strong>Lock word</strong></div>
+        <div><span>Mobile</span><strong>Tap Start typing to open your keyboard, then use Erase AI / Lock word</strong></div>
       </div>
     </section>
 
     <section class="panel panel-pad">
       <h2 class="section-title">Scoring</h2>
-      <p class="help how-copy">Using fewer clue letters earns more points. Building a word streak adds a combo bonus. Failed locks reset your streak, while erasing wrong AI letters contributes to achievement progress.</p>
+      <p class="help how-copy">Points are earned for correctly locking words. A faster guess with fewer clue letters scores higher. Your streak adds a small bonus.</p>
+      <div class="how-score-examples">
+        <div><span>1 clue</span><strong>120</strong></div>
+        <div><span>2 clues</span><strong>100</strong></div>
+        <div><span>3 clues</span><strong>80</strong></div>
+        <div><span>4 clues</span><strong>60</strong></div>
+        <div><span>5 clues</span><strong>40</strong></div>
+        <div><span>6+ clues</span><strong>20</strong></div>
+      </div>
+      <p class="help how-copy">Each consecutive correct word adds <strong>+5 points</strong> to the next, capped at <strong>+30</strong>. An incorrect Lock resets the streak. Erasing wrong autocomplete letters does not deduct points.</p>
+      <p class="help how-copy"><strong>Coins are separate:</strong> Online completed rounds earn 20 coins, +10 for zero failed locks, +5 for a 5-word streak, +15 in Daily, and +75 for each new achievement. These rewards require a successfully saved round; score is not converted directly into coins.</p>
+      <p class="help how-copy">* You can change confirm and erase shortcuts in <a class="text-link" href="settings.html#gameplaySettings">Settings → Gameplay</a>.</p>
     </section>
   </div>
 
@@ -100,14 +112,19 @@
   <section class="panel panel-pad">
     <h2 class="section-title">Modes</h2>
     <div class="help-mode-list">
-      <div><strong>Word</strong><span>Only your current prefix influences autocomplete.</span></div>
+      <div><strong>Word</strong><span>Randomized matching completions for your current prefix.</span></div>
       <div><strong>Context</strong><span>The previous completed word affects the ranking.</span></div>
-      <div><strong>Sentence</strong><span>Context mode plus a visible prediction for how the sentence may continue.</span></div>
+      <div><strong>Sentence</strong><span>Varied autocomplete guesses plus a visible prediction of how the sentence might continue.</span></div>
       <div><strong>Evil</strong><span>Plausible wrong words and slang are deliberately prioritized.</span></div>
-      <div><strong>Daily Challenge</strong><span>One deterministic sentence for the entire day. Beat your saved best.</span></div>
+      <div><strong>Daily Challenge</strong><span>One shared daily target sentence with varied guessing. Beat your saved best.</span></div>
       <div><strong>Plinko Arcade</strong><span>Free five-ball physics minigame with point-only scoring and a browser-local best. No coins are used.</span></div>
       <div><strong>Custom</strong><span>Write your own sentence and choose any predictor behavior.</span></div>
-      <div><strong>Race</strong><span>Friends receive the exact same fixed sentence and compare completion results.</span></div>
+      <div><strong>Race</strong><span>Friends receive the same sentence and compare scores and speed.</span></div>
+      <div><strong>Tournaments</strong><span>Register for a competitive event, complete the target challenge, and compete on the results board.</span></div>
+    </div>
+    <div class="row-wrap" style="margin-top:16px">
+      <a class="button button-primary" href="play.html">Choose a game mode</a>
+      <a class="button button-secondary" href="explore.html">Explore all game features</a>
     </div>
   </section>
 </main>
