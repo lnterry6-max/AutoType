@@ -23,7 +23,10 @@
     backgroundDim:64,
     backgroundLuminance:null,
     highContrast:false,
-    textScale:100
+    textScale:100,
+    confirmKey:"Space",
+    eraseKey:"Backspace",
+    predictionKey:"F2"
   };
 
   const defaultWallet = {
