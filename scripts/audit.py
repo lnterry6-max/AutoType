@@ -59,6 +59,23 @@ def main() -> int:
         if js.exists():
             check_node(js, issues)
 
+    regression = ROOT / "scripts" / "test-level-consistency.cjs"
+    if regression.exists():
+        try:
+            proc = subprocess.run(
+                ["node", str(regression)], capture_output=True, text=True, timeout=20
+            )
+            if proc.returncode:
+                fail(
+                    "Leaderboard level consistency regression failed:\\n"
+                    + (proc.stderr.strip() or proc.stdout.strip()),
+                    issues,
+                )
+            else:
+                print(proc.stdout.strip())
+        except subprocess.TimeoutExpired:
+            fail("Leaderboard level consistency regression timed out.", issues)
+
     canonical_more = [
         "predictions.html", "leaderboard.html", "how-to.html", "explore.html", "settings.html"
     ]
