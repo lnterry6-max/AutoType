@@ -92,6 +92,14 @@ def main() -> int:
         else:
             print(proc.stdout.strip())
 
+    admin_level_test = ROOT / "scripts" / "test-admin-progression.cjs"
+    if admin_level_test.exists():
+        proc = subprocess.run(["node", str(admin_level_test)], capture_output=True, text=True, timeout=20)
+        if proc.returncode:
+            fail("Admin progression regression failed:\\n" + (proc.stderr.strip() or proc.stdout.strip()), issues)
+        else:
+            print(proc.stdout.strip())
+
     canonical_more = [
         "predictions.html", "leaderboard.html", "how-to.html", "explore.html", "settings.html"
     ]
@@ -171,6 +179,19 @@ def main() -> int:
                     fail(f"play.html: missing mobile/scoring control #{required_id}", issues)
             if 'type="text" inputmode="text"' not in text:
                 fail("play.html: native mobile keyboard input is missing", issues)
+
+        if page.name == "profile.html":
+            for expected in ('id="inventory"', 'inventoryAccordion.open=true',
+                             'styles.css?v=20261008-profile-accordion'):
+                if expected not in text:
+                    fail(f"profile.html: missing inventory accordion detail {expected}", issues)
+            if 'id="developerPanel"' in text:
+                fail("Developer controls must live in Admin Console, not Profile", issues)
+        if page.name == "admin.html":
+            if 'backend.js?v=20261008-admin-levels' not in text:
+                fail("Admin level code is not cache-busted", issues)
+            if 'achievements:m.achievements[profile.id]||{}' not in text:
+                fail("Admin player levels are ignoring achievements", issues)
 
         duplicates = sorted({value for value in parser.ids if parser.ids.count(value) > 1})
         if duplicates:
