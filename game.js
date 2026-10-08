@@ -183,6 +183,64 @@ AutoType.ready().then(async()=>{
   let started=false,startTime=0,timer=null;
 
   const names={classic:"Word",context:"Context",sentence:"Sentence",evil:"Evil",daily:"Daily Challenge",custom:"Custom",race:"Friend Race",tournament:"Tournament"};
+  const crateModeNames={classic:"Word",context:"Context",sentence:"Sentence",evil:"Evil"};
+  let crateProgressRequest=0;
+
+  async function showRoundCrateProgress(verifiedSaved){
+    const panel=$("resultModeCrate");
+    const name=crateModeNames[mode];
+    const request=++crateProgressRequest;
+    // Non-core modes do not advance these mode-specific crates.
+    // An online round must save as verified before displaying its reward progress.
+    if(!name||(account?.online&&!verifiedSaved)){
+      panel.hidden=true;
+      return;
+    }
+
+    panel.hidden=false;
+    $("resultModeCrateTitle").textContent=name+" Mode Crate";
+    $("resultModeCrateCount").textContent="Checking…";
+    $("resultModeCrateMeter").value=0;
+    $("resultModeCrateHint").textContent="Loading your "+name+" round progress…";
+
+    try{
+      let progress;
+      if(account?.online){
+        const allModes=await AutoTypeBackend.freeCrateProgress();
+        progress=allModes?.[mode];
+      }else{
+        const profile=AutoType.currentProfile();
+        const wallet=AutoType.currentAccount()?.wallet;
+        const rounds=Math.max(0,Number(profile?.modeRounds?.[mode]||0));
+        const claimed=Math.max(0,Number(wallet?.modeDropClaims?.[mode]||0));
+        progress={remaining:Math.max(0,rounds-claimed*5)};
+      }
+      // Ignore a completed network response if the player started another round.
+      if(request!==crateProgressRequest)return;
+      if(!progress||!Number.isFinite(Number(progress.remaining))){
+        throw new Error("Progress is unavailable");
+      }
+
+      const remaining=Math.max(0,Number(progress.remaining));
+      const unlockable=Math.floor(remaining/5);
+      $("resultModeCrateCount").textContent=remaining+" / 5 rounds";
+      $("resultModeCrateMeter").value=Math.min(5,remaining);
+      if(unlockable>0){
+        $("resultModeCrateHint").textContent=unlockable+" "+name+
+          " crate"+(unlockable===1?" is":"s are")+" ready in your inventory of completed rounds.";
+      }else{
+        const needed=5-remaining;
+        $("resultModeCrateHint").textContent=needed+" more "+(account?.online?"verified ":"")+
+          name+" round"+(needed===1?"":"s")+" to unlock your next crate.";
+      }
+    }catch(error){
+      if(request!==crateProgressRequest)return;
+      console.warn("Could not read mode crate progress",error);
+      $("resultModeCrateCount").textContent="Progress unavailable";
+      $("resultModeCrateHint").textContent="Your round is saved. Check the Shop for your latest crate progress.";
+    }
+  }
+
   const quickMatch=mode==="race"&&race?.room?.match_type==="matchmaking";
   $("modeName").textContent=quickMatch?"Quick Match":(names[mode]||"Word");
   $("newBtn").disabled=fixed;
@@ -350,6 +408,8 @@ AutoType.ready().then(async()=>{
     sentence=newSentence;words=sentence.split(" ");index=0;prefix="";visible="";score=0;streak=0;maxStreak=0;keyCount=0;erased=0;errors=0;clueCounts=[];
     cluesThisWord=0;recentGuesses=[];justKeptAI=0;
     $("time").textContent="0:00";$("results").hidden=true;
+    crateProgressRequest++;
+    $("resultModeCrate").hidden=true;
     if($("dailyMixResult"))$("dailyMixResult").hidden=true;
     $("mobileGameControls").hidden=false;
     $("mobileTypingInput").value="";
@@ -629,6 +689,8 @@ AutoType.ready().then(async()=>{
     }
 
     $("results").hidden=false;
+    // Read-only progress feedback does not delay the completed-round screen.
+    void showRoundCrateProgress(verifiedSaved);
     $("progress").style.width="100%";
     $("mobileGameControls").hidden=true;
     $("mobileTypingInput").blur();
