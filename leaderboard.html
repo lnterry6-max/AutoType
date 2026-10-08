@@ -123,7 +123,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
           bestStreak:Number(row.best_streak||0),
           rounds:Number(row.rounds||0),
           words:Number(row.words||0),
-          achievements:{}
+          achievements:row.achievements||{}
         }
       };
     }
@@ -141,9 +141,12 @@ document.addEventListener("DOMContentLoaded",async()=>{
     const myIndex=all.findIndex(x=>x.user_id===current.supabaseUserId);
     currentRankMetric.textContent=myIndex>=0?`#${myIndex+1}`:"—";
     currentBestMetric.textContent=myIndex>=0?Number(all[myIndex].best_score||0):0;
-    currentLevelMetric.textContent=AutoType.levelInfo(current.profile).level;
+    // Use the same server progress data shown beside the player's ranked row.
+    // Only fall back to the hydrated account if they are outside the top 100.
+    const myProgress=myIndex>=0?onlineAccountFromRow(all[myIndex]).profile:current.profile;
+    currentLevelMetric.textContent=AutoType.levelInfo(myProgress).level;
     allTimeBoard.innerHTML=all.length?all.map((x,i)=>onlineRow(x,x.best_score,i+1)).join(""):`<div class="empty">No ranked scores yet.</div>`;
-    dailyBoard.innerHTML=daily.length?daily.map((x,i)=>onlineRow({...x,words:0,rounds:0,best_streak:0,best_score:x.score},x.score,i+1)).join(""):`<div class="empty">No Daily Challenge scores yet today.</div>`;
+    dailyBoard.innerHTML=daily.length?daily.map((x,i)=>onlineRow(x,x.score,i+1)).join(""):`<div class="empty">No Daily Challenge scores yet today.</div>`;
 
     if(daily[0]?.user_id===current.supabaseUserId){
       dailyClaim.hidden=false;
