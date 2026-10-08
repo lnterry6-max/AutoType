@@ -293,6 +293,10 @@ document.addEventListener("DOMContentLoaded",async()=>{
       return;
     }
     const username=$("#createUsername").value.trim();
+    const reservedNames=["admin","administrator","developer","autotype","support","moderator","mod","staff","system","official","security","owner","root","help","helper"];
+    if(reservedNames.includes(username.toLowerCase())){
+      AutoType.toast("That username is reserved. Choose another.");return;
+    }
     if(!/^[A-Za-z0-9_]{3,24}$/.test(username)){
       AutoType.toast("Username must be 3–24 letters, numbers, or underscores.");
       return;
