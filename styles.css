@@ -3358,3 +3358,28 @@ body.high-contrast .help,body.high-contrast .eyebrow,body.high-contrast .label{
   .score-explainer summary{align-items:flex-start;flex-direction:column}
   .score-table{grid-template-columns:repeat(2,1fr)}
 }
+
+
+/* A discoverable directory replaces an overwhelming More menu. */
+.explore-page .platform-page-heading p{color:var(--muted);margin-top:10px;max-width:740px;line-height:1.6}
+.explore-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;margin-top:20px}
+.explore-grid .platform-section{min-width:0}
+.explore-links{display:grid;gap:8px}
+.explore-links a{
+  display:flex;flex-direction:column;gap:5px;padding:12px 13px;border:1px solid var(--border);
+  border-radius:8px;background:var(--surface-2);font-size:13px;font-weight:760;color:var(--text);
+  text-decoration:none;transition:background .15s,border-color .15s
+}
+.explore-links a:hover,.explore-links a:focus-visible{
+  background:var(--surface-3);border-color:var(--blue);color:var(--text)
+}
+.explore-links a span{font-size:11px;line-height:1.5;color:var(--muted);font-weight:450}
+.how-score-examples{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:12px 0}
+.how-score-examples div{
+  display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 4px;
+  border:1px solid var(--border);border-radius:7px;background:var(--surface-2)
+}
+.how-score-examples span{font-size:10px;color:var(--muted)}
+.how-score-examples strong{font-size:19px;color:var(--text)}
+@media(max-width:730px){.explore-grid{grid-template-columns:1fr}}
+@media(max-width:400px){.how-score-examples{grid-template-columns:repeat(2,minmax(0,1fr))}}
