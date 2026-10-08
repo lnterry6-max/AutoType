@@ -3131,3 +3131,17 @@ body.theme-light .topbar-inner .header-messages-link.active{
 @media(max-width:930px){.plinko-layout{grid-template-columns:1fr}.plinko-sidebar{grid-template-columns:repeat(2,minmax(0,1fr))}.plinko-tips{grid-column:1/-1}}
 @media(max-width:600px){.plinko-sidebar{grid-template-columns:1fr}.plinko-tips{grid-column:auto}.plinko-intro{display:block}.plinko-intro>a{margin-top:12px}.plinko-overview{align-items:flex-start}.plinko-arcade-flag{display:none}.plinko-cabinet{padding:6px}.plinko-cabinet-top{font-size:8px;padding:6px 6px 9px}}
 body.theme-light .plinko-overview-mark{background:#e6f4ff;color:#1877af;border-color:#a4d6ee}
+
+
+/* Plinko's Play menu tile fills the row rather than leaving an empty cell. */
+.mode-tile.plinko-mode{
+  grid-column:1/-1;
+  min-height:145px;
+  border-color:rgba(72,170,219,.4);
+  background:linear-gradient(112deg,rgba(0,162,255,.09),var(--surface) 55%);
+}
+.mode-tile.plinko-mode:hover{background:var(--surface-2);border-color:var(--blue)}
+.home-mode-card.plinko-tile{border-color:rgba(72,170,219,.42);background:linear-gradient(135deg,rgba(0,162,255,.1),#24292f 65%)}
+.home-mode-card.plinko-tile:hover{border-color:var(--blue)}
+body.theme-light .mode-tile.plinko-mode{background:linear-gradient(112deg,#e9f6fc,var(--surface) 65%)}
+body.theme-light .home-mode-card.plinko-tile{background:linear-gradient(112deg,#e9f6fc,#fff 70%)}
