@@ -23,8 +23,9 @@ The Supabase backend consists of:
 - `delete-account` Edge Function for authenticated account deletion
 - `create-checkout-session` Edge Function for authenticated Stripe Checkout sessions
 - `stripe-webhook` Edge Function for signed Stripe payment events
+- `refund-payment` Edge Function for authenticated refunds
 
-Apply migrations in filename order when provisioning another project, then deploy the Edge Functions.
+For a **brand-new** database, first run `supabase/bootstrap/001_backend_foundation.sql` exactly once, then apply `supabase/migrations/` in filename order. That bootstrap has already been applied to the existing AutoType project, which must not be reset or replayed. Its migration history uses the filenames now committed in this repository. Check `supabase migration list` before any database push, and see `supabase/README.md` for the one-time bootstrap and history details. Deploy Edge Functions from the approved release branch.
 
 ## Environment / keys
 
@@ -67,7 +68,11 @@ Run:
 python3 scripts/audit.py
 ```
 
-and require the backend-foundation GitHub Actions audit to pass before merging/deploying.
+and require the backend-foundation GitHub Actions audit to pass before merging/deploying. The audit also checks for duplicate migration versions and missing browser/game-api action names.
+
+Before public deployment, run a two-browser/two-account Quick Match test (simultaneous queue joins, one shared race and target, both results and same winner, leave/cancellation/reconnect), then a complete tournament registration-to-payout test. Check Supabase Auth site/redirect URLs, password protection if available, logging, backup policy and email deliverability.
+
+Keep Stripe in test mode, with `STRIPE_LIVE_ENABLED=false`, until test-mode webhook delivery is verified and business/payment requirements have been addressed. This readiness patch does **not** enable live payments.
 
 ## Production hardening still recommended
 
