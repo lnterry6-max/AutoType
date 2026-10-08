@@ -75,6 +75,7 @@
         <h1 id="playerName"></h1>
         <p class="player-handle" id="playerHandle"></p>
         <p id="playerBio" class="player-bio"></p>
+        <div class="public-role-badges" id="playerRoleBadges" aria-label="Player role badges"></div>
         <div class="player-actions" id="playerActions"></div>
       </div>
     </section>
@@ -135,14 +136,21 @@ document.addEventListener("DOMContentLoaded",async()=>{
     $("playerLoading").hidden=true;
     if(!profile){$("playerNotFound").hidden=false;return;}
     const isSelf=current?.supabaseUserId===profile.id;
-    const [awards,stats]=await Promise.all([
+    const [awards,stats,roleBadges]=await Promise.all([
       AutoTypeBackend.publicAchievementsFor(profile.id),
-      AutoTypeBackend.publicPlayerStats(profile.id)
+      AutoTypeBackend.publicPlayerStats(profile.id),
+      AutoTypeBackend.publicBadgesFor(profile.id)
     ]);
     $("playerView").hidden=false;
     $("playerName").textContent=profile.display_name||profile.username;
     $("playerHandle").textContent="@"+profile.username;
     $("playerBio").textContent=profile.bio||"No bio yet.";
+    for(const b of roleBadges){
+      const tag=document.createElement("span");
+      tag.className="user-role-badge";tag.textContent=b.name;
+      tag.style.setProperty("--badge-color",b.color);
+      $("playerRoleBadges").appendChild(tag);
+    }
     const avatar=$("playerAvatar");
     if(profile.avatar_url){
       const img=document.createElement("img");
