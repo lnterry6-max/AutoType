@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Play · AutoType</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="styles.css?v=20261008-mobile-hotfix">
+<link rel="stylesheet" href="styles.css?v=20261008-daily-mix-v2">
 </head>
 <body data-page="play">
 
@@ -101,9 +101,9 @@
       <a href="tournaments.html"><span>COMPETE</span><strong>Tournaments</strong><small>Skill-based events</small></a>
     </div>
     <section class="daily-mix-play-promo" aria-label="Today's Daily Mix">
-      <div class="platform-section-head"><div><span class="section-kicker">DAILY MIX · <span data-daily-mix-date></span></span><h2>Today's three goals</h2></div><strong class="daily-mix-summary" id="playDailyMixSummary">Loading…</strong></div>
-      <div class="daily-mix-grid" id="playDailyMixCards"><p class="section-note">Loading Daily Mix…</p></div>
-      <p class="daily-mix-intro">Just for variety: goals reset daily, with no penalty for missing a day.</p>
+      <div class="platform-section-head daily-mix-heading"><div><span class="section-kicker">DAILY MIX · <span data-daily-mix-date></span></span><h2>Today's mix</h2></div><span class="daily-mix-summary" id="playDailyMixSummary" aria-live="polite">Loading goals…</span></div>
+      <div class="daily-mix-grid" id="playDailyMixCards"><p class="section-note">Loading today's challenges…</p></div>
+      <p class="daily-mix-footnote">Fresh goals tomorrow. No streaks, no pressure.</p>
     </section>
   </section>
 
@@ -205,7 +205,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="backend.js?v=20261008-level-consistency"></script>
 <script src="core.js?v=20261008-variety-ux"></script>
-<script src="daily-mix.js?v=20261008-replay"></script>
+<script src="daily-mix.js?v=20261008-daily-mix-v2"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded",async()=>{

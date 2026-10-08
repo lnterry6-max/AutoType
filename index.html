@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Home · AutoType</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="styles.css?v=20261008-mobile-hotfix">
+<link rel="stylesheet" href="styles.css?v=20261008-daily-mix-v2">
 </head>
 <body data-page="home">
 
@@ -91,12 +91,12 @@
   </section>
 
   <section class="platform-section daily-mix-section" aria-label="Daily Mix skill challenges">
-    <div class="platform-section-head">
-      <div><span class="section-kicker">DAILY MIX · <span data-daily-mix-date></span></span><h2>Three reasons to play something different</h2></div>
-      <strong class="daily-mix-summary" id="dailyMixSummary" aria-live="polite">Loading today’s goals…</strong>
+    <div class="platform-section-head daily-mix-heading">
+      <div><span class="section-kicker">DAILY MIX · <span data-daily-mix-date></span></span><h2>Today's mix</h2></div>
+      <span class="daily-mix-summary" id="dailyMixSummary" aria-live="polite">Loading goals…</span>
     </div>
-    <p class="daily-mix-intro">Three rotating skill goals. Complete them at your own pace today — no extra purchases, no rewards to lose, and no penalty for missing a day. Online progress uses verified rounds.</p>
-    <div class="daily-mix-grid" id="dailyMixCards" aria-live="polite"><p class="section-note">Loading Daily Mix…</p></div>
+    <div class="daily-mix-grid" id="dailyMixCards" aria-live="polite"><p class="section-note">Loading today's challenges…</p></div>
+    <p class="daily-mix-footnote">Three quick skill challenges. A fresh mix tomorrow, with no streak to maintain.</p>
   </section>
 
   <section class="platform-section">
@@ -159,7 +159,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="backend.js?v=20261008-level-consistency"></script>
 <script src="core.js?v=20261008-variety-ux"></script>
-<script src="daily-mix.js?v=20261008-replay"></script>
+<script src="daily-mix.js?v=20261008-daily-mix-v2"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded",async()=>{

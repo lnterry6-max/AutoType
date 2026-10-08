@@ -107,16 +107,16 @@
   function draw(container,goals,summary){
     const completed=goals.filter(goal=>goal.complete).length;
     container.innerHTML=goals.map((goal,index)=>
-      '<article class="daily-mix-card'+(goal.complete?' is-complete':'')+'">'+
-        '<div class="daily-mix-card-top"><span class="daily-mix-slot">0'+(index+1)+' / '+escapeText(goal.modeLabel)+'</span>'+
-          '<span class="daily-mix-state">'+(goal.complete?'Completed':'Ready')+'</span></div>'+
-        '<h3>'+escapeText(goal.title)+'</h3>'+
-        '<p>'+escapeText(goal.description)+'</p>'+
-        '<a class="daily-mix-action" href="play.html?mode='+encodeURIComponent(goal.mode)+'">'+
-          (goal.complete?'Play again':'Play '+escapeText(goal.modeLabel))+' &rarr;</a>'+
-      '</article>'
+      '<a class="daily-mix-card'+(goal.complete?' is-complete':'')+'" href="play.html?mode='+encodeURIComponent(goal.mode)+'" aria-label="'+
+        escapeText(goal.title)+': '+escapeText(goal.description)+'">'+
+        '<span class="daily-mix-card-top"><span class="daily-mix-slot">0'+(index+1)+' · '+escapeText(goal.modeLabel).toUpperCase()+'</span>'+
+          '<span class="daily-mix-state">'+(goal.complete?'✓ DONE':'TO DO')+'</span></span>'+
+        '<strong class="daily-mix-title">'+escapeText(goal.title)+'</strong>'+
+        '<span class="daily-mix-description">'+escapeText(goal.description)+'</span>'+
+        '<span class="daily-mix-action">'+(goal.complete?'Play again':'Play now')+' &rarr;</span>'+
+      '</a>'
     ).join("");
-    if(summary)summary.textContent=completed+" of "+goals.length+" goals complete";
+    if(summary)summary.textContent=completed+" / "+goals.length+" COMPLETED";
   }
   async function render(container,summary){
     if(!container)return;
