@@ -763,6 +763,40 @@
     return data;
   }
 
+  // The leaderboard must use the same lifetime XP components as Profile.
+  // Read-only public progress data; it never modifies player stats or achievements.
+  async function attachPublicLevelProgress(rows,{includeStats=false}={}){
+    if(!Array.isArray(rows)||!rows.length)return rows||[];
+    const db=getClient();
+    if(!db)return rows;
+    const ids=[...new Set(rows.map(row=>row.user_id).filter(Boolean))];
+    const awardsPromise=db.from("user_achievements")
+      .select("user_id,achievement_id").in("user_id",ids);
+    const statsPromise=includeStats
+      ? db.from("player_stats").select("user_id,rounds,words,best_streak").in("user_id",ids)
+      : Promise.resolve({data:[],error:null});
+    const [awards,stats]=await Promise.all([awardsPromise,statsPromise]);
+    if(awards.error)throw awards.error;
+    if(stats.error)throw stats.error;
+
+    const earned=new Map();
+    for(const item of awards.data||[]){
+      if(!earned.has(item.user_id))earned.set(item.user_id,{});
+      earned.get(item.user_id)[item.achievement_id]=true;
+    }
+    const lifetime=new Map((stats.data||[]).map(row=>[row.user_id,row]));
+    return rows.map(row=>{
+      const statsRow=lifetime.get(row.user_id)||row;
+      return {
+        ...row,
+        rounds:Number(statsRow.rounds||0),
+        words:Number(statsRow.words||0),
+        best_streak:Number(statsRow.best_streak||0),
+        achievements:earned.get(row.user_id)||{}
+      };
+    });
+  }
+
   async function dailyLeaderboard(dayKey=new Date().toISOString().slice(0,10)){
     const db=getClient();
     if(!db)return [];
@@ -780,7 +814,8 @@
     for(const row of data||[]){
       if(!best.has(row.user_id)||row.score>best.get(row.user_id).score)best.set(row.user_id,row);
     }
-    return [...best.values()].sort((a,b)=>Number(b.score)-Number(a.score));
+    const ranked=[...best.values()].sort((a,b)=>Number(b.score)-Number(a.score));
+    return attachPublicLevelProgress(ranked,{includeStats:true});
   }
 
   async function dailyRewardClaimStatus(day){
@@ -809,7 +844,10 @@
       .order("verified_best_score",{ascending:false})
       .limit(Math.max(1,Math.min(100,Number(limit)||50)));
     if(error)throw error;
-    return (data||[]).map(row=>({...row,best_score:Number(row.verified_best_score||0)}));
+    const ranked=(data||[]).map(row=>({
+      ...row,best_score:Number(row.verified_best_score||0)
+    }));
+    return attachPublicLevelProgress(ranked);
   }
 
   async function submitBetaFeedback({category,message,pagePath}){
