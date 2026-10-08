@@ -658,8 +658,10 @@ AutoType.ready().then(async()=>{
   window.visualViewport?.addEventListener("resize",syncMobileViewport);
   window.visualViewport?.addEventListener("scroll",syncMobileViewport);
   window.addEventListener("orientationchange",syncMobileViewport);
+  let mobileBlurTimer;
   const focusMobileInput=()=>{
     if(!$("results").hidden)return;
+    clearTimeout(mobileBlurTimer);
     document.body.classList.add("mobile-keyboard-active");
     syncMobileViewport();
     mobileInput.focus({preventScroll:true});
@@ -667,13 +669,20 @@ AutoType.ready().then(async()=>{
   };
   mobileStart.addEventListener("click",focusMobileInput);
   mobileInput.addEventListener("focus",()=>{
+    clearTimeout(mobileBlurTimer);
     document.body.classList.add("mobile-keyboard-active");
     syncMobileViewport();
     mobileStart.textContent="Keyboard ready";
   });
   mobileInput.addEventListener("blur",()=>{
-    document.body.classList.remove("mobile-keyboard-active");
-    mobileStart.textContent="Tap to open keyboard ⌨";
+    // Tapping Erase/Lock can briefly blur iOS inputs before the click refocuses.
+    // Keep the game stage stable across that transition.
+    clearTimeout(mobileBlurTimer);
+    mobileBlurTimer=setTimeout(()=>{
+      if(document.activeElement===mobileInput)return;
+      document.body.classList.remove("mobile-keyboard-active");
+      mobileStart.textContent="Tap to open keyboard ⌨";
+    },150);
   });
   gameArena.addEventListener("click",e=>{
     if(e.target.closest("button,input,textarea,select,a,summary,details"))return;
