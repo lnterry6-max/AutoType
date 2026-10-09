@@ -264,23 +264,35 @@ document.addEventListener("DOMContentLoaded",async()=>{
     return;
   }
 
-  let searching=false;
-  let timer=null;
+  const offer=document.querySelector("#npcOffer");
+  const decision=document.querySelector("#npcDecision");
+  const difficulty=document.querySelector("#npcDifficulty");
+  const yes=document.querySelector("#npcOfferYes");
+  const no=document.querySelector("#npcOfferNo");
+  let searching=false, timer=null, startedAt=0, searchId=0;
+  const NPC_OFFER_AFTER_MS=20000;
 
   function stopTimer(){
-    if(timer){clearTimeout(timer);timer=null}
+    if(timer){clearTimeout(timer);timer=null;}
   }
-
+  function clearOffer(){
+    offer.hidden=true;
+    decision.hidden=false;
+    difficulty.hidden=true;
+  }
   function rangeLabel(value){
     return value==null?"Any level":`±${value} levels`;
   }
-
-  async function tick(){
-    if(!searching)return;
+  async function leaveQueue(){
+    try{await AutoTypeBackend.leaveMatchmaking();}
+    catch(error){console.warn("Could not leave matchmaking queue",error);}
+  }
+  async function tick(requestId){
+    if(!searching||requestId!==searchId)return;
     try{
       const result=await AutoTypeBackend.matchmakingTick();
+      if(!searching||requestId!==searchId)return;
       level.textContent=`LV ${Number(result.level||localLevel)}`;
-
       if(result.status==="matched"&&result.race_id){
         searching=false;
         stopTimer();
@@ -288,39 +300,67 @@ document.addEventListener("DOMContentLoaded",async()=>{
         location.href=`play.html?race=${encodeURIComponent(result.race_id)}&match=1`;
         return;
       }
-
+      if(Date.now()-startedAt>=NPC_OFFER_AFTER_MS){
+        searching=false;
+        stopTimer();
+        button.disabled=false;
+        cancel.hidden=true;
+        status.textContent="No opponent found.";
+        await leaveQueue();
+        if(requestId===searchId)offer.hidden=false;
+        return;
+      }
       status.textContent=`Searching · ${rangeLabel(result.range)} · ${Number(result.wait_seconds||0)}s`;
-      timer=setTimeout(tick,1500);
+      timer=setTimeout(()=>tick(requestId),1500);
     }catch(error){
+      if(requestId!==searchId)return;
       searching=false;
       stopTimer();
       button.disabled=false;
       cancel.hidden=true;
-      status.textContent="";
+      status.textContent="Matchmaking is temporarily unavailable.";
       AutoType.toast(error.message||"Matchmaking failed.");
     }
   }
-
   button.addEventListener("click",()=>{
     if(searching)return;
+    searchId++;
     searching=true;
+    startedAt=Date.now();
+    clearOffer();
     button.disabled=true;
     cancel.hidden=false;
     status.textContent="Searching…";
-    tick();
+    tick(searchId);
   });
-
   cancel.addEventListener("click",async()=>{
+    searchId++;
     searching=false;
     stopTimer();
     button.disabled=false;
     cancel.hidden=true;
-    status.textContent="";
-    try{await AutoTypeBackend.leaveMatchmaking()}catch{}
+    status.textContent="Search canceled.";
+    clearOffer();
+    await leaveQueue();
   });
-
+  yes.addEventListener("click",()=>{
+    decision.hidden=true;
+    difficulty.hidden=false;
+  });
+  no.addEventListener("click",()=>{
+    clearOffer();
+    status.textContent="You can try Quick Match again anytime.";
+  });
+  difficulty.querySelectorAll("[data-npc-skill]").forEach(choice=>{
+    choice.addEventListener("click",()=>{
+      const skill=choice.dataset.npcSkill;
+      if(!["easy","medium","hard"].includes(skill))return;
+      location.href=`play.html?mode=npc&skill=${encodeURIComponent(skill)}`;
+    });
+  });
   window.addEventListener("pagehide",()=>{
     if(searching){
+      searchId++;
       searching=false;
       stopTimer();
       AutoTypeBackend.leaveMatchmaking().catch(()=>{});
