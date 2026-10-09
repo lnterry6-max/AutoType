@@ -9,6 +9,7 @@ This is a staged layout plan, not permission to run ads or an approval guarantee
 - A site-owned preview via `?ad-preview=1` on those three pages. Preview never loads third-party ads, sets cookies, or pays out.
 - An AdSense **verification-only** meta tag using the publisher ID shown in the site owner’s latest AdSense screen is in each HTML `<head>`. The tag is public and does not load ads or track visitors.
 - No advertising JavaScript, live ad slots, forced ad clicks, rewarded viewing, overlays or automatic placements.
+- A root `ads.txt` file authorizes only the current AdSense account, which does not itself activate ads.
 - Active typing, NPC matches, mobile keyboard viewport, Plinko, accounts, messages, profiles, settings, admin and shop remain free of ads.
 - Normal site visitors never see the preview.
 
@@ -17,9 +18,9 @@ This is a staged layout plan, not permission to run ads or an approval guarantee
 2. Periodically check both forwarding aliases, and keep the contact addresses current. Forwarding does not automatically make outgoing mail appear to come from the AutoType domain.
 3. Review the drafted privacy disclosures with the site operator, including all current provider and retention details, and revise as needed.
 4. Configure required consent and privacy tools in the provider dashboard (including a Google-certified CMP for applicable regional personalized ads). Keep auto ads **off**.
-5. Confirm the installed verification meta tag matches the actual publisher account. The eligible account holder can then check **I’ve placed the HTML meta tag** and click **Verify** in AdSense Sites, and request review if offered. Eligibility and payment details must be accurate. Verification does not guarantee approval.
+5. Site ownership is verified and the AdSense site review has been requested (October 9, 2026). Wait for Google to decide whether the site is eligible; review submission is not approval.
 6. After site approval, get official ad-unit IDs and add clearly labeled, responsive in-page units only to the three safe placements. Keep advertising separate from game controls and avoid accidental clicks.
-7. Add the provider's **exact verified** `ads.txt` authorization record if requested; never fabricate it.
+7. The exact `ads.txt` record provided for `pub-9541821976044642` is now in the website root. Confirm `https://auto-type.net/ads.txt` serves that plain text after deployment; Google may take time to recognize it.
 8. Test on mobile, with screen reader and privacy choices, monitor performance, and confirm that the active game remains unaffected.
 
 ## Recommended eventual placements

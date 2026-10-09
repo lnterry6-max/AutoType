@@ -49,6 +49,10 @@ for(const p of pages.filter(p=>!Object.hasOwn(previewPages,p))){
  assert.doesNotMatch(read(p),/data-autotype-ad-slot=/,"No ad location on gameplay, shop, accounts or chats: "+p);
  assert.doesNotMatch(read(p),/src="ad-preview\.js/,"No ad preview dependency on private/game pages: "+p);
 }
+const adsTxt=read("ads.txt");
+assert.equal(adsTxt.trim(),"google.com, pub-9541821976044642, DIRECT, f08c47fec0942fa0","ads.txt must exactly match the verified AdSense account");
+assert.equal(adsTxt.split("\\n").filter(Boolean).length,1,"Don't invent or duplicate publisher records");
+assert.doesNotMatch(adsTxt,/pub-3694969670830097/,"Do not authorize the earlier AdSense account");
 const verification='<meta name="google-adsense-account" content="ca-pub-9541821976044642">';
 for(const p of pages){
  const html=read(p),head=html.match(/<head>([\s\S]*?)<\/head>/i)?.[1]||"";
@@ -75,4 +79,4 @@ vm.runInNewContext(src,{location:{search:"?ad-preview=1"},document:{
 assert.equal(slot.hidden,false,"Explicit preview must display the reserved area");
 assert.match(slot.innerHTML,/PREVIEW ONLY/);
 assert.match(read("site-finish.css"),/autotype-ad-slot\[hidden\]/,"Hidden placeholder guard in site CSS");
-console.log("Ad readiness PASSED: 26 publisher verification meta tags, 3 public pages, 3 inactive preview slots, zero live ad calls.");
+console.log("Ad readiness PASSED: authorized ads.txt, 26 publisher verification tags, 3 preview-only ad placements, zero live ad calls.");
