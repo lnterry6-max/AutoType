@@ -37,7 +37,7 @@ for(const address of ["support@auto-type.net","privacy@auto-type.net"]){
  assert.ok(privacy.includes('href="mailto:'+address+'"'),"Privacy page must link "+address);
 }
 assert.doesNotMatch(contact,/public email support inbox has not been established/,"Stale support warning must be removed");
-assert.match(read("ADS_READINESS.md"),/Inbound delivery has not yet been verified/,"Do not claim forwarding was tested");
+assert.match(read("ADS_READINESS.md"),/confirmed through test messages/,"Keep contact readiness accurately documented");
 const previewPages={"index.html":"home-discovery","leaderboard.html":"leaderboard-bottom","how-to.html":"guide-bottom"};
 for(const [p,slot] of Object.entries(previewPages)){
  const page=read(p);
@@ -49,9 +49,15 @@ for(const p of pages.filter(p=>!Object.hasOwn(previewPages,p))){
  assert.doesNotMatch(read(p),/data-autotype-ad-slot=/,"No ad location on gameplay, shop, accounts or chats: "+p);
  assert.doesNotMatch(read(p),/src="ad-preview\.js/,"No ad preview dependency on private/game pages: "+p);
 }
+const verification='<meta name="google-adsense-account" content="ca-pub-9541821976044642">';
+for(const p of pages){
+ const html=read(p),head=html.match(/<head>([\s\S]*?)<\/head>/i)?.[1]||"";
+ assert.equal(head.split(verification).length-1,1,"Exactly one correct publisher tag in HTML head: "+p);
+ assert.doesNotMatch(html,/ca-pub-3694969670830097/,"Prior AdSense publisher account ID must not appear: "+p);
+}
 for(const p of [...pages,"ad-preview.js"]){
- assert.doesNotMatch(read(p),/pagead2\.googlesyndication\.com|adsbygoogle\.push\(|google-adsense-account/,
- "No publisher verification or third-party ad calls until adult-approved account and privacy settings: "+p);
+ assert.doesNotMatch(read(p),/pagead2\.googlesyndication\.com|adsbygoogle\.push\(/,
+ "Site verification must not load advertisements or tracking: "+p);
 }
 const src=read("ad-preview.js");
 const fake=()=>({
@@ -69,4 +75,4 @@ vm.runInNewContext(src,{location:{search:"?ad-preview=1"},document:{
 assert.equal(slot.hidden,false,"Explicit preview must display the reserved area");
 assert.match(slot.innerHTML,/PREVIEW ONLY/);
 assert.match(read("site-finish.css"),/autotype-ad-slot\[hidden\]/,"Hidden placeholder guard in site CSS");
-console.log("Ad readiness PASSED: 3 public information pages, 3 inactive preview slots, zero live ad calls, site-wide legal links.");
+console.log("Ad readiness PASSED: 26 publisher verification meta tags, 3 public pages, 3 inactive preview slots, zero live ad calls.");
