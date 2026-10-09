@@ -11,7 +11,7 @@ const issues=[],notes=[];
 const log=(s)=>{console.log("QA "+s);notes.push(s)};
 const problem=(s)=>{console.error("QA ISSUE: "+s);issues.push(s)};
 const sleep=n=>new Promise(resolve=>setTimeout(resolve,n));
-async function visit(page,route,label,{screenshot=false}={}){
+async function visit(page,route,label,{screenshot=false,checkViewport=false}={}){
   let response;
   try{
     response=await page.goto(BASE+route,{waitUntil:"domcontentloaded",timeout:30000});
@@ -24,6 +24,21 @@ async function visit(page,route,label,{screenshot=false}={}){
     const status=response?.status()||0;
     if(status>=400||status===0||details.title.includes("Page not found")||details.title.includes("404"))
       problem(label+" "+route+" HTTP "+status+" => "+details.title);
+    if(checkViewport){
+      const layout=await page.evaluate(()=>({
+        width:innerWidth,scrollWidth:document.documentElement.scrollWidth,
+        bodyWidth:document.body?.scrollWidth||0,installHintVisible:(()=>{
+          const el=document.querySelector(".home-install-hint");
+          return !!el&&getComputedStyle(el).display!=="none";
+        })()
+      }));
+      if(layout.scrollWidth>layout.width+8){
+        problem(label+" horizontal overflow: scroll "+layout.scrollWidth+" viewport "+layout.width);
+      }
+      if(label.startsWith("desktop")&&layout.installHintVisible)
+        problem(label+" shows mobile-only install invitation on desktop");
+      log(label+" viewport "+JSON.stringify(layout));
+    }
     if(screenshot)await page.screenshot({path:path.join(dir,label+".png"),fullPage:true});
     log(label+" "+route+" HTTP "+status+" => "+details.pathname+" ["+details.title+"]");
     return {status,...details};
@@ -58,6 +73,12 @@ async function testRound(page,mode){
   const targetWords=await page.locator("#target span").allTextContents();
   log(mode+" target length "+targetWords.length+"; starts "+targetWords.slice(0,2).join(" "));
   if(targetWords.length<2||targetWords.length>40){problem(mode+" target absent/invalid");return}
+  await page.evaluate(()=>{
+    window.__seenDone=false;
+    new MutationObserver(()=>{if(!document.getElementById("roundDoneOverlay")?.hidden)
+      window.__seenDone=true;
+    }).observe(document.getElementById("roundDoneOverlay"),{attributes:true,attributeFilter:["hidden"]});
+  });
   let totalKeys=0,autoAccepted=0;
   for(let i=0;i<targetWords.length;i++){
     const goal=targetWords[i].trim().toLowerCase();
@@ -109,11 +130,13 @@ async function testRound(page,mode){
     totalWords:document.querySelectorAll("#target span").length,
     progress:document.getElementById("progress")?.style.width,
     result:document.getElementById("resultScore")?.textContent,
-    summary:document.getElementById("roundProgressTitle")?.textContent
+    summary:document.getElementById("roundProgressTitle")?.textContent,
+    sawDone:window.__seenDone
   }));
   log(mode+" ROUND "+JSON.stringify({final,totalKeys,autoAccepted}));
   await page.screenshot({path:path.join(dir,mode+"-results.png"),fullPage:true});
   if(!final.finished)problem(mode+" round failed to finish");
+  if(!final.sawDone)problem(mode+" DONE overlay was never displayed");
   if(final.counter!==targetWords.length+" / "+targetWords.length)
     problem(mode+" counter "+final.counter+" should be "+targetWords.length+" / "+targetWords.length);
   if(final.doneWords!==targetWords.length)
@@ -129,22 +152,30 @@ async function testRound(page,mode){
   const homepage=await visit(page,"/","desktop-home",{screenshot:true});
   if(homepage){
     const urls=await page.locator("a[href]").evaluateAll(nodes=>nodes.map(n=>n.getAttribute("href")).filter(Boolean));
-    const internal=urls.filter(x=>x.startsWith("/")&&x.endsWith(".html"));
+    const internal=urls.filter(x=>{
+      try{return new URL(x,BASE).pathname.endsWith(".html")}catch{return false}
+    });
     if(internal.length)problem("Home page still exposes .html links: "+internal.slice(0,6).join(","));
     log("Home hyperlinks="+urls.length+" extensionless check="+internal.length);
   }
-  for(const route of ["/play","/leaderboard","/shop","/friends","/profile","/account","/how-to","/explore","/tournaments","/settings","/notifications","/feedback","/privacy","/contact","/install"]){
-    await visit(page,route,"desktop-"+route.slice(1),{screenshot:route==="/play"||route==="/shop"});
+  for(const route of ["/play","/leaderboard","/shop","/friends","/profile","/account","/how-to","/explore","/tournaments","/settings","/notifications","/feedback","/privacy","/contact","/install","/create","/stats","/achievements","/chat","/predictions","/about"]){
+    await visit(page,route,"desktop-"+route.slice(1),{
+      screenshot:route==="/play"||route==="/shop",checkViewport:true
+    });
   }
   // Guest play should not write competitive account rewards or charge anything.
   for(const mode of ["classic","sentence","context"])await testRound(page,mode);
   const mobile=await browser.newContext({...devices["Pixel 7"],locale:"en-US",colorScheme:"dark"});
   const phone=await mobile.newPage();
   watchErrors(phone,"mobile");
-  await visit(phone,"/","mobile-home",{screenshot:true});
+  await visit(phone,"/","mobile-home",{screenshot:true,checkViewport:true});
   await clickVisibleMenu(phone);
-  await visit(phone,"/play","mobile-play",{screenshot:true});
-  await visit(phone,"/play?mode=sentence","mobile-sentence",{screenshot:true});
+  for(const route of ["/play","/leaderboard","/shop","/friends","/profile","/how-to","/explore","/settings"]){
+    await visit(phone,route,"mobile-"+route.slice(1),{
+      screenshot:route==="/play"||route==="/shop",checkViewport:true
+    });
+  }
+  await visit(phone,"/play?mode=sentence","mobile-sentence",{screenshot:true,checkViewport:true});
   const input=phone.locator("#mobileTypingInput");
   const start=phone.locator("#mobileStartButton");
   if(await start.isVisible()){
