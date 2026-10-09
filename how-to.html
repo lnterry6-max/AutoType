@@ -6,6 +6,7 @@
 <title>How to Play · AutoType</title>
 <link rel="icon" href="assets/logo.png">
 <link rel="stylesheet" href="styles.css?v=20261008-beta-polish-v1">
+<link rel="stylesheet" href="onboarding-races.css?v=20261008-onboarding-v1">
 </head>
 <body data-page="help">
 <header class="topbar">
@@ -69,6 +70,31 @@
   <section class="mechanic-demo platform-section">
     <div class="platform-section-head"><div><span class="section-kicker">THE CORE LOOP</span><h2>One word, three decisions</h2></div></div>
     <div class="mechanic-demo-flow"><div><small>TARGET</small><strong>minutes</strong></div><b>→</b><div><small>YOU TYPE</small><strong>m</strong></div><b>→</b><div><small>AUTOTYPE GUESSES</small><strong><i>mi</i>ld</strong></div><b>→</b><div><small>SMART ERASE</small><strong>mi ⌫ld</strong></div></div>
+  </section>
+
+  <section class="guided-tutorial platform-section" id="try-it" aria-label="Playable AutoType tutorial">
+    <div class="guided-tutorial-head">
+      <div><span class="section-kicker">TRY IT YOURSELF</span><h2>A quick practice round</h2>
+        <p>Learn the prediction, smart erase, and lock controls. No score or coins involved.</p></div>
+      <button class="button button-primary" id="tutorialLaunch" type="button">Start tutorial</button>
+    </div>
+    <div class="guided-tutorial-play" id="tutorialStage" hidden>
+      <div class="guided-tutorial-progress"><span>GUIDED ROUND</span><strong id="tutorialCount">Step 1 of 5</strong></div>
+      <div class="guided-tutorial-track"><i id="tutorialBar"></i></div>
+      <div class="guided-tutorial-target">TARGET WORD <strong>minutes</strong></div>
+      <div class="guided-tutorial-word" id="tutorialGuess" aria-live="off">type a clue…</div>
+      <p class="guided-tutorial-message" id="tutorialMessage" role="status" aria-live="polite">Type M to begin.</p>
+      <div class="guided-tutorial-actions">
+        <input type="text" id="tutorialInput" class="input guided-tutorial-input" inputmode="text"
+          autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false"
+          aria-label="Practice typing the highlighted tutorial clue" placeholder="Or type here…">
+        <button class="button button-secondary" type="button" id="tutorialType">Type M</button>
+        <button class="button button-secondary" type="button" id="tutorialErase" hidden>⌫ Erase</button>
+        <button class="button button-primary" type="button" id="tutorialLock" hidden>Lock word ↵</button>
+        <button class="button button-quiet" type="button" id="tutorialRestart">Restart</button>
+      </div>
+      <p class="guide-tutorial-outcome" id="tutorialOutcome" hidden>✓ Tutorial complete. Ready to play?</p>
+    </div>
   </section>
 
   <section class="how-steps">
@@ -142,6 +168,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="backend.js?v=20261008-beta-polish-v1"></script>
 <script src="core.js?v=20261008-beta-polish-v1"></script>
+<script src="how-to-tutorial.js?v=20261008-onboarding-v1"></script>
 
 </body>
 </html>
