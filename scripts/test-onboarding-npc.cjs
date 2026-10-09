@@ -47,7 +47,7 @@ class FakeElement {
   focus() {}
   blur() {}
 }
-const ids = ["guidedTutorial", "tutorialLaunch", "tutorialStage", "tutorialGuess",
+const ids = ["try-it", "tutorialLaunch", "tutorialStage", "tutorialGuess",
   "tutorialMessage", "tutorialInput", "tutorialType", "tutorialErase",
   "tutorialLock", "tutorialRestart", "tutorialCount", "tutorialBar", "tutorialOutcome"];
 const nodes = Object.fromEntries(ids.map(id => [id, new FakeElement()]));
