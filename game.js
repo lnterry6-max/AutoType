@@ -239,9 +239,8 @@ AutoType.ready().then(async()=>{
     return matches;
   }
 
-  // Context mode stays sentence-aware. Other modes deliberately vary their guesses.
-  // A stable round/word/prefix hash keeps displayed suggestions from jumping on each render,
-  // while still producing very different guesses across prompts and words.
+  // This stable hash is only for the preview queue and sentence example.
+  // The actual non-Context guess is randomly picked by AutoTypePredictionPicker.
   function guessScore(word,pref){
     const key=sentence+"|"+predictorMode+"|"+index+"|"+pref+"|"+word;
     let hash=2166136261;
@@ -276,7 +275,16 @@ AutoType.ready().then(async()=>{
 
   function guess(){
     if(!prefix)return"";
-    const chosen=rankedCandidates(prefix)[0]||prefix;
+    const options=rankedCandidates(prefix);
+    // Context remains sentence-aware. All other modes take a new random
+    // draw for each accepted clue, never from the fixed preview-queue ranking.
+    const chosen=predictorMode==="context"
+      ?(options[0]||prefix)
+      :AutoTypePredictionPicker.choose({
+        prefix,candidates:options,recent:recentGuesses,
+        previous:recentGuesses[recentGuesses.length-1]||"",
+        mode:predictorMode,target:words[index]
+      });
     rememberGuess(chosen);
     return chosen;
   }
