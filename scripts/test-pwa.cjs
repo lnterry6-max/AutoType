@@ -56,7 +56,7 @@ assert.match(read("index.html"),/href="install\.html">Add to Home Screen/);
 const install=read("install.html");
 for(const text of ["Install from Safari","Add to Home Screen","Open as Web App","Install from Chrome","installPromptButton","installStatus"])
  assert.ok(install.includes(text),"Install instruction "+text);
-assert.ok(manifest.shortcuts.some(x=>x.url==="/play.html"),"Play shortcut");
+assert.ok(manifest.shortcuts.some(x=>x.url==="/play"),"Play shortcut");
 const sw=read("service-worker.js"),js=read("pwa.js");
 assert.doesNotMatch(sw,/addEventListener\("fetch"|respondWith|cache\.add|caches\.open|caches\.match/,"No intercepted pages or forced offline screen");
 assert.match(sw,/caches\.delete/,"Old offline cache cleaned");
