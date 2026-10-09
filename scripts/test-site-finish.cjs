@@ -5,7 +5,7 @@ const path=require("node:path");
 const root=path.resolve(__dirname,"..");
 const read=p=>fs.readFileSync(path.join(root,p),"utf8");
 const all=fs.readdirSync(root).filter(p=>p.endsWith(".html"));
-const asset='<link rel="stylesheet" href="site-finish.css?v=20261009-pwa-polish-v2">';
+const asset='<link rel="stylesheet" href="site-finish.css?v=20261009-pwa-polish-v3">';
 assert.equal(all.length,27,"Unexpected site page count");
 for(const p of all){
   const html=read(p);

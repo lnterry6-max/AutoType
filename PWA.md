@@ -29,3 +29,10 @@ Check installation, the app icon, opening directly to Home, clicking Play, sign-
 - In standalone mode, the homepage install CTA, installer guide, and install footer links are suppressed.
 - Old iOS offline fallback interception has been retired and its cache is cleaned.
 - After changing a Home Screen icon on iOS, remove the previously installed Home Screen shortcut and add it again to see the updated icon.
+
+## v3 (mobile/browser separation)
+- The original transparent wordmark remains in `assets/logo.png`; both site header and homepage install teaser show it on a **white rounded background**, visually cropped with CSS (no replacement artwork).
+- The iOS/Android icon URLs are versioned to v3 to invalidate old Home Screen and favicon caches; they reference the original-logo icons, not the obsolete A-only icon.
+- Install invitations are **hidden by default** and only shown when `pwa.js` confirms a mobile Safari/Chrome browser. The normal desktop site and the installed app never display these invitations.
+- Direct desktop visits to `/install.html` show a desktop-appropriate explanation and hide the mobile step-by-step installation guides.
+- App dock and service worker remain independent of ordinary desktop browsing.

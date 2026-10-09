@@ -390,3 +390,43 @@ body.pwa-standalone .pwa-install-guide-grid{display:none!important}
  .home-install-hint strong{font-size:12px}
  .home-install-hint a{display:inline-block;min-height:24px}
 }
+
+/* PWA v3: protect the original logo and isolate the mobile installation UI.
+   The source logo contains transparent margins; present its complete wordmark
+   in a white framed crop on dark and light backgrounds alike. */
+.brand-logo{
+  position:relative;width:58px;height:34px;flex:0 0 58px;overflow:hidden;
+  padding:0;background:#fff!important;border:1px solid rgba(23,42,58,.18);
+  border-radius:8px;
+}
+.brand-logo img[src="assets/logo.png"]{
+  position:absolute;display:block;width:85px!important;height:54px!important;
+  max-width:none!important;left:-14px;top:-10px;object-fit:fill;
+}
+.home-install-hint .home-install-mark{
+  position:relative;display:block;flex:0 0 74px;width:74px;height:42px;
+  padding:0;overflow:hidden;border-radius:9px;background:#fff!important;
+  border:1px solid rgba(27,51,70,.22);
+  box-shadow:0 3px 10px rgba(0,0,0,.12);
+}
+.home-install-hint .home-install-mark img[src="assets/logo.png"]{
+  position:absolute;display:block;width:110px!important;height:70px!important;
+  max-width:none!important;left:-18px;top:-13px;object-fit:fill;
+}
+/* Desktop pages never advertise Home Screen installation. */
+.home-install-hint,.footer-links a[href="install.html"]{display:none!important}
+html.pwa-mobile-browser body:not(.pwa-standalone) .home-install-hint{display:flex!important}
+html.pwa-mobile-browser body:not(.pwa-standalone) .footer-links a[href="install.html"]{display:inline-block!important}
+html.pwa-desktop-browser .pwa-install-guide-grid,
+html.pwa-desktop-browser .pwa-install-copy .section-kicker{display:none!important}
+html.pwa-desktop-browser .pwa-install-faq{margin-top:16px}
+html.pwa-installed .home-install-hint,
+html.pwa-installed .footer-links a[href="install.html"],
+html.pwa-installed .pwa-install-guide-grid{display:none!important}
+@media(max-width:520px){
+  html.pwa-mobile-browser .home-install-hint{gap:9px;align-items:center}
+  .home-install-hint .home-install-mark{flex:0 0 74px!important}
+  .home-install-hint strong{min-width:0}
+  .brand-logo{width:53px;flex-basis:53px}
+  .brand-logo img[src="assets/logo.png"]{left:-16px}
+}
