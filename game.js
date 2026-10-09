@@ -185,6 +185,7 @@ AutoType.ready().then(async()=>{
   // One continuation forecast for the current unfinished part of Sentence Mode.
   // It only advances when the player correctly locks a word.
   let sentenceForecast=[];
+  let sentencePhraseWords=0,sentencePhraseActions=0;
 
   const names={classic:"Word",context:"Context",sentence:"Sentence",evil:"Evil",daily:"Daily Challenge",custom:"Custom",race:"Friend Race",tournament:"Tournament",npc:"NPC Race"};
   const npcProfiles={
@@ -325,7 +326,7 @@ AutoType.ready().then(async()=>{
   function refreshSentenceForecast(){
     if(mode!=="sentence"||index===0||index>=words.length){sentenceForecast=[];return;}
     sentenceForecast=AutoTypeSentenceForecast.predict({
-      completed:words.slice(0,index),totalWords:words.length,corpus:sentences
+      completed:words.slice(0,index),totalWords:words.length,corpus:sentences,exclude:sentence
     });
   }
   function sentencePrediction(){
@@ -340,15 +341,18 @@ AutoType.ready().then(async()=>{
   }
   function renderSentenceForecast(){
     const panel=$("sentencePrediction");
+    const acceptButton=$("sentenceAcceptButton");
     if(mode!=="sentence"){
+      if(acceptButton)acceptButton.hidden=true;
       panel.classList.remove("is-active");
       panel.textContent=sentencePrediction();
       return;
     }
     panel.classList.add("is-active");
     if(index===0){
-      panel.innerHTML='<strong class="sentence-forecast-label">Full-sentence prediction</strong>'+
-        '<span class="sentence-forecast-hint">Finish the first word and AutoType will guess the entire rest of the sentence.</span>';
+      if(acceptButton)acceptButton.hidden=true;
+      panel.innerHTML='<strong class="sentence-forecast-label">Sentence prediction</strong>'+
+        '<span class="sentence-forecast-hint">Finish the first word to start.</span>';
       return;
     }
     // As the player corrects the current AI word, the rest of the sentence
@@ -357,15 +361,20 @@ AutoType.ready().then(async()=>{
     if(prefix&&visible&&visible!==sentenceForecast[0]){
       forecast=[visible,...AutoTypeSentenceForecast.predict({
         completed:[...words.slice(0,index),visible],
-        totalWords:words.length,corpus:sentences
+        totalWords:words.length,corpus:sentences,exclude:sentence
       })];
     }
     const chips=forecast.map((word,i)=>
       `<span class="sentence-forecast-word${i===0?" is-next":""}">${AutoType.escapeHTML(word)}</span>`
     ).join("");
-    panel.innerHTML='<strong class="sentence-forecast-label">AutoType predicts the rest</strong>'+
-      '<span class="sentence-forecast-words">'+chips+'</span>'+
-      '<span class="sentence-forecast-hint">Correct the next guessed word using your clues. The whole prediction changes as you progress.</span>';
+    panel.innerHTML='<strong class="sentence-forecast-label">AI predicts</strong>'+
+      '<span class="sentence-forecast-words">'+chips+'</span>';
+    if(acceptButton){
+      const count=!prefix
+        ?AutoTypeSentenceForecast.matchingPrefix(sentenceForecast,words.slice(index)):0;
+      acceptButton.hidden=count===0;
+      if(count)acceptButton.textContent=`Accept ${count} word${count===1?"":"s"} ✓`;
+    }
   }
   function render(){
     $("target").innerHTML=words.map((w,i)=>`<span class="${i<index?"done":i===index?"current":"future"}">${AutoType.escapeHTML(w)}</span>`).join(" ");
@@ -439,6 +448,7 @@ AutoType.ready().then(async()=>{
     if(timer)clearInterval(timer);started=false;startTime=0;
     sentence=newSentence;words=sentence.split(" ");index=0;prefix="";visible="";score=0;streak=0;maxStreak=0;keyCount=0;erased=0;errors=0;clueCounts=[];
     cluesThisWord=0;recentGuesses=[];justKeptAI=0;sentenceForecast=[];
+    sentencePhraseWords=0;sentencePhraseActions=0;
     $("time").textContent="0:00";$("results").hidden=true;
     if($("roundProgression"))$("roundProgression").hidden=true;
     if($("dailyMixResult"))$("dailyMixResult").hidden=true;
@@ -547,6 +557,34 @@ AutoType.ready().then(async()=>{
       $("message").className="message bad";
     }
   }
+  // Sentence Mode only: accept the contiguous words that the AI truly guessed.
+  // One tap is one real input action; do not fabricate keyboard events.
+  // Server-side sentence verification understands the separate batch metrics.
+  function acceptSentencePhrase(){
+    if(mode!=="sentence"||index===0||index>=words.length||prefix||
+       !$("results").hidden)return;
+    const count=AutoTypeSentenceForecast.matchingPrefix(
+      sentenceForecast,words.slice(index)
+    );
+    if(!count)return;
+    startTimer();
+    keyCount++;
+    sentencePhraseWords+=count;
+    sentencePhraseActions++;
+    for(let i=0;i<count;i++){
+      // Accepted words are worth the base minimum, not 120 one-clue points.
+      score+=20+Math.min(streak*5,30);
+      streak++;
+      maxStreak=Math.max(maxStreak,streak);
+    }
+    index+=count;
+    prefix="";visible="";cluesThisWord=0;recentGuesses=[];
+    justKeptAI=0;
+    refreshSentenceForecast();
+    if(index>=words.length)finish();else render();
+    pulse($("score"),"score-pop");
+    pulse(document.querySelector("#gameArea .arena"),"word-locked");
+  }
   function unlocks(p){
     const newly=[];
     const unlock=(id,condition)=>{
@@ -630,6 +668,8 @@ AutoType.ready().then(async()=>{
           erased,
           maxStreak,
           totalKeys:keyCount,
+          sentencePhraseWords,
+          sentencePhraseActions,
           errors,
           durationMs:Math.max(250,Math.round(ms)),
           oneClue:clueCounts.some(n=>n===1)
@@ -777,6 +817,7 @@ AutoType.ready().then(async()=>{
   const mobileStart=$("mobileStartButton");
   const mobileErase=$("mobileEraseButton");
   const mobileLock=$("mobileLockButton");
+  const sentenceAccept=$("sentenceAcceptButton");
   const mobileClose=$("mobileKeyboardClose");
   const gameArena=document.querySelector("#gameArea .arena");
   // Put the active sentence, guess and *real* input in one compact viewport
@@ -832,6 +873,10 @@ AutoType.ready().then(async()=>{
   mobileLock.addEventListener("click",()=>{
     lock();
     if($("results").hidden)focusMobileInput();
+  });
+  sentenceAccept?.addEventListener("click",()=>{
+    acceptSentencePhrase();
+    if($("results").hidden&&matchMedia("(pointer:coarse)").matches)focusMobileInput();
   });
   let mobileComposing=false;
   function handleMobileText(raw){
