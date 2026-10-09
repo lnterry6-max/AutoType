@@ -21,6 +21,12 @@
 }
 @media(max-width:820px),(pointer:coarse){
   #gameArea .sentence-prediction.is-active{margin-top:9px;padding:9px 11px}
+  body.mobile-keyboard-active #gameArea .sentence-action-row{
+    margin:3px 0 0;flex:0 0 auto;
+  }
+  body.mobile-keyboard-active #gameArea .sentence-accept-button{
+    min-height:28px;padding:4px 10px;font-size:11px;
+  }
   body.mobile-keyboard-active #gameArea .sentence-prediction.is-active{
     display:block;min-height:0;max-height:30px;overflow:auto;
     white-space:nowrap;margin:5px 0 0;padding:3px 6px;border:0;
@@ -36,3 +42,8 @@
     padding:1px 4px;font-size:11px;
   }
 }
+
+/* Accept only correct predicted words; keep a large accessible tap target. */
+#gameArea .sentence-action-row{display:flex;justify-content:flex-start;margin:9px 0 0}
+#gameArea .sentence-accept-button{min-height:36px;padding:7px 13px;font-size:12px}
+#gameArea .sentence-accept-button[hidden]{display:none!important}
