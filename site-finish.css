@@ -430,3 +430,16 @@ html.pwa-installed .pwa-install-guide-grid{display:none!important}
   .brand-logo{width:53px;flex-basis:53px}
   .brand-logo img[src="assets/logo.png"]{left:-16px}
 }
+
+
+/* Match both legacy and extensionless installer links. These rules are essential:
+   DOM link normalization must never reveal installation prompts on desktop/PWA. */
+.footer-links a[href="install"]{display:none!important}
+@media(display-mode:standalone){
+  .footer-links a[href="install"]{display:none!important}
+}
+body.pwa-standalone .footer-links a[href="install"],
+html.pwa-installed .footer-links a[href="install"]{display:none!important}
+html.pwa-mobile-browser body:not(.pwa-standalone) .footer-links a[href="install"]{
+  display:inline-block!important
+}
