@@ -161,6 +161,24 @@ def main() -> int:
         else:
             print(proc.stdout.strip())
 
+    sentence_forecast_test = ROOT / "scripts" / "test-sentence-forecast.cjs"
+    if sentence_forecast_test.exists():
+        proc = subprocess.run(["node", str(sentence_forecast_test)], capture_output=True, text=True, timeout=20)
+        if proc.returncode:
+            fail("Sentence Mode full prediction regression failed:\\n"
+                 + (proc.stderr.strip() or proc.stdout.strip()), issues)
+        else:
+            print(proc.stdout.strip())
+
+    completion_test = ROOT / "scripts" / "test-round-completion.cjs"
+    if completion_test.exists():
+        proc = subprocess.run(["node", str(completion_test)], capture_output=True, text=True, timeout=20)
+        if proc.returncode:
+            fail("Round completion regression failed:\\n"
+                 + (proc.stderr.strip() or proc.stdout.strip()), issues)
+        else:
+            print(proc.stdout.strip())
+
     clean_urls_test = ROOT / "scripts" / "test-clean-page-urls.cjs"
     if clean_urls_test.exists():
         proc = subprocess.run(["node", str(clean_urls_test)], capture_output=True, text=True, timeout=20)

@@ -53,7 +53,7 @@ assert.equal(nodes.roundBestBadge.hidden,true);
 model.render(host,{visible:false});
 assert.equal(host.hidden,true);
 const play=read("play.html"),game=read("game.js");
-assert.match(play, /<script src="progression-feedback\.js\?v=[^"]+"><\/script>[\s\S]*?<script src="prediction-picker\.js\?v=[^"]+"><\/script>\s*<script src="game\.js\?v=[^"]+"><\/script>/,
+ assert.match(play, /<script src="progression-feedback\.js\?v=[^"]+"><\/script>[\s\S]*?<script src="prediction-picker\.js\?v=[^"]+"><\/script>\s*<script src="sentence-forecast\.js\?v=[^"]+"><\/script>\s*<script src="completion-feedback\.js\?v=[^"]+"><\/script>\s*<script src="game\.js\?v=[^"]+"><\/script>/,
   "Progression and fresh-word picker must both load before the game engine");
 assert.ok(play.includes('id="roundProgression"'));
 assert.ok(play.includes('id="resultCoinLabel"'));
