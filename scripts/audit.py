@@ -218,6 +218,32 @@ def main() -> int:
             if 'id="mobileRoundStage"' not in text:
                 fail("play.html: keyboard-safe mobile round stage is missing", issues)
 
+        # Plinko must keep its single Aim control in view with the board on
+        # portrait phones, and place it alongside the board in landscape.
+        if page.name == "plinko.html":
+            for required in (
+                'href="plinko-mobile.css?v=20261008-plinko-mobile-v1"',
+                'id="plinkoBoard"', 'id="plinkoAim"',
+                'id="plinkoDrop"', 'id="plinkoReset"',
+            ):
+                if required not in text:
+                    fail("Mobile Plinko missing current control/asset: " + required, issues)
+            plinko_mobile_file = ROOT / "plinko-mobile.css"
+            if not plinko_mobile_file.is_file():
+                fail("Mobile Plinko stylesheet is missing", issues)
+            else:
+                plinko_css = plinko_mobile_file.read_text(encoding="utf-8")
+                for label, pattern in (
+                    ("flattened phone sidebar", r"\\.plinko-sidebar\\s*\\{\\s*display:\\s*contents"),
+                    ("Aim directly after board", r"\\.plinko-controls\\s*\\{[^}]*grid-row:\\s*2\\s*;"),
+                    ("round stats after Aim", r"\\.plinko-stats\\s*\\{[^}]*grid-row:\\s*3\\s*;"),
+                    ("viewport-aware board", r"#plinkoBoard\\s*\\{[^}]*42dvh"),
+                    ("landscape board-and-controls", r"orientation:\\s*landscape"),
+                    ("touch-sized Aim control", r"#plinkoAim\\s*\\{[^}]*min-height:\\s*42px"),
+                ):
+                    if not re.search(pattern, plinko_css, re.S):
+                        fail("Mobile Plinko regression: missing " + label, issues)
+
         if page.name == "profile.html":
             for expected in ('id="inventory"', 'inventoryAccordion.open=true',
                              'styles.css?v=20261008-beta-polish-v1'):
