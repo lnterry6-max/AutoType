@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Play · AutoType</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="styles.css?v=20261008-per-mode-crates-v1">
+<link rel="stylesheet" href="styles.css?v=20261008-beta-polish-v1">
 </head>
 <body data-page="play">
 
@@ -86,10 +86,10 @@
     </section>
 
     <div class="mode-card-grid">
-      <a class="mode-tile plinko-mode surprise-mode" data-surprise-mode href="play.html?mode=classic"><span class="mode-number">01</span><div><small>RANDOM MODE</small><h2>Surprise Me</h2><p>Try a different challenge without overthinking what to play next.</p></div><b>Shuffle →</b></a>
-      <a class="mode-tile primary-mode" href="play.html?mode=classic"><span class="mode-number">02</span><div><small>CORE</small><h2>Word</h2><p>Your prefix controls the guess, but the AI picks surprising matching words.</p></div><b>Play →</b></a>
+      <a class="mode-tile plinko-mode surprise-mode" data-surprise-mode href="play.html?mode=classic"><span class="mode-number">01</span><div><small>RANDOM MODE</small><h2>Surprise Me</h2><p>Jump into a random mode.</p></div><b>Shuffle →</b></a>
+      <a class="mode-tile primary-mode" href="play.html?mode=classic"><span class="mode-number">02</span><div><small>CORE</small><h2>Word</h2><p>Type a clue and see what AutoType guesses.</p></div><b>Play →</b></a>
       <a class="mode-tile" href="play.html?mode=context"><span class="mode-number">03</span><div><small>SMARTER</small><h2>Context</h2><p>The previous word influences the next prediction.</p></div><b>Play →</b></a>
-      <a class="mode-tile" href="play.html?mode=sentence"><span class="mode-number">04</span><div><small>FULL VIEW</small><h2>Sentence</h2><p>Watch AutoType make chaotic sentence-wide predictions.</p></div><b>Play →</b></a>
+      <a class="mode-tile" href="play.html?mode=sentence"><span class="mode-number">04</span><div><small>FULL VIEW</small><h2>Sentence</h2><p>See what AutoType thinks comes next.</p></div><b>Play →</b></a>
       <a class="mode-tile evil-mode" href="play.html?mode=evil"><span class="mode-number">05</span><div><small>CHAOS</small><h2>Evil</h2><p>Unexpected slang and wildly unhelpful guesses keep you on your toes.</p></div><b>Play →</b></a>
       <a class="mode-tile plinko-mode" href="plinko.html"><span class="mode-number">06</span><div><small>ARCADE · FREE</small><h2>Plinko</h2><p>Drop five free balls through a maze of pegs. Score arcade points and beat your personal best — no coins involved.</p></div><b>Drop →</b></a>
     </div>
@@ -103,11 +103,13 @@
     <section class="daily-mix-play-promo" aria-label="Today's Daily Mix">
       <div class="platform-section-head daily-mix-heading"><div><span class="section-kicker">DAILY MIX · <span data-daily-mix-date></span></span><h2>Today's mix</h2></div><span class="daily-mix-summary" id="playDailyMixSummary" aria-live="polite">Loading goals…</span></div>
       <div class="daily-mix-grid" id="playDailyMixCards"><p class="section-note">Loading today's challenges…</p></div>
-      <p class="daily-mix-footnote">Fresh goals tomorrow. No streaks, no pressure.</p>
+      <p class="daily-mix-footnote">New challenges tomorrow.</p>
     </section>
   </section>
 
   <section class="game-page" id="gameArea" hidden>
+    <div class="mobile-round-stage" id="mobileRoundStage">
+    <button type="button" class="mobile-keyboard-close" id="mobileKeyboardClose" aria-label="Close phone keyboard">Done</button>
     <div class="game-head">
       <div class="game-mode"><span>Mode</span><strong id="modeName">Word</strong></div>
       <div class="game-stats">
@@ -136,21 +138,22 @@
       </div>
       <div class="type-line"><div class="typing-trail" id="typingTrail"></div><div class="cursor"></div><div class="typed" id="typedPrefix">_</div><div class="key-help" id="keyboardHint">SPACE lock · BACKSPACE erase</div></div>
       <div class="mobile-game-controls" id="mobileGameControls">
-        <label for="mobileTypingInput">Mobile typing</label>
+        <label for="mobileTypingInput">Type your clue</label>
         <button type="button" class="button button-primary mobile-start-button" id="mobileStartButton">Tap to start typing <span aria-hidden="true">⌨</span></button>
         <input id="mobileTypingInput" class="input mobile-typing-input" type="text" inputmode="text"
           enterkeyhint="done" autocapitalize="off" autocomplete="off" autocorrect="off"
           spellcheck="false" aria-label="Type AutoType clues using your phone keyboard"
-          placeholder="Tap here to open the keyboard">
+          placeholder="Type a letter…">
         <div class="mobile-typing-actions">
           <button type="button" class="button button-secondary" id="mobileEraseButton">⌫ Erase AI</button>
           <button type="button" class="button button-primary" id="mobileLockButton">Lock word ↵</button>
         </div>
-        <p class="help">Type clues with your phone keyboard. Use Erase AI to remove wrong guesses and Lock word when the autocomplete matches the target.</p>
+        <p class="help">Erase incorrect guesses. Lock the word when it matches.</p>
       </div>
       <div class="message" id="message">Type one letter. AutoType will fill the rest.</div>
       <div class="progress"><i id="progress"></i></div>
     </div>
+    </div><!-- mobile-round-stage -->
 
     <details class="score-explainer" id="scoreExplainer">
       <summary><span>ⓘ How points work</span> <strong id="scoreNextWord">Up to 120 points for this word</strong></summary>
@@ -177,7 +180,7 @@
     <section class="results" id="results" hidden>
       <div class="result-heading"><h2>Round complete</h2><span class="verified-result" id="verifiedResult" hidden></span></div>
       <div class="result-score" id="resultScore">0</div>
-      <p class="help result-score-caption">Word score = clue points + streak bonuses. Coins earned are shown separately below.</p>
+      <p class="help result-score-caption">Clue points and streak bonuses. Coins are shown below.</p>
       <div class="result-grid">
         <div class="result-box"><strong id="resultTime">0:00</strong><span>Time</span></div>
         <div class="result-box"><strong id="resultKeys">0</strong><span>Keys</span></div>
@@ -196,15 +199,16 @@
 
 <footer class="footer">
   <div class="container footer-inner">
-    <span>AutoType · Competitive autocomplete typing</span>
+    <span><strong>AutoType</strong> <span class="footer-beta">BETA</span></span>
+    <div class="footer-links"><a href="how-to.html">How to play</a><a href="explore.html">Explore</a><a href="feedback.html">Feedback</a></div>
   </div>
 </footer>
 <div class="toast"></div>
 
 <script src="backend-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="backend.js?v=20261008-per-mode-crates-v1"></script>
-<script src="core.js?v=20261008-per-mode-crates-v1"></script>
+<script src="backend.js?v=20261008-beta-polish-v1"></script>
+<script src="core.js?v=20261008-beta-polish-v1"></script>
 <script src="daily-mix.js?v=20261008-daily-mix-v2"></script>
 
 <script>
@@ -309,7 +313,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   }).catch(error=>console.warn("Daily Mix could not initialize",error));
 });
 </script>
-<script src="game.js?v=20261008-per-mode-crates-v1"></script>
+<script src="game.js?v=20261008-beta-polish-v1"></script>
 
 </body>
 </html>

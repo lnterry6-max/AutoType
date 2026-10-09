@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Profile · AutoType</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="styles.css?v=20261008-per-mode-crates-v1">
+<link rel="stylesheet" href="styles.css?v=20261008-beta-polish-v1">
 </head>
 <body data-page="">
 
@@ -108,7 +108,7 @@
             <input type="color" id="profileAccent" value="#4ba6d8" aria-label="Choose a profile accent color">
             <span id="profileAccentPreview" class="profile-accent-swatch">My profile color</span>
           </div>
-          <p class="help">Adds a color accent to your public profile, without changing your equipped banner.</p>
+          <p class="help">Change your profile accent without changing your banner.</p>
         </div>
         <div class="form-group"><label class="label" for="statusMessage">Profile status</label>
           <input class="input" id="statusMessage" maxlength="110" placeholder="Building my next high score…">
@@ -167,15 +167,16 @@
 
 <footer class="footer">
   <div class="container footer-inner">
-    <span>AutoType · Competitive autocomplete typing</span>
+    <span><strong>AutoType</strong> <span class="footer-beta">BETA</span></span>
+    <div class="footer-links"><a href="how-to.html">How to play</a><a href="explore.html">Explore</a><a href="feedback.html">Feedback</a></div>
   </div>
 </footer>
 <div class="toast"></div>
 
 <script src="backend-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="backend.js?v=20261008-per-mode-crates-v1"></script>
-<script src="core.js?v=20261008-per-mode-crates-v1"></script>
+<script src="backend.js?v=20261008-beta-polish-v1"></script>
+<script src="core.js?v=20261008-beta-polish-v1"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded",async()=>{

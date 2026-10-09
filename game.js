@@ -291,6 +291,11 @@ AutoType.ready().then(async()=>{
   }
   function render(){
     $("target").innerHTML=words.map((w,i)=>`<span class="${i<index?"done":i===index?"current":"future"}">${AutoType.escapeHTML(w)}</span>`).join(" ");
+    // Scroll only the sentence strip, never the whole page, to follow the active word.
+    if(document.body.classList.contains("mobile-keyboard-active")){
+      const strip=$("target"),current=strip.querySelector(".current");
+      if(current)strip.scrollLeft=Math.max(0,current.offsetLeft-strip.offsetLeft-24);
+    }
     $("score").textContent=score;$("streak").textContent=streak;$("keys").textContent=keyCount;
     $("erasedCount").textContent=erased;
     const upcomingStreakBonus=Math.min(streak*5,30);
@@ -640,18 +645,49 @@ AutoType.ready().then(async()=>{
   const mobileStart=$("mobileStartButton");
   const mobileErase=$("mobileEraseButton");
   const mobileLock=$("mobileLockButton");
+  const mobileClose=$("mobileKeyboardClose");
   const gameArena=document.querySelector("#gameArea .arena");
+  // Put the active sentence, guess and *real* input in one compact viewport
+  // when iOS/Android raises the virtual keyboard. The fixed stage prevents
+  // Safari from scrolling the page down to chase a below-the-fold input.
+  const syncMobileViewport=()=>{
+    if(!document.body.classList.contains("mobile-keyboard-active"))return;
+    const viewport=window.visualViewport;
+    document.documentElement.style.setProperty("--mobile-vv-height",Math.round(viewport?.height||innerHeight)+"px");
+    document.documentElement.style.setProperty("--mobile-vv-top",Math.max(0,Math.round(viewport?.offsetTop||0))+"px");
+  };
+  window.visualViewport?.addEventListener("resize",syncMobileViewport);
+  window.visualViewport?.addEventListener("scroll",syncMobileViewport);
+  window.addEventListener("orientationchange",syncMobileViewport);
+  let mobileBlurTimer;
   const focusMobileInput=()=>{
     if(!$("results").hidden)return;
+    clearTimeout(mobileBlurTimer);
+    document.body.classList.add("mobile-keyboard-active");
+    syncMobileViewport();
     mobileInput.focus({preventScroll:true});
-    mobileStart.textContent="Keyboard ready · type a clue";
+    mobileStart.textContent="Keyboard ready";
   };
   mobileStart.addEventListener("click",focusMobileInput);
+  mobileClose?.addEventListener("click",()=>{
+    mobileInput.blur();
+    document.body.classList.remove("mobile-keyboard-active");
+  });
   mobileInput.addEventListener("focus",()=>{
-    mobileStart.textContent="Keyboard ready · type a clue";
+    clearTimeout(mobileBlurTimer);
+    document.body.classList.add("mobile-keyboard-active");
+    syncMobileViewport();
+    mobileStart.textContent="Keyboard ready";
   });
   mobileInput.addEventListener("blur",()=>{
-    mobileStart.textContent="Tap to open keyboard ⌨";
+    // Tapping Erase/Lock can briefly blur iOS inputs before the click refocuses.
+    // Keep the game stage stable across that transition.
+    clearTimeout(mobileBlurTimer);
+    mobileBlurTimer=setTimeout(()=>{
+      if(document.activeElement===mobileInput)return;
+      document.body.classList.remove("mobile-keyboard-active");
+      mobileStart.textContent="Tap to open keyboard ⌨";
+    },150);
   });
   gameArena.addEventListener("click",e=>{
     if(e.target.closest("button,input,textarea,select,a,summary,details"))return;

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Home · AutoType</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="styles.css?v=20261008-per-mode-crates-v1">
+<link rel="stylesheet" href="styles.css?v=20261008-beta-polish-v1">
 </head>
 <body data-page="home">
 
@@ -62,13 +62,13 @@
 
 
 <main class="container platform-home">
-  <aside class="friends-beta-banner" aria-label="Beta testing notice"><strong>FRIENDS BETA</strong><span>You're playing an early version of AutoType! Features may change. Found a bug? Tell the friend who sent you this link.</span></aside>
+  <aside class="friends-beta-banner" aria-label="Beta testing notice"><strong>FRIENDS BETA</strong><span>We're still in beta. See something off? Send us feedback.</span></aside>
   <section class="home-announcement" id="homeAnnouncement" hidden aria-live="polite"></section>
   <section class="home-command-shelf">
     <div class="home-command-copy">
       <div class="eyebrow" id="homeGreeting">AUTOTYPE</div>
       <h1>Beat the prediction.<br>Own the sentence.</h1>
-      <p>AutoType commits to a word before you finish typing. Reject bad guesses, feed it better clues, and lock each word with the fewest moves possible.</p>
+      <p>Type a clue. AutoType guesses the rest. Erase what doesn't fit and finish the sentence.</p>
       <div class="hero-actions">
         <a class="button button-primary home-play-button" href="play.html">Play AutoType</a>
         <a class="button button-secondary" href="play.html?mode=daily">Daily Challenge</a>
@@ -96,7 +96,7 @@
       <span class="daily-mix-summary" id="dailyMixSummary" aria-live="polite">Loading goals…</span>
     </div>
     <div class="daily-mix-grid" id="dailyMixCards" aria-live="polite"><p class="section-note">Loading today's challenges…</p></div>
-    <p class="daily-mix-footnote">Three quick skill challenges. A fresh mix tomorrow, with no streak to maintain.</p>
+    <p class="daily-mix-footnote">Three challenges today. New ones tomorrow.</p>
   </section>
 
   <section class="platform-section">
@@ -150,15 +150,16 @@
 
 <footer class="footer">
   <div class="container footer-inner">
-    <span>AutoType · Competitive autocomplete typing</span>
+    <span><strong>AutoType</strong> <span class="footer-beta">BETA</span></span>
+    <div class="footer-links"><a href="how-to.html">How to play</a><a href="explore.html">Explore</a><a href="feedback.html">Feedback</a></div>
   </div>
 </footer>
 <div class="toast"></div>
 
 <script src="backend-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="backend.js?v=20261008-per-mode-crates-v1"></script>
-<script src="core.js?v=20261008-per-mode-crates-v1"></script>
+<script src="backend.js?v=20261008-beta-polish-v1"></script>
+<script src="core.js?v=20261008-beta-polish-v1"></script>
 <script src="daily-mix.js?v=20261008-daily-mix-v2"></script>
 
 <script>
