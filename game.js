@@ -185,6 +185,7 @@ AutoType.ready().then(async()=>{
   // One continuation forecast for the current unfinished part of Sentence Mode.
   // It only advances when the player correctly locks a word.
   let sentenceForecast=[];
+  let sentencePreviewCacheKey="",sentencePreviewCache=[];
   let sentencePhraseWords=0,sentencePhraseActions=0;
 
   const names={classic:"Word",context:"Context",sentence:"Sentence",evil:"Evil",daily:"Daily Challenge",custom:"Custom",race:"Friend Race",tournament:"Tournament",npc:"NPC Race"};
@@ -324,6 +325,7 @@ AutoType.ready().then(async()=>{
     return kept;
   }
   function refreshSentenceForecast(){
+    sentencePreviewCacheKey="";sentencePreviewCache=[];
     if(mode!=="sentence"||index===0||index>=words.length){sentenceForecast=[];return;}
     sentenceForecast=AutoTypeSentenceForecast.predict({
       completed:words.slice(0,index),totalWords:words.length,corpus:sentences,exclude:sentence
@@ -359,10 +361,15 @@ AutoType.ready().then(async()=>{
     // is previewed from that correction. Accepting the word locks in a new forecast.
     let forecast=sentenceForecast;
     if(prefix&&visible&&visible!==sentenceForecast[0]){
-      forecast=[visible,...AutoTypeSentenceForecast.predict({
-        completed:[...words.slice(0,index),visible],
-        totalWords:words.length,corpus:sentences,exclude:sentence
-      })];
+      const key=index+"|"+visible;
+      if(sentencePreviewCacheKey!==key){
+        sentencePreviewCacheKey=key;
+        sentencePreviewCache=AutoTypeSentenceForecast.predict({
+          completed:[...words.slice(0,index),visible],
+          totalWords:words.length,corpus:sentences,exclude:sentence
+        });
+      }
+      forecast=[visible,...sentencePreviewCache];
     }
     const chips=forecast.map((word,i)=>
       `<span class="sentence-forecast-word${i===0?" is-next":""}">${AutoType.escapeHTML(word)}</span>`
@@ -448,6 +455,7 @@ AutoType.ready().then(async()=>{
     if(timer)clearInterval(timer);started=false;startTime=0;
     sentence=newSentence;words=sentence.split(" ");index=0;prefix="";visible="";score=0;streak=0;maxStreak=0;keyCount=0;erased=0;errors=0;clueCounts=[];
     cluesThisWord=0;recentGuesses=[];justKeptAI=0;sentenceForecast=[];
+    sentencePreviewCacheKey="";sentencePreviewCache=[];
     sentencePhraseWords=0;sentencePhraseActions=0;
     $("time").textContent="0:00";$("results").hidden=true;
     if($("roundProgression"))$("roundProgression").hidden=true;
@@ -806,6 +814,7 @@ AutoType.ready().then(async()=>{
     }
 
     $("results").hidden=false;
+    if($("sentenceAcceptButton"))$("sentenceAcceptButton").hidden=true;
     $("progress").style.width="100%";
     $("mobileGameControls").hidden=true;
     $("mobileTypingInput").blur();
