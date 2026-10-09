@@ -1,0 +1,263 @@
+/* AutoType: Finish Pass — original visual language, sharper execution.
+ * Supplement to styles.css, scoped to shared components and existing routes.
+ * Built to preserve user themes, photo backgrounds and keyboard gameplay.
+ */
+:root {
+  --finish-ring:rgba(0,162,255,.42);
+  --finish-shadow:0 18px 42px rgba(0,0,0,.11);
+  --finish-ease:cubic-bezier(.2,.7,.2,1);
+}
+html { scroll-behavior:smooth; }
+body { text-rendering:optimizeLegibility; }
+:where(a,button,input,textarea,select,summary):focus-visible {
+  outline:2px solid var(--blue);
+  outline-offset:3px;
+}
+:where(.button,.account-button,.home-mode-card,.mode-tile,.explore-links a,
+       .special-mode-strip a,.shop-item-card,.tournament-card,.platform-section-head>a) {
+  transition:transform .18s var(--finish-ease),border-color .18s ease,
+    box-shadow .18s ease,background-color .18s ease,color .18s ease;
+}
+
+/* A real navigation shell, not a second distracting hero. */
+.topbar { border-bottom-color:color-mix(in srgb,var(--border) 85%,transparent); }
+body:not(.has-photo-bg) .topbar {
+  background:color-mix(in srgb,var(--bg) 92%,transparent);
+  -webkit-backdrop-filter:saturate(125%) blur(16px);
+  backdrop-filter:saturate(125%) blur(16px);
+}
+.brand { letter-spacing:-.035em; }
+.brand-logo { border:1px solid rgba(255,255,255,.15);box-shadow:0 3px 12px rgba(0,0,0,.16); }
+.main-nav a,.nav-more summary { transition:color .17s ease,background-color .17s ease; }
+.main-nav a.active { font-weight:800; }
+.account-button { border:1px solid transparent; }
+.account-button:hover,.account-button.open { border-color:var(--border); }
+.account-dropdown {
+  border-radius:12px;box-shadow:0 22px 55px rgba(0,0,0,.3);
+  padding:8px;z-index:90;
+}
+
+/* Editorial hierarchy: readable at a glance, generous without wasted space. */
+.page-heading h1,.platform-page-heading h1,.account-intro h1 {
+  text-wrap:balance;
+}
+.platform-page-heading {
+  border-bottom-color:var(--border-soft);
+  padding-bottom:24px;
+}
+.platform-page-heading h1 { letter-spacing:-.052em; }
+.platform-page-heading p,.page-heading p { max-width:62ch;line-height:1.62; }
+.section-kicker { font-size:10px;letter-spacing:.11em; }
+.platform-section-head h2 { font-size:clamp(17px,1.65vw,21px);line-height:1.2; }
+.platform-section-head>a { text-underline-offset:3px; }
+.platform-section-head>a:hover { color:var(--text); }
+.section-note,.help { line-height:1.6; }
+
+/* Shared panels: comfortable contrast and restrained depth. */
+.platform-section,.panel,.stat {
+  border-radius:13px;
+  border-color:color-mix(in srgb,var(--border) 92%,transparent);
+}
+.platform-section {
+  box-shadow:0 10px 28px rgba(0,0,0,.085);
+}
+.panel { box-shadow:0 9px 26px rgba(0,0,0,.06); }
+.stat strong { letter-spacing:-.025em; }
+.stat span { font-size:11px; }
+:where(.platform-section,.panel) .empty { line-height:1.6; }
+
+/* Buttons should feel clickable without affecting layout or game timing. */
+.button { border-radius:9px;min-height:42px;line-height:1.2;letter-spacing:-.008em; }
+.button-primary { box-shadow:0 4px 13px rgba(0,162,255,.16); }
+.button-primary:hover:not(:disabled) { box-shadow:0 7px 20px rgba(0,162,255,.21); }
+.button:hover:not(:disabled) { transform:translateY(-1px); }
+.button:active:not(:disabled) { transform:translateY(0); }
+.input,.textarea,.select { border-radius:9px; }
+.input:focus,.textarea:focus,.select:focus {
+  box-shadow:0 0 0 3px rgba(0,162,255,.14);
+}
+:where(.button,.input,.textarea,.select):disabled { cursor:not-allowed; }
+
+/* Home: keep the original message and predictor, add game-like art direction. */
+.home-command-shelf {
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  border-radius:18px;
+  border-color:color-mix(in srgb,var(--border) 80%,var(--blue) 20%);
+  background:
+    radial-gradient(ellipse 72% 100% at 92% 4%,rgba(0,162,255,.11),transparent 78%),
+    color-mix(in srgb,var(--surface) 95%,transparent);
+  box-shadow:var(--finish-shadow);
+}
+.home-command-shelf::before {
+  content:"";position:absolute;z-index:-1;pointer-events:none;
+  top:-112px;right:-95px;width:310px;height:310px;border-radius:50%;
+  border:1px solid rgba(0,162,255,.105);
+  box-shadow:0 0 0 46px rgba(0,162,255,.018),
+             0 0 0 92px rgba(0,162,255,.013);
+}
+.home-command-copy h1 { text-wrap:balance; }
+.home-command-copy>p { max-width:52ch; }
+.home-play-button { min-width:142px; }
+.home-game-preview {
+  border-radius:14px;
+  box-shadow:0 18px 33px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.025);
+  border-color:color-mix(in srgb,var(--border) 75%,var(--blue) 25%);
+}
+.home-game-preview-head { font-size:10px;letter-spacing:.08em; }
+.home-target-sample { font-size:12px; }
+.home-preview-keys { gap:9px;flex-wrap:wrap;font-size:10px;line-height:1.3; }
+.home-preview-keys b { color:var(--muted); }
+.preview-learn-link {
+  margin-left:auto;white-space:nowrap;color:#8cd5ff;font-weight:850;
+  text-decoration:underline;text-decoration-color:transparent;
+  text-underline-offset:3px;
+}
+.preview-learn-link:hover { text-decoration-color:currentColor;color:#fff; }
+.home-mini-stats span { font-size:10px; }
+.home-mini-stats strong { font-size:19px;font-variant-numeric:tabular-nums; }
+
+/* Roblox-like discovery hierarchy, implemented with AutoType's own visual language.
+   Five useful modes remain visible; no new modes or artificial content. */
+.home-mode-grid { grid-template-columns:repeat(5,minmax(0,1fr));gap:12px; }
+.home-mode-card {
+  min-width:0;position:relative;isolation:isolate;overflow:hidden;
+  border-radius:13px;min-height:168px;padding:19px;
+  background:linear-gradient(153deg,rgba(255,255,255,.024),transparent 70%),var(--surface);
+}
+.home-mode-card::before {
+  content:"";position:absolute;top:0;left:0;right:0;height:3px;
+  background:var(--mode-accent,#00a2ff);opacity:.82;
+}
+.home-mode-card::after {
+  content:"";position:absolute;pointer-events:none;z-index:-1;
+  width:130px;height:130px;right:-50px;top:-57px;border-radius:50%;
+  background:radial-gradient(circle,color-mix(in srgb,var(--mode-accent,#00a2ff) 20%,transparent),transparent 69%);
+}
+.home-mode-card:nth-child(1){--mode-accent:#00a2ff}
+.home-mode-card:nth-child(2){--mode-accent:#63cdb2}
+.home-mode-card:nth-child(3){--mode-accent:#bb87ec}
+.home-mode-card:nth-child(4){--mode-accent:#e9b967}
+.home-mode-card:nth-child(5){--mode-accent:#79a4ff}
+.home-mode-card>span { font-size:10px;letter-spacing:.1em; }
+.home-mode-card strong { font-size:20px;letter-spacing:-.03em;margin-top:13px; }
+.home-mode-card p { font-size:12px;line-height:1.5;margin-top:8px; }
+.home-mode-card b { font-size:12px;letter-spacing:0; }
+.home-mode-card:hover {
+  transform:translateY(-3px);border-color:var(--mode-accent);
+  box-shadow:0 14px 30px rgba(0,0,0,.15);
+}
+.home-mode-card:active { transform:translateY(-1px); }
+
+/* The rest of the home dashboard should be legible, not microtext. */
+.home-progress-line { font-size:12px; }
+.metric-row-3 span,.home-wallet small { font-size:10px; }
+.metric-row-3 strong { font-size:17px; }
+.metric-row-3 div,.home-wallet div { border-radius:10px; }
+.home-feature-link p { font-size:12px; }
+.feature-icon { border-radius:11px; }
+
+/* Game-mode selection and discoverability. */
+.mode-card-grid { gap:13px; }
+.mode-tile {
+  min-width:0;border-radius:13px;overflow:hidden;
+  background:linear-gradient(125deg,rgba(0,162,255,.035),transparent 56%),var(--surface);
+}
+.mode-tile:hover {
+  transform:translateY(-2px);
+  border-color:color-mix(in srgb,var(--blue) 45%,var(--border));
+  box-shadow:0 12px 26px rgba(0,0,0,.12);
+}
+.mode-number { font-size:11px; }
+.mode-tile small,.special-mode-strip span { font-size:10px; }
+.mode-tile p { font-size:13px; }
+.mode-tile>b { font-size:12px; }
+.special-mode-strip a:hover { background:var(--surface-2); }
+.special-mode-strip small { font-size:11px;line-height:1.45; }
+.social-metrics span,.lab-metrics span,.leaderboard-self span { font-size:10px; }
+.mechanic-demo-flow small { font-size:10px; }
+
+/* Lists, community, shop and tournament surfaces feel part of one product. */
+.explore-links a { border-radius:9px; }
+.explore-links a:hover { transform:translateX(2px); }
+:where(.shop-item-card,.tournament-card,.crate-card,.collection-card,
+        .achievement-card,.inventory-item) { border-radius:12px; }
+:where(.shop-item-card,.tournament-card,.crate-card,.collection-card):hover {
+  border-color:color-mix(in srgb,var(--border) 70%,var(--blue) 30%);
+}
+:where(.leaderboard-row,.list-row,.friend-row) { transition:background-color .16s ease; }
+:where(.leaderboard-row,.list-row,.friend-row):hover { background:rgba(139,174,202,.045); }
+
+/* Consistent finish across account, settings, help, and site footer. */
+.account-benefits span { font-size:12px; }
+.settings-index a { font-size:11px; }
+.footer {
+  margin-top:42px;padding:27px 0 35px;
+  font-size:12px;color:var(--muted);
+}
+.footer-inner { align-items:center;flex-wrap:wrap; }
+.footer strong { color:var(--text); }
+.footer-links a { text-decoration:none;transition:color .16s ease; }
+.footer-links a:hover { color:var(--text);text-decoration:underline;text-underline-offset:3px; }
+.friends-beta-banner { border-radius:9px; }
+
+/* Light themes remain light; user-selected images and solid backgrounds remain theirs. */
+body.theme-light .home-command-shelf {
+  background:radial-gradient(ellipse at 95% 2%,rgba(0,135,225,.07),transparent 73%),
+    color-mix(in srgb,var(--surface) 96%,transparent);
+}
+body.theme-light .home-command-shelf::before { border-color:rgba(0,125,200,.1); }
+body.theme-light .home-mode-card {
+  background:linear-gradient(153deg,rgba(255,255,255,.55),transparent 70%),var(--surface);
+}
+body.theme-light .preview-learn-link { color:#006da9; }
+body.theme-light .preview-learn-link:hover { color:#00466d; }
+body.theme-light .footer strong { color:var(--text); }
+body.theme-light .home-mode-card:hover { box-shadow:0 11px 25px rgba(27,42,58,.09); }
+
+@media(max-width:1080px) {
+  .home-mode-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .home-command-shelf { gap:26px;padding:42px 30px; }
+}
+@media(max-width:760px) {
+  .home-mode-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .home-mode-card { min-height:156px;padding:16px; }
+  .home-command-shelf::before { opacity:.6; }
+  .home-game-preview { box-shadow:0 10px 22px rgba(0,0,0,.12); }
+  .page,.platform-home { padding-top:26px; }
+}
+@media(max-width:520px) {
+  .home-command-shelf { padding:23px 17px;border-radius:14px; }
+  .home-mode-grid { gap:9px; }
+  .home-mode-card { min-height:160px;padding:14px; }
+  .home-mode-card strong { font-size:19px; }
+  .home-mode-card p { font-size:11px; }
+  .home-preview-keys { gap:6px;font-size:9px; }
+  .preview-learn-link { flex-basis:100%;margin:5px 0 0; }
+  .platform-section { padding:16px; }
+  .home-mini-stats div { min-width:0;flex:1;padding-right:10px; }
+  .home-mini-stats div+div { padding-left:10px; }
+  .footer-inner { gap:12px; }
+}
+@media(max-width:355px) {
+  .home-mode-grid { grid-template-columns:1fr; }
+  .home-mode-card { min-height:138px; }
+}
+@media(hover:none) {
+  .home-mode-card:hover,.mode-tile:hover,.button:hover:not(:disabled),.explore-links a:hover {
+    transform:none;
+  }
+}
+@media(prefers-reduced-motion:reduce) {
+  html { scroll-behavior:auto; }
+  .button,.home-mode-card,.mode-tile,.explore-links a,.platform-section-head>a,
+  .footer-links a,.account-button { transition:none!important; }
+  .home-mode-card:hover,.mode-tile:hover,.button:hover:not(:disabled),.explore-links a:hover {
+    transform:none;
+  }
+}
+body.animations-off .button,
+body.animations-off .home-mode-card,
+body.animations-off .mode-tile,
+body.animations-off .explore-links a { transition:none!important;transform:none!important; }
