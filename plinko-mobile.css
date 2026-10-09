@@ -1,0 +1,102 @@
+/* Plinko mobile play surface. Keeps the aim control beside the board in the player's flow.
+   The desktop arcade remains on the shared two-column layout. */
+
+@media (max-width: 600px) {
+  .plinko-page { padding-top: 14px; }
+  .plinko-intro {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    padding-bottom: 9px;
+  }
+  .plinko-intro h1 { font-size: 26px; }
+  .plinko-intro .section-kicker { font-size: 9px; margin-bottom: 3px; }
+  .plinko-intro > a {
+    margin: 0 0 0 auto;
+    padding: 8px 10px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .plinko-overview {
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    margin-bottom: 9px;
+  }
+  .plinko-overview-mark { display: none; }
+  .plinko-overview strong { font-size: 12px; }
+  .plinko-overview p { margin-top: 2px; font-size: 10px; line-height: 1.35; }
+  .plinko-layout { gap: 9px; }
+  .plinko-cabinet { padding: 6px; }
+  .plinko-cabinet-top { padding: 4px 4px 7px; font-size: 8px; }
+  #plinkoBoard {
+    /* Limit board height on short phones without stretching the canvas. */
+    width: min(100%, 42dvh);
+    max-width: 100%;
+    height: auto;
+    margin-inline: auto;
+  }
+  .plinko-board-help { display: none; }
+
+  /* Flatten the sidebar only on phones. One real Aim input, no duplicated IDs
+     or separate mobile game logic. Put controls directly after the board. */
+  .plinko-sidebar { display: contents; }
+  .plinko-controls {
+    grid-column: 1;
+    grid-row: 2;
+    padding: 10px 12px 12px;
+  }
+  .plinko-controls .platform-section-head { display: none; }
+  .plinko-control-label { margin-bottom: 3px; }
+  #plinkoAim { min-height: 42px; touch-action: pan-x; }
+  .plinko-actions { margin-top: 5px; }
+  .plinko-actions .button { min-height: 44px; padding: 10px 8px; }
+  .plinko-controls .help { display: none; }
+  .plinko-stats { grid-column: 1; grid-row: 3; }
+  .plinko-tips { grid-column: 1; grid-row: 4; }
+}
+@media (max-width: 600px) and (max-height: 700px) {
+  #plinkoBoard { width: min(100%, 38dvh); }
+}
+
+/* Landscape phones: board and controls side by side rather than making the
+   player scroll a portrait-height board in a shallow viewport. */
+@media (max-width: 930px) and (max-height: 500px) and (orientation: landscape) {
+  .plinko-page { padding-top: 12px; }
+  .plinko-intro {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+  }
+  .plinko-intro > a { margin: 0 0 0 auto; }
+  .plinko-overview {
+    align-items: center;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+  }
+  .plinko-overview-mark { display: none; }
+  .plinko-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(200px, .85fr);
+    gap: 10px;
+  }
+  .plinko-cabinet { grid-column: 1; grid-row: 1; padding: 6px; }
+  #plinkoBoard { width: min(100%, 60dvh); max-width: 100%; height: auto; margin-inline: auto; }
+  .plinko-board-help { display: none; }
+  .plinko-sidebar { display: contents; }
+  .plinko-controls {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 12px;
+  }
+  .plinko-controls .platform-section-head { display: none; }
+  .plinko-control-label { margin-bottom: 3px; }
+  #plinkoAim { min-height: 42px; touch-action: pan-x; }
+  .plinko-actions { margin-top: 5px; }
+  .plinko-actions .button { min-height: 44px; padding: 10px 8px; }
+  .plinko-controls .help { display: none; }
+  .plinko-stats { grid-column: 1 / -1; grid-row: 2; }
+  .plinko-tips { grid-column: 1 / -1; grid-row: 3; }
+}
