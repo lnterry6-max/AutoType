@@ -9,6 +9,7 @@
 <link rel="icon" href="assets/logo.png">
 <link rel="stylesheet" href="styles.css?v=20261008-beta-polish-v1">
 <link rel="stylesheet" href="site-finish.css?v=20261008-finish-v1">
+<link rel="stylesheet" href="progression-polish.css?v=20261008-progression-v1">
 </head>
 <body data-page="home">
 
@@ -209,14 +210,21 @@ document.addEventListener("DOMContentLoaded",async()=>{
     set("homeBestScore",profile.bestScore||0);
     set("homeLevelMetric",info.level);
     set("homeBestStreak",profile.bestStreak||0);
-    set("homeXpText",`${info.xp} XP`);
-    set("homeXpNext",`${info.remaining} to level ${info.level+1}`);
+    set("homeXpText",`${info.into.toLocaleString()} / ${info.perLevel.toLocaleString()} XP`);
+    set("homeXpNext",`Level ${info.level+1} · ${info.remaining.toLocaleString()} to go`);
     set("homeAchievementMetric",`${AutoType.unlockedAchievements(profile).length} / ${AutoType.achievementDefs.length}`);
     set("homeRoundsMetric",profile.rounds||0);
     set("homeWordsMetric",profile.words||0);
 
     const bar=$("homeXpBar");
-    if(bar)bar.style.width=`${Math.max(0,Math.min(100,info.pct))}%`;
+    if(bar){
+      bar.style.width=`${Math.max(0,Math.min(100,info.pct))}%`;
+      bar.parentElement.setAttribute("role","progressbar");
+      bar.parentElement.setAttribute("aria-label","Current level XP progress");
+      bar.parentElement.setAttribute("aria-valuemin","0");
+      bar.parentElement.setAttribute("aria-valuemax",String(info.perLevel));
+      bar.parentElement.setAttribute("aria-valuenow",String(info.into));
+    }
   }
 
   function renderWallet(account,wallet){

@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="styles.css?v=20261008-beta-polish-v1">
 <link rel="stylesheet" href="onboarding-races.css?v=20261008-onboarding-v2">
 <link rel="stylesheet" href="site-finish.css?v=20261008-finish-v1">
+<link rel="stylesheet" href="progression-polish.css?v=20261008-progression-v1">
 </head>
 <body data-page="play">
 
@@ -214,8 +215,23 @@
         <div class="result-box"><strong id="resultKeys">0</strong><span>Keys</span></div>
         <div class="result-box"><strong id="resultErrors">0</strong><span>Errors</span></div>
         <div class="result-box"><strong id="resultErased">0</strong><span>AI erased</span></div>
-        <div class="result-box reward-result"><strong id="resultCoins">+0</strong><span>Coins earned</span></div>
+        <div class="result-box reward-result"><strong id="resultCoins">+0</strong><span id="resultCoinLabel">Coins earned</span></div>
       </div>
+      <section class="round-progression" id="roundProgression" aria-label="Round XP and level progress" hidden>
+        <div class="round-progression-head">
+          <div><span class="section-kicker" id="roundProgressKicker">ROUND PROGRESS</span><strong id="roundProgressTitle">Level progress</strong></div>
+          <span class="round-xp-gain" id="roundXpGain" hidden>+0 XP</span>
+        </div>
+        <p class="round-progression-note" id="roundProgressNote" role="status" aria-live="polite"></p>
+        <div class="round-xp-track" id="roundXpTrack" role="progressbar" aria-label="XP earned toward next level"
+          aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="roundXpFill"></i></div>
+        <div class="round-progression-foot">
+          <span id="roundProgressCount">0 / 500 XP</span>
+          <span id="roundProgressNext">500 XP to next level</span>
+          <a href="profile.html">View profile →</a>
+        </div>
+        <span class="round-best-badge" id="roundBestBadge" hidden>✦ New personal best</span>
+      </section>
       <div class="match-result" id="matchResult" hidden></div>
       <div class="achievement-unlocks" id="achievementUnlocks" hidden></div>
       <div class="daily-mix-result" id="dailyMixResult" hidden></div>
@@ -381,7 +397,8 @@ document.addEventListener("DOMContentLoaded",()=>{
   }).catch(error=>console.warn("Daily Mix could not initialize",error));
 });
 </script>
-<script src="game.js?v=20261008-npc-v2"></script>
+<script src="progression-feedback.js?v=20261008-progression-v1"></script>
+<script src="game.js?v=20261008-progression-v1"></script>
 
 </body>
 </html>

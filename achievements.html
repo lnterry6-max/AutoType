@@ -8,6 +8,7 @@
 <link rel="icon" href="assets/logo.png">
 <link rel="stylesheet" href="styles.css?v=20261008-beta-polish-v1">
 <link rel="stylesheet" href="site-finish.css?v=20261008-finish-v1">
+<link rel="stylesheet" href="progression-polish.css?v=20261008-progression-v1">
 </head>
 <body data-page="achievements">
 <header class="topbar">
@@ -73,6 +74,21 @@
     <div class="stat"><strong id="achievementXP">0</strong><span>Total XP</span></div>
   </div>
 
+  <section class="achievement-spotlight" id="achievementSpotlight" aria-label="Next achievement">
+    <div class="achievement-spotlight-icon" id="spotlightIcon" aria-hidden="true">★</div>
+    <div class="achievement-spotlight-body">
+      <span class="section-kicker" id="spotlightKicker">NEXT ACHIEVEMENT</span>
+      <div class="achievement-spotlight-top">
+        <strong id="spotlightName">Your next milestone</strong>
+        <a href="play.html">Play →</a>
+      </div>
+      <p id="spotlightDescription"></p>
+      <div class="achievement-spotlight-progress" id="spotlightTrack"
+        role="progressbar" aria-label="Next achievement progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="spotlightFill"></i></div>
+      <small id="spotlightCount"></small>
+    </div>
+  </section>
+
   <section class="achievement-page-grid" id="achievementGrid"></section>
 </main>
 
@@ -105,7 +121,34 @@ document.addEventListener("DOMContentLoaded",async()=>{
   const unlocked=AutoType.unlockedAchievements(p);
   unlockedCount.textContent=`${unlocked.length} / ${AutoType.achievementDefs.length}`;
   achievementLevel.textContent=info.level;
-  achievementXP.textContent=info.xp;
+  achievementXP.textContent=info.xp.toLocaleString();
+
+  // Highlight the closest earned-so-far milestone from the same real counters as the grid.
+  const nextAchievements=AutoType.achievementDefs.map((entry,order)=>{
+    const state=progress[entry.id]||{value:0,target:1,label:"Not started"};
+    return {entry,order,state,ratio:state.target?state.value/state.target:0};
+  }).filter(({entry})=>!p.achievements?.[entry.id])
+    .sort((a,b)=>b.ratio-a.ratio||a.state.target-b.state.target||a.order-b.order);
+  const spotlight=nextAchievements[0];
+  if(spotlight){
+    spotlightIcon.textContent=spotlight.entry.icon;
+    spotlightName.textContent=spotlight.entry.name;
+    spotlightDescription.textContent=spotlight.entry.desc;
+    spotlightCount.textContent=spotlight.state.label;
+    const pct=Math.max(0,Math.min(100,spotlight.ratio*100));
+    spotlightFill.style.width=pct+"%";
+    spotlightTrack.setAttribute("aria-valuenow",String(Math.round(pct)));
+    spotlightTrack.setAttribute("aria-valuetext",spotlight.state.label);
+  }else{
+    spotlightIcon.textContent="✓";
+    spotlightKicker.textContent="ALL COMPLETE";
+    spotlightName.textContent="Every achievement unlocked";
+    spotlightDescription.textContent="You've earned all current AutoType achievements.";
+    spotlightCount.textContent="";
+    spotlightFill.style.width="100%";
+    spotlightTrack.setAttribute("aria-valuenow","100");
+    spotlightTrack.setAttribute("aria-valuetext","All achievements unlocked");
+  }
 
   achievementGrid.innerHTML=AutoType.achievementDefs.map(a=>{
     const done=!!p.achievements?.[a.id];

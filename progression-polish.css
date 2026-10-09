@@ -1,0 +1,108 @@
+/* AutoType progression finish: the same visual system as site-finish.css. */
+.round-progression {
+  margin:16px 0;
+  padding:18px 20px;
+  border:1px solid color-mix(in srgb,var(--border) 78%,var(--blue) 22%);
+  border-radius:12px;
+  background:linear-gradient(125deg,rgba(0,162,255,.065),transparent 65%),var(--surface-2);
+}
+.round-progression[hidden],.round-progression [hidden]{display:none!important}
+.round-progression-head {
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.round-progression-head .section-kicker {margin:0 0 5px;font-size:10px}
+.round-progression-head strong {display:block;font-size:19px;letter-spacing:-.03em;line-height:1.24}
+.round-xp-gain {
+  flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;
+  padding:8px 11px;border:1px solid rgba(0,162,255,.24);border-radius:8px;
+  background:rgba(0,162,255,.1);color:#82d1ff;font-size:16px;font-weight:850;
+  font-variant-numeric:tabular-nums;
+}
+.round-progression-note {margin:8px 0 11px;color:var(--muted);font-size:12px;line-height:1.5}
+.round-xp-track {
+  width:100%;height:9px;border-radius:99px;overflow:hidden;
+  background:rgba(0,0,0,.2);
+}
+.round-xp-track i {
+  display:block;height:100%;width:0;border-radius:inherit;
+  background:linear-gradient(90deg,#0b9adb,#72d5ff);
+  transition:width .65s cubic-bezier(.2,.7,.2,1);
+}
+.round-progression-foot {
+  display:flex;justify-content:space-between;align-items:center;
+  gap:8px;flex-wrap:wrap;margin-top:9px;
+  font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;
+}
+.round-progression-foot a {color:#8fd2ff;font-weight:800;text-decoration:none}
+.round-progression-foot a:hover {text-decoration:underline;text-underline-offset:3px}
+.round-best-badge {
+  display:inline-flex;align-items:center;gap:6px;margin-top:11px;
+  padding:5px 9px;border:1px solid rgba(211,170,74,.32);
+  color:#ebc770;background:rgba(211,170,74,.085);
+  border-radius:7px;font-size:11px;font-weight:800;
+}
+.round-progression.level-up {
+  border-color:rgba(87,185,130,.5);
+  background:linear-gradient(120deg,rgba(87,185,130,.12),transparent 70%),var(--surface-2);
+}
+.round-progression.level-up .round-progression-head .section-kicker {color:#8de0b0}
+.round-progression.level-up .round-xp-gain {
+  color:#98e3b8;background:rgba(87,185,130,.12);border-color:rgba(87,185,130,.36)
+}
+.round-progression.level-up .round-xp-track i {
+  background:linear-gradient(90deg,#37ad77,#91edbd);
+}
+.round-progression.progress-pending {
+  border-color:var(--border);background:var(--surface-2);
+}
+.round-progression.progress-pending .round-progression-head strong {font-size:16px}
+.achievement-unlocks {border-radius:11px;gap:10px;padding:14px 16px;}
+.achievement-unlocks a {padding:5px 9px;border-radius:8px;background:rgba(87,185,130,.075)}
+.achievement-unlocks a:hover {background:rgba(87,185,130,.16)}
+.result-heading h2 {letter-spacing:-.035em}
+.result-score {font-variant-numeric:tabular-nums;letter-spacing:-.045em}
+.result-grid .result-box {border-radius:10px}
+.result-grid .result-box strong {font-variant-numeric:tabular-nums}
+.result-grid .result-box span {font-size:11px}
+.xp-bar i {transition:width .45s ease}
+.home-progress-line, #xpText,#xpNext {font-variant-numeric:tabular-nums}
+.achievement-spotlight {
+  display:flex;align-items:center;gap:14px;
+  margin:0 0 16px;padding:17px 20px;
+  border:1px solid var(--border);border-radius:13px;
+  background:color-mix(in srgb,var(--surface) 96%,transparent);
+}
+.achievement-spotlight-icon {
+  flex:0 0 auto;width:53px;height:53px;display:grid;place-items:center;
+  border-radius:12px;background:rgba(0,162,255,.10);
+  border:1px solid rgba(0,162,255,.25);color:#87d4ff;font-size:22px;font-weight:850;
+}
+.achievement-spotlight-body {min-width:0;flex:1}
+.achievement-spotlight-top {
+  display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px;
+}
+.achievement-spotlight-top strong {font-size:17px;letter-spacing:-.02em}
+.achievement-spotlight-top a {color:#88d2ff;font-size:12px;font-weight:750}
+.achievement-spotlight p {color:var(--muted);font-size:12px;line-height:1.5;margin:6px 0 10px}
+.achievement-spotlight-progress {height:7px;border-radius:99px;overflow:hidden;background:rgba(0,0,0,.18)}
+.achievement-spotlight-progress i {display:block;height:100%;background:var(--blue);border-radius:inherit}
+.achievement-spotlight small {display:block;margin-top:6px;font-size:11px;color:var(--muted)}
+body.theme-light .round-xp-track,
+body.theme-light .achievement-spotlight-progress{background:rgba(20,35,45,.11)}
+body.theme-light .round-xp-gain{color:#006da9}
+body.theme-light .round-progression.level-up .round-xp-gain{color:#0d8454}
+body.theme-light .round-progression-foot a,
+body.theme-light .achievement-spotlight-top a{color:#006da9}
+body.theme-light .round-best-badge{color:#855c05}
+@media(max-width:600px) {
+  .round-progression{padding:15px;margin:13px 0}
+  .round-progression-head strong{font-size:17px}
+  .round-xp-gain{font-size:14px;padding:7px 9px}
+  .achievement-spotlight{align-items:flex-start;padding:14px}
+  .achievement-spotlight-icon{width:43px;height:43px;font-size:18px}
+}
+@media(prefers-reduced-motion:reduce){
+  .round-xp-track i,.xp-bar i {transition:none!important}
+}
+body.animations-off .round-xp-track i,
+body.animations-off .xp-bar i {transition:none!important}

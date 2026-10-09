@@ -55,7 +55,7 @@ def main() -> int:
     issues: list[str] = []
     html_files = sorted(ROOT.glob("*.html"))
 
-    for js in (ROOT / "core.js", ROOT / "game.js", ROOT / "backend.js", ROOT / "plinko.js", ROOT / "content-pack.js", ROOT / "daily-mix.js", ROOT / "shop-rotation.js", ROOT / "how-to-tutorial.js"):
+    for js in (ROOT / "core.js", ROOT / "game.js", ROOT / "backend.js", ROOT / "plinko.js", ROOT / "content-pack.js", ROOT / "daily-mix.js", ROOT / "shop-rotation.js", ROOT / "how-to-tutorial.js", ROOT / "progression-feedback.js"):
         if js.exists():
             check_node(js, issues)
 
@@ -140,6 +140,15 @@ def main() -> int:
         if proc.returncode:
             fail("Site-wide finish regression failed:\\n" +
                  (proc.stderr.strip() or proc.stdout.strip()), issues)
+        else:
+            print(proc.stdout.strip())
+
+    progression_test = ROOT / "scripts" / "test-progression-feedback.cjs"
+    if progression_test.exists():
+        proc = subprocess.run(["node", str(progression_test)], capture_output=True, text=True, timeout=20)
+        if proc.returncode:
+            fail("Progression feedback regression failed:\\n"
+                 + (proc.stderr.strip() or proc.stdout.strip()), issues)
         else:
             print(proc.stdout.strip())
 

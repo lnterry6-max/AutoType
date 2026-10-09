@@ -391,6 +391,7 @@ AutoType.ready().then(async()=>{
     sentence=newSentence;words=sentence.split(" ");index=0;prefix="";visible="";score=0;streak=0;maxStreak=0;keyCount=0;erased=0;errors=0;clueCounts=[];
     cluesThisWord=0;recentGuesses=[];justKeptAI=0;
     $("time").textContent="0:00";$("results").hidden=true;
+    if($("roundProgression"))$("roundProgression").hidden=true;
     if($("dailyMixResult"))$("dailyMixResult").hidden=true;
     $("mobileGameControls").hidden=false;
     $("mobileTypingInput").value="";
@@ -561,6 +562,11 @@ AutoType.ready().then(async()=>{
     let newlyUnlocked=[];
     let verifiedSaved=false;
     const activeAccount=AutoType.currentAccount();
+    const previousProfile=AutoType.currentProfile();
+    // Preserve the real XP state before any server or guest progression is recorded.
+    const beforeProgress=AutoTypeProgression.snapshot(
+      AutoType.levelInfo(previousProfile),previousProfile.bestScore||0
+    );
 
     if(activeAccount?.online&&!npc){
       $("resultCoins").textContent="Saving…";
@@ -579,8 +585,8 @@ AutoType.ready().then(async()=>{
           oneClue:clueCounts.some(n=>n===1)
         });
         verifiedSaved=!!result?.verified;
-        coinsEarned=Number(result?.coins_earned||0);
-        newlyUnlocked=Array.isArray(result?.new_achievements)?result.new_achievements:[];
+        coinsEarned=verifiedSaved?Number(result?.coins_earned||0):0;
+        newlyUnlocked=verifiedSaved&&Array.isArray(result?.new_achievements)?result.new_achievements:[];
         const verifiedBadge=$("verifiedResult");
         if(verifiedBadge){
           verifiedBadge.hidden=!result?.verified;
@@ -589,6 +595,10 @@ AutoType.ready().then(async()=>{
         await AutoTypeBackend.hydrateLocalMirror();
       }catch(error){
         console.error("Round save failed",error);
+        // Never present unconfirmed backend rewards or level changes as earned.
+        verifiedSaved=false;
+        coinsEarned=0;
+        newlyUnlocked=[];
         if($("verifiedResult"))$("verifiedResult").hidden=true;
         AutoType.toast(error.message||"Round finished, but the backend could not save it.");
       }
@@ -667,7 +677,20 @@ AutoType.ready().then(async()=>{
     $("resultKeys").textContent=keyCount;
     $("resultErrors").textContent=errors;
     $("resultErased").textContent=erased;
-    $("resultCoins").textContent=npc?"Practice only":activeAccount?`+${coinsEarned}`:"Sign in";
+    const onlinePending=!!activeAccount?.online&&!npc&&!verifiedSaved;
+    $("resultCoins").textContent=npc?"Practice only":onlinePending?"Unconfirmed":activeAccount?`+${coinsEarned}`:"Sign in";
+    $("resultCoinLabel").textContent=npc?"Rewards":onlinePending?"Coins":"Coins earned";
+    const finalProfile=AutoType.currentProfile();
+    const afterProgress=AutoTypeProgression.snapshot(
+      AutoType.levelInfo(finalProfile),finalProfile.bestScore||0
+    );
+    const progressSummary=AutoTypeProgression.compare(beforeProgress,afterProgress,{
+      practice:!!npc,
+      confirmed:!activeAccount?.online||verifiedSaved,
+      local:!activeAccount?.online,
+      score
+    });
+    AutoTypeProgression.render($("roundProgression"),progressSummary);
     if(npc){
       updateNpc(ms);
       const botFinished=ms>=npcFinishMs;

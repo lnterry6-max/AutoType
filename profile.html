@@ -8,6 +8,7 @@
 <link rel="icon" href="assets/logo.png">
 <link rel="stylesheet" href="styles.css?v=20261008-beta-polish-v1">
 <link rel="stylesheet" href="site-finish.css?v=20261008-finish-v1">
+<link rel="stylesheet" href="progression-polish.css?v=20261008-progression-v1">
 </head>
 <body data-page="">
 
@@ -348,9 +349,14 @@ document.addEventListener("DOMContentLoaded",async()=>{
   favoriteModes.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>b.classList.toggle("selected")));
   const info=AutoType.levelInfo(p);
   levelStat.textContent=info.level;bestStat.textContent=p.bestScore||0;roundStat.textContent=p.rounds||0;
-  xpText.textContent=`${info.xp} XP`;
+  xpText.textContent=`${info.into.toLocaleString()} / ${info.perLevel.toLocaleString()} XP`;
   xpBar.style.width=`${info.pct}%`;
-  xpNext.textContent=`${info.remaining} XP until level ${info.level+1}.`;
+  xpBar.parentElement.setAttribute("role","progressbar");
+  xpBar.parentElement.setAttribute("aria-label","Level "+info.level+" progress");
+  xpBar.parentElement.setAttribute("aria-valuemin","0");
+  xpBar.parentElement.setAttribute("aria-valuemax",String(info.perLevel));
+  xpBar.parentElement.setAttribute("aria-valuenow",String(info.into));
+  xpNext.textContent=`${info.remaining.toLocaleString()} XP to level ${info.level+1} · ${info.xp.toLocaleString()} lifetime XP`;
 
   bio.addEventListener("input",()=>bioCount.textContent=bio.value.length);
   changeImage.addEventListener("click",()=>imageInput.click());
