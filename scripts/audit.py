@@ -55,7 +55,7 @@ def main() -> int:
     issues: list[str] = []
     html_files = sorted(ROOT.glob("*.html"))
 
-    for js in (ROOT / "core.js", ROOT / "game.js", ROOT / "backend.js", ROOT / "plinko.js", ROOT / "content-pack.js", ROOT / "daily-mix.js", ROOT / "shop-rotation.js"):
+    for js in (ROOT / "core.js", ROOT / "game.js", ROOT / "backend.js", ROOT / "plinko.js", ROOT / "content-pack.js", ROOT / "daily-mix.js", ROOT / "shop-rotation.js", ROOT / "how-to-tutorial.js"):
         if js.exists():
             check_node(js, issues)
 
@@ -113,6 +113,15 @@ def main() -> int:
         proc = subprocess.run(["node", str(crate_progress_test)], capture_output=True, text=True, timeout=20)
         if proc.returncode:
             fail("Mode crate progress regression failed:\\n" + (proc.stderr.strip() or proc.stdout.strip()), issues)
+        else:
+            print(proc.stdout.strip())
+
+    onboarding_test = ROOT / "scripts" / "test-onboarding-npc.cjs"
+    if onboarding_test.exists():
+        proc = subprocess.run(["node", str(onboarding_test)], capture_output=True, text=True, timeout=20)
+        if proc.returncode:
+            fail("Onboarding and NPC regression failed:\\n"
+                 + (proc.stderr.strip() or proc.stdout.strip()), issues)
         else:
             print(proc.stdout.strip())
 
