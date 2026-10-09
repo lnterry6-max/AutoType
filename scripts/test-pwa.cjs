@@ -74,7 +74,7 @@ const css=read("site-finish.css");
 assert.match(css,/body\.pwa-has-dock\[data-page="play"\]:has\(#gameArea:not\(\[hidden\]\)\)/,"Mobile dock remains visible on Play menu but hides during matches");
 assert.match(css,/@media\(display-mode:standalone\)/,"Native app hides install CTA");
 assert.match(css,/\.pwa-install-feature/,"Responsive install experience");
-assert.match(read("install.html"),/src="assets\/pwa\/icon-logo-192-v2\.png"/,"Correct installer artwork");
+assert.match(read("install.html"),/src="assets\/pwa\/icon-logo-192-v3\.png"/,"Correct installer artwork");
 
 // Mobile installation links are hidden by default (before JS and on desktop).
 assert.match(css,/\.home-install-hint,\.footer-links a\[href="install\.html"\]\{display:none!important\}/);
