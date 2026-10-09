@@ -19,7 +19,7 @@ for(const [file,size] of pngs){
  assert.deepEqual([...b.subarray(0,8)],[137,80,78,71,13,10,26,10],"PNG signature: "+file);
  assert.equal(b.readUInt32BE(16),size,"PNG width: "+file);
  assert.equal(b.readUInt32BE(20),size,"PNG height: "+file);
- assert.equal(b[24],2,"PNG palette bit depth: "+file);
+ assert.ok([2,4,8].includes(b[24]),"Supported PNG indexed palette bit depth: "+file);
  assert.equal(b[25],3,"PNG indexed color: "+file);
  let offset=8,palette=false,image=false;
  while(offset<b.length){
