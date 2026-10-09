@@ -42,7 +42,8 @@ begin
     raise exception 'This round challenge expired';
   end if;
   if p_mode <> 'sentence' then raise exception 'Phrase acceptance is only for Sentence Mode'; end if;
-  if p_batch_words < 0 or p_batch_words >= p_words or
+  if p_batch_words is null or p_batch_actions is null or
+     p_batch_words < 0 or p_batch_words >= p_words or
      p_batch_actions < 0 or p_batch_actions > p_batch_words or
      ((p_batch_words = 0) <> (p_batch_actions = 0)) then
     raise exception 'Invalid accepted phrase metrics';
@@ -62,6 +63,9 @@ begin
   for i in 0..greatest(0,p_words-1) loop
     max_score:=max_score+120+least(i*5,30);
   end loop;
+  -- Automatically accepted words receive 20 points instead of 120.
+  -- Restrict the score ceiling so batch acceptance never boosts rankings.
+  max_score:=max_score-100*p_batch_words;
 
   server_elapsed:=greatest(0,(extract(epoch from (now()-ch.issued_at))*1000)::bigint);
 
