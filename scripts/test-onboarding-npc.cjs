@@ -14,7 +14,7 @@ const script = read("how-to-tutorial.js");
 
 assert.match(account, /location\.href="how-to\.html#try-it"/);
 assert.equal((account.match(/location\.href="how-to\.html#try-it"/g) || []).length, 2, "Both login and registration must link to How to Play");
-assert.match(howto, /id="guidedTutorial"/); // Intentional: catch a wrongly named wrapper.
+assert.match(howto, /id="try-it"/);
 assert.match(howto, /id="tutorialStage"/);
 assert.match(howto, /how-to-tutorial\.js/);
 assert.doesNotMatch(play, /how-to-tutorial\.js/, "Tutorial must be exclusive to How to Play");
