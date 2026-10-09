@@ -10,12 +10,12 @@ const missingNames=[],dupeIds=[],brokenLabels=[],h1Anomalies=[],unlabelledImages
 let menuCount=0,coreScripts=0,backendCalls=0,externalWindows=0;
 const backend=read("backend.js"),ex=backend.match(/window\.AutoTypeBackend=\{([\s\S]*?)\n\s*\};/);
 assert.ok(ex,"Backend must expose its shared API");
-const exports=new Set(ex[1].split(",").map(x=>x.trim().split(":")[0].trim()).filter(Boolean));
+const backendExports=new Set(ex[1].split(",").map(x=>x.trim().split(":")[0].trim()).filter(Boolean));
 for(const filename of [...pages,...scripts]){
  const s=read(filename);
  for(const m of s.matchAll(/AutoTypeBackend\.([a-zA-Z_]\w*)/g)){
   backendCalls++;
-  if(!exports.has(m[1]))missingNames.push(filename+" → "+m[1]);
+  if(!backendExports.has(m[1]))missingNames.push(filename+" → "+m[1]);
  }
 }
 assert.deepEqual(missingNames,[],"All frontend method names must exist on AutoTypeBackend");

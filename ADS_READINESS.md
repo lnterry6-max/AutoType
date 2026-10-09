@@ -17,7 +17,7 @@ This is a staged layout plan, not permission to run ads or an approval guarantee
 1. Use only an **eligible account holder** and provide accurate payment/identity information. AdSense requires publishers to be at least 18; a parent or guardian can own an account if the site operator is younger.
 2. Periodically check both forwarding aliases, and keep the contact addresses current. Forwarding does not automatically make outgoing mail appear to come from the AutoType domain.
 3. Review the drafted privacy disclosures with the site operator, including all current provider and retention details, and revise as needed.
-4. Configure required consent and privacy tools in the provider dashboard (including a Google-certified CMP for applicable regional personalized ads). Keep auto ads **off**.
+4. European and US privacy messages were published in the AdSense dashboard. Before any live ad scripts load, verify the consent message is actually integrated and honors regional visitor choices, including on mobile. Keep auto ads **off**.
 5. Site ownership is verified and the AdSense site review has been requested (October 9, 2026). Wait for Google to decide whether the site is eligible; review submission is not approval.
 6. After site approval, get official ad-unit IDs and add clearly labeled, responsive in-page units only to the three safe placements. Keep advertising separate from game controls and avoid accidental clicks.
 7. The exact `ads.txt` record provided for `pub-9541821976044642` is now in the website root. Confirm `https://auto-type.net/ads.txt` serves that plain text after deployment; Google may take time to recognize it.

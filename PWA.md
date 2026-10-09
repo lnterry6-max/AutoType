@@ -9,7 +9,7 @@ AutoType is installable at https://auto-type.net/. It uses the same website and 
 
 ## Standalone design
 - User's original `assets/logo.png` wordmark, cropped to its alpha bounds and resized without alteration, centered on white in new square PNG icon assets; standalone app window.
-- Compact four-item dock for installed mobile browse pages; **never shown during active matches, Plinko, messaging, account recovery, admin or the keyboard-heavy pages**.
+- Compact four-item dock for installed mobile browse pages; **hidden during active matches, Plinko, account creation/recovery, admin, and whenever an input has focus**; other browsing screens, including the messages inbox, may show the dock until a text field is focused.
 - Normal browser visitors see no dock or automatic install pop-up.
 - Home and footer link to the installation guide.
 
