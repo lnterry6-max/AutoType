@@ -59,7 +59,7 @@ vm.runInNewContext(script, sandbox, {filename: "how-to-tutorial.js"});
 nodes.tutorialLaunch.click();
 assert.equal(nodes.tutorialCount.textContent, "Step 1 of 5");
 nodes.tutorialType.click();
-assert.match(nodes.tutorialGuess.innerHTML, /mild/); // markup splits the word across spans
+assert.equal(nodes.tutorialGuess.innerHTML.replace(/<[^>]+>/g, ""), "mild");
 nodes.tutorialErase.click();
 nodes.tutorialErase.click();
 assert.equal(nodes.tutorialCount.textContent, "Step 3 of 5");
