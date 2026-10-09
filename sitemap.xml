@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://auto-type.net/</loc></url>
-  <url><loc>https://auto-type.net/play.html</loc></url>
-  <url><loc>https://auto-type.net/how-to.html</loc></url>
-  <url><loc>https://auto-type.net/explore.html</loc></url>
-  <url><loc>https://auto-type.net/leaderboard.html</loc></url>
-  <url><loc>https://auto-type.net/plinko.html</loc></url>
-  <url><loc>https://auto-type.net/predictions.html</loc></url>
-  <url><loc>https://auto-type.net/tournaments.html</loc></url>
-  <url><loc>https://auto-type.net/shop.html</loc></url>
-  <url><loc>https://auto-type.net/about.html</loc></url>
-  <url><loc>https://auto-type.net/privacy.html</loc></url>
-  <url><loc>https://auto-type.net/contact.html</loc></url>
-  <url><loc>https://auto-type.net/install.html</loc></url>
+  <url><loc>https://auto-type.net/play</loc></url>
+  <url><loc>https://auto-type.net/how-to</loc></url>
+  <url><loc>https://auto-type.net/explore</loc></url>
+  <url><loc>https://auto-type.net/leaderboard</loc></url>
+  <url><loc>https://auto-type.net/plinko</loc></url>
+  <url><loc>https://auto-type.net/predictions</loc></url>
+  <url><loc>https://auto-type.net/tournaments</loc></url>
+  <url><loc>https://auto-type.net/shop</loc></url>
+  <url><loc>https://auto-type.net/about</loc></url>
+  <url><loc>https://auto-type.net/privacy</loc></url>
+  <url><loc>https://auto-type.net/contact</loc></url>
+  <url><loc>https://auto-type.net/install</loc></url>
 </urlset>
