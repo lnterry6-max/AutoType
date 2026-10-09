@@ -20,8 +20,8 @@ for(const filename of [...pages,...scripts]){
 }
 assert.deepEqual(missingNames,[],"All frontend method names must exist on AutoTypeBackend");
 const gameServer=read("supabase/functions/game-api/index.ts");
-const clientActions=[...new Set([...backend.matchAll(/\\bapi\\(["']([a-z_]+)["']/g)].map(m=>m[1]))].sort();
-const serverActions=[...new Set([...gameServer.matchAll(/case\\s+["']([a-z_]+)["']/g)].map(m=>m[1]))].sort();
+const clientActions=[...new Set([...backend.matchAll(/api\("([a-z_]+)"/g)].map(m=>m[1]))].sort();
+const serverActions=[...new Set([...gameServer.matchAll(/case\s+"([a-z_]+)"/g)].map(m=>m[1]))].sort();
 assert.deepEqual(clientActions,serverActions,"Every frontend game-api action has exactly one matching server handler");
 
 for(const filename of pages){
