@@ -1,0 +1,62 @@
+/* AutoType: guided How to Play lesson, optional NPC practice, subtle game feedback.
+   Scoped to the two relevant pages; respects reduced motion and user settings. */
+.guided-tutorial { margin:18px 0 22px; }
+.guided-tutorial-head { display:flex;align-items:center;justify-content:space-between;gap:16px; }
+.guided-tutorial-head h2 { margin:3px 0 5px;font-size:20px; }
+.guided-tutorial-head p { color:var(--muted);margin:0;font-size:12px;line-height:1.5; }
+.guided-tutorial-play[hidden], .guide-tutorial-outcome[hidden],
+.guided-tutorial [hidden], .quick-match-npc[hidden], .npc-race-strip[hidden] { display:none!important; }
+.guided-tutorial-play { padding-top:18px;margin-top:16px;border-top:1px solid var(--border); }
+.guided-tutorial-progress { display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:11px;color:var(--muted); }
+.guided-tutorial-progress strong { color:var(--text);font-size:12px; }
+.guided-tutorial-track,.npc-race-progress { height:5px;background:var(--surface-2);border-radius:9px;overflow:hidden;margin:9px 0 19px; }
+.guided-tutorial-track i,.npc-race-progress i { display:block;width:0;height:100%;background:var(--blue);transition:width .25s ease; }
+.guided-tutorial-target { font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:800; }
+.guided-tutorial-target strong { display:block;color:var(--text);font-size:26px;letter-spacing:-.02em;text-transform:none;margin-top:4px; }
+.guided-tutorial-word { font-size:clamp(32px,5vw,48px);font-weight:800;letter-spacing:-.04em;overflow:hidden;text-overflow:ellipsis;min-height:56px;margin:15px 0 8px; }
+.guided-tutorial-message { color:var(--muted);font-size:13px;line-height:1.5;min-height:37px;margin:0 0 10px; }
+.guided-tutorial-actions { display:flex;gap:8px;flex-wrap:wrap;align-items:center; }
+.guided-tutorial-input { flex:1 1 150px;min-width:0;max-width:260px; }
+.guided-tutorial-actions .button { min-height:42px; }
+.guide-tutorial-outcome { display:flex;align-items:center;gap:9px;color:var(--green);font-size:12px;font-weight:700;margin:12px 0 0; }
+.guide-word-pop { animation:guide-word-in .17s ease-out; }
+@keyframes guide-word-in { from{transform:translateY(3px);opacity:.72} to{transform:translateY(0);opacity:1} }
+
+.quick-match-npc { grid-column:1/-1;border-top:1px solid var(--border);padding-top:13px; }
+.quick-match-npc p { margin:0 0 10px;font-size:12px;color:var(--text); }
+.quick-match-npc-actions,.quick-match-npc-levels { display:flex;flex-wrap:wrap;gap:8px; }
+.quick-match-npc-levels .button { flex:1 1 100px;max-width:170px; }
+.quick-match-npc .npc-skill-detail { color:var(--muted);font-size:11px;margin-top:8px; }
+.quick-match-npc [hidden] { display:none!important; }
+
+.npc-race-strip { margin:15px 0 -16px;padding:12px 15px;border:1px solid var(--border);border-radius:10px;background:var(--surface); }
+.npc-race-top { display:flex;align-items:center;justify-content:space-between;gap:12px; }
+.npc-race-top strong { font-size:13px; }
+.npc-race-top span { color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums; }
+.npc-race-progress { margin:11px 0 5px;height:6px; }
+.npc-race-note { color:var(--muted);font-size:10px; }
+body[data-page="play"] .arena.word-locked { animation:autotype-lock-glow .26s ease-out; }
+body[data-page="play"] .guess.guess-pop { animation:autotype-guess-in .17s ease-out; }
+body[data-page="play"] .game-stats strong.score-pop { animation:autotype-score-in .2s ease-out; }
+@keyframes autotype-lock-glow { 0%{box-shadow:0 0 0 1px rgba(89,201,150,.6)} 100%{box-shadow:none} }
+@keyframes autotype-guess-in { from{opacity:.6;transform:translateY(3px)}to{opacity:1;transform:translateY(0)} }
+@keyframes autotype-score-in { 50%{transform:scale(1.12);color:var(--green)} }
+
+@media(max-width:600px) {
+  .guided-tutorial {padding:14px}
+  .guided-tutorial-head {align-items:flex-start;flex-wrap:wrap}
+  .guided-tutorial-head .button {width:100%}
+  .guided-tutorial-target strong {font-size:24px}
+  .guided-tutorial-input {flex-basis:100%;max-width:none;font-size:16px}
+  .guided-tutorial-actions .button {flex:1}
+  .npc-race-strip {padding:9px 11px;margin:10px 0 0}
+  .quick-match-npc-levels .button {flex:1 1 85px}
+}
+@media(prefers-reduced-motion:reduce){
+  .guide-word-pop,.arena.word-locked,.guess.guess-pop,.game-stats strong.score-pop {animation:none!important}
+  .guided-tutorial-track i,.npc-race-progress i {transition:none}
+}
+body.animations-off .guide-word-pop,
+body.animations-off .arena.word-locked,
+body.animations-off .guess.guess-pop,
+body.animations-off .game-stats strong.score-pop {animation:none!important}
