@@ -161,6 +161,15 @@ def main() -> int:
         else:
             print(proc.stdout.strip())
 
+    clean_urls_test = ROOT / "scripts" / "test-clean-page-urls.cjs"
+    if clean_urls_test.exists():
+        proc = subprocess.run(["node", str(clean_urls_test)], capture_output=True, text=True, timeout=20)
+        if proc.returncode:
+            fail("Clean URL navigation regression failed:\\n"
+                 + (proc.stderr.strip() or proc.stdout.strip()), issues)
+        else:
+            print(proc.stdout.strip())
+
     ad_readiness_test = ROOT / "scripts" / "test-ad-readiness.cjs"
     if ad_readiness_test.exists():
         proc = subprocess.run(["node", str(ad_readiness_test)], capture_output=True, text=True, timeout=20)
