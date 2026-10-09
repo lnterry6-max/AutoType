@@ -1,7 +1,7 @@
 /* AutoType guided lesson. Only loaded by how-to.html; never changes stats or wallets. */
 (() => {
   "use strict";
-  const root = document.getElementById("guidedTutorial");
+  const root = document.getElementById("try-it");
   if (!root) return;
   const $ = id => document.getElementById(id);
   const launch = $("tutorialLaunch"), stage = $("tutorialStage");
