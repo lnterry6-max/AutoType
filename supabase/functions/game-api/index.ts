@@ -78,7 +78,16 @@ Deno.serve(async(req:Request)=>{
 
         if(competitive){
           if(!payload.challengeId)throw new Error("This competitive round is missing its server challenge.");
-          return json(await rpc("autotype_record_verified_round",{
+          const batchWords=Number(payload.sentencePhraseWords??0);
+          const batchActions=Number(payload.sentencePhraseActions??0);
+          if(!Number.isSafeInteger(batchWords)||!Number.isSafeInteger(batchActions)||
+             batchWords<0||batchActions<0||batchActions>batchWords){
+            throw new Error("Invalid phrase acceptance metrics.");
+          }
+          if(mode!=="sentence"&&(batchWords!==0||batchActions!==0)){
+            throw new Error("Phrase acceptance is only available in Sentence Mode.");
+          }
+          const metrics={
             p_user:user.id,
             p_challenge:payload.challengeId,
             p_round:payload.roundId,
@@ -91,7 +100,13 @@ Deno.serve(async(req:Request)=>{
             p_errors:Number(payload.errors||0),
             p_duration_ms:Number(payload.durationMs||0),
             p_one_clue:!!payload.oneClue
-          }));
+          };
+          if(mode==="sentence"){
+            return json(await rpc("autotype_record_sentence_round",{
+              ...metrics,p_batch_words:batchWords,p_batch_actions:batchActions
+            }));
+          }
+          return json(await rpc("autotype_record_verified_round",metrics));
         }
 
         return json(await rpc("autotype_record_round",{
