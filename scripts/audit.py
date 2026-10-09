@@ -125,6 +125,15 @@ def main() -> int:
         else:
             print(proc.stdout.strip())
 
+    seo_test = ROOT / "scripts" / "test-seo.cjs"
+    if seo_test.exists():
+        proc = subprocess.run(["node", str(seo_test)], capture_output=True, text=True, timeout=20)
+        if proc.returncode:
+            fail("AutoType sitemap and indexing regression failed:\\n"
+                 + (proc.stderr.strip() or proc.stdout.strip()), issues)
+        else:
+            print(proc.stdout.strip())
+
     canonical_more = [
         "predictions.html", "leaderboard.html", "how-to.html", "explore.html", "settings.html"
     ]
