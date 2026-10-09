@@ -113,23 +113,23 @@
             <button class="button button-secondary" type="button" data-npc-skill="medium">Medium · Rival</button>
             <button class="button button-primary" type="button" data-npc-skill="hard">Hard · Ace</button>
           </div>
-          <p class="npc-skill-detail">Practice race · first to finish wins · no leaderboard or wallet rewards.</p>
+          <p class="npc-skill-detail">Practice only · no rewards.</p>
         </div>
       </div>
     </section>
 
     <div class="mode-card-grid">
-      <a class="mode-tile plinko-mode surprise-mode" data-surprise-mode href="play.html?mode=classic"><span class="mode-number">01</span><div><small>RANDOM MODE</small><h2>Surprise Me</h2><p>Jump into a random mode.</p></div><b>Shuffle →</b></a>
-      <a class="mode-tile primary-mode" href="play.html?mode=classic"><span class="mode-number">02</span><div><small>CORE</small><h2>Word</h2><p>Type a clue and see what AutoType guesses.</p></div><b>Play →</b></a>
-      <a class="mode-tile" href="play.html?mode=context"><span class="mode-number">03</span><div><small>SMARTER</small><h2>Context</h2><p>The previous word influences the next prediction.</p></div><b>Play →</b></a>
-      <a class="mode-tile" href="play.html?mode=sentence"><span class="mode-number">04</span><div><small>FULL VIEW</small><h2>Sentence</h2><p>AutoType predicts the whole sentence. Your clues steer its next guess.</p></div><b>Play →</b></a>
-      <a class="mode-tile evil-mode" href="play.html?mode=evil"><span class="mode-number">05</span><div><small>CHAOS</small><h2>Evil</h2><p>Unexpected slang and wildly unhelpful guesses keep you on your toes.</p></div><b>Play →</b></a>
-      <a class="mode-tile plinko-mode" href="plinko.html"><span class="mode-number">06</span><div><small>ARCADE · FREE</small><h2>Plinko</h2><p>Drop five free balls through a maze of pegs. Score arcade points and beat your personal best — no coins involved.</p></div><b>Drop →</b></a>
+      <a class="mode-tile plinko-mode surprise-mode" data-surprise-mode href="play.html?mode=classic"><span class="mode-number">01</span><div><small>RANDOM MODE</small><h2>Surprise Me</h2><p>Random mode.</p></div><b>Shuffle →</b></a>
+      <a class="mode-tile primary-mode" href="play.html?mode=classic"><span class="mode-number">02</span><div><small>CORE</small><h2>Word</h2><p>One word at a time.</p></div><b>Play →</b></a>
+      <a class="mode-tile" href="play.html?mode=context"><span class="mode-number">03</span><div><small>SMARTER</small><h2>Context</h2><p>Guesses use earlier words.</p></div><b>Play →</b></a>
+      <a class="mode-tile" href="play.html?mode=sentence"><span class="mode-number">04</span><div><small>FULL VIEW</small><h2>Sentence</h2><p>Fix the AI's full-sentence guess.</p></div><b>Play →</b></a>
+      <a class="mode-tile evil-mode" href="play.html?mode=evil"><span class="mode-number">05</span><div><small>CHAOS</small><h2>Evil</h2><p>Chaotic autocomplete.</p></div><b>Play →</b></a>
+      <a class="mode-tile plinko-mode" href="plinko.html"><span class="mode-number">06</span><div><small>ARCADE · FREE</small><h2>Plinko</h2><p>Free arcade challenge.</p></div><b>Drop →</b></a>
     </div>
 
     <div class="special-mode-strip">
-      <a href="play.html?mode=daily"><span>DAILY</span><strong>Daily Challenge</strong><small>One fixed challenge today</small></a>
-      <a href="create.html"><span>CREATE</span><strong>Custom</strong><small>Write the target yourself</small></a>
+      <a href="play.html?mode=daily"><span>DAILY</span><strong>Daily Challenge</strong><small>Same challenge today</small></a>
+      <a href="create.html"><span>CREATE</span><strong>Custom</strong><small>Your sentence</small></a>
       <a href="friends.html"><span>SOCIAL</span><strong>Race</strong><small>Challenge a friend</small></a>
       <a href="tournaments.html"><span>COMPETE</span><strong>Tournaments</strong><small>Skill-based events</small></a>
     </div>
@@ -164,6 +164,7 @@
       <div class="target-label">Target sentence</div>
       <div class="target" id="target"></div>
       <div class="sentence-prediction" id="sentencePrediction" role="group" aria-label="Full-sentence AI prediction" aria-live="off"></div>
+      <div class="sentence-action-row"><button class="button button-primary sentence-accept-button" id="sentenceAcceptButton" type="button" hidden>Accept phrase ✓</button></div>
     </div>
 
     <div class="panel arena">
@@ -197,14 +198,15 @@
     <details class="score-explainer" id="scoreExplainer">
       <summary><span>ⓘ How points work</span> <strong id="scoreNextWord">Up to 120 points for this word</strong></summary>
       <div class="score-explainer-body">
-        <p>Each correctly locked word earns <strong>120 points with 1 clue</strong>. Every extra clue costs 20 points, down to a <strong>20-point minimum</strong>.</p>
+        <p>Fewer clues earn more points: <strong>120 for one clue</strong>, down to <strong>20</strong>.</p>
         <div class="score-table" aria-label="Word points by number of clue letters">
           <span>1 clue <strong>120</strong></span><span>2 clues <strong>100</strong></span>
           <span>3 clues <strong>80</strong></span><span>4 clues <strong>60</strong></span>
           <span>5 clues <strong>40</strong></span><span>6+ clues <strong>20</strong></span>
         </div>
-        <p><strong>Streak bonus:</strong> Each consecutive correct word adds 5 points to the next word, up to +30. An incorrect Lock attempt breaks that streak. Erasing extra AI letters doesn't directly reduce points; the clue count is what matters.</p>
-        <p><strong>Coins are separate:</strong> Finished rounds normally award 20 coins, +10 for no failed locks, +5 for a streak of at least five, +15 for Daily, and +75 for each newly unlocked achievement. These wallet rewards are separate from score and may require a successfully saved round.</p>
+        <p><strong>Streak:</strong> +5 per correct word (up to +30). Wrong locks reset it.</p>
+        <p><strong>Sentence:</strong> Accepted AI words earn 20 points each, plus streak.</p>
+        <p><strong>Coins</strong> are separate from score. Online rewards require a saved round.</p>
       </div>
     </details>
     <div class="game-actions">
