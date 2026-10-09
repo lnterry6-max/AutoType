@@ -6,7 +6,8 @@ const ROOT = path.resolve(__dirname, "..");
 const read = filename => fs.readFileSync(path.join(ROOT, filename), "utf8");
 const publicPaths = [
   "index.html", "play.html", "how-to.html", "explore.html", "leaderboard.html",
-  "plinko.html", "predictions.html", "tournaments.html", "shop.html"
+  "plinko.html", "predictions.html", "tournaments.html", "shop.html",
+  "about.html", "privacy.html", "contact.html"
 ];
 const canonical = filename => filename === "index.html"
   ? "https://auto-type.net/"

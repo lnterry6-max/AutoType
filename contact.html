@@ -3,13 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex">
-<title>Notifications · AutoType</title>
+<meta name="description" content="Get AutoType support, report game bugs, share feedback, and find help with account or privacy questions.">
+<link rel="canonical" href="https://auto-type.net/contact.html">
+<title>Contact & Support · AutoType</title>
 <link rel="icon" href="assets/logo.png">
 <link rel="stylesheet" href="styles.css?v=20261008-beta-polish-v1">
 <link rel="stylesheet" href="site-finish.css?v=20261008-finish-v1">
 </head>
-<body data-page="notifications">
+<body data-page="contact">
 <header class="topbar">
   <div class="container topbar-inner">
     <a class="brand" href="index.html">
@@ -61,31 +62,38 @@
   <a href="settings.html">Settings</a>
 </nav>
 
-<main class="container page notifications-page">
-  <header class="platform-page-heading">
-    <div><span class="section-kicker">YOUR SOCIAL ACTIVITY</span><h1>Notifications</h1>
-    </div>
-    <a class="button button-secondary" href="friends.html">Friends</a>
+<main class="container page information-page">
+  <header class="page-heading platform-page-heading">
+    <div><span class="section-kicker">CONTACT & SUPPORT</span><h1>Need a hand?</h1>
+      <p>Found a bug, have an idea, or need help with your AutoType account? Here are the ways to reach us during the beta.</p></div>
   </header>
-  <div id="notificationsSignedOut" class="panel panel-pad" hidden>Sign in to receive social notifications. <a href="account.html">Sign in</a></div>
-  <div id="notificationsContent" hidden>
+  <div class="information-contact-grid">
     <section class="platform-section">
-      <div class="platform-section-head">
-        <div><span class="section-kicker">INBOX</span><h2>Friend requests</h2></div>
-        <a class="text-link" href="friends.html">Manage requests →</a>
-      </div>
-      <div id="notificationRequests" class="notification-list"></div>
+      <span class="section-kicker">FOR PLAYERS</span><h2>Send private feedback</h2>
+      <p>Signed-in players can use the built-in feedback form to report bugs, suggest features or explain an account problem. Reports go to the developer's private review inbox.</p>
+      <a class="button button-primary" href="feedback.html">Open feedback</a>
+      <p class="information-fineprint">Requires an AutoType account.</p>
     </section>
     <section class="platform-section">
-      <div class="platform-section-head">
-        <div><span class="section-kicker">PRIVATE CHAT</span><h2>Unread messages</h2></div>
-        <a class="text-link" href="chat.html">Open Messages →</a>
-      </div>
-      <div id="notificationMessages" class="notification-list"></div>
+      <span class="section-kicker">PUBLIC BUG TRACKER</span><h2>Report a technical issue</h2>
+      <p>AutoType's GitHub repository provides a public place to report reproducible website issues. Don't post passwords, private messages, personal data or recovery links.</p>
+      <a class="button button-secondary" href="https://github.com/lnterry6-max/AutoType/issues" rel="noopener noreferrer" target="_blank">GitHub issues ↗</a>
+      <p class="information-fineprint">GitHub may require its own account to post.</p>
     </section>
-    <p class="help">Messages from blocked or removed friends are not shown. Open a conversation to mark messages as read.</p>
+    <section class="platform-section">
+      <span class="section-kicker">ACCOUNT HELP</span><h2>Locked out?</h2>
+      <p>Use the account recovery flow to request a password reset. Signed-in players can change account settings or delete their account directly from Settings.</p>
+      <div class="information-actions"><a class="button button-secondary" href="account.html">Account recovery</a><a class="button button-secondary" href="settings.html#securitySettings">Settings</a></div>
+    </section>
   </div>
+  <section class="platform-section information-section">
+    <h2>Privacy or account-data requests</h2>
+    <p>For privacy or account-data questions, please use the private in-game feedback form while signed in. If you can't sign in, recover access first. A separate public email support inbox has not been established yet.</p>
+    <p class="information-fineprint">We don't ask for passwords, payment numbers, security answers or recovery codes in bug reports.</p>
+    <a class="text-link" href="privacy.html">Read our Privacy Policy →</a>
+  </section>
 </main>
+
 <footer class="footer">
   <div class="container footer-inner">
     <span><strong>AutoType</strong> <span class="footer-beta">BETA</span></span>
@@ -98,53 +106,5 @@
 <script src="backend.js?v=20261008-beta-polish-v1"></script>
 <script src="core.js?v=20261008-menu-cleanup-v1"></script>
 
-<script>
-document.addEventListener("DOMContentLoaded",async()=>{
-  await AutoType.ready();
-  const account=AutoType.currentAccount();
-  if(!account?.online){document.querySelector("#notificationsSignedOut").hidden=false;return;}
-  document.querySelector("#notificationsContent").hidden=false;
-  const requests=document.querySelector("#notificationRequests");
-  const messages=document.querySelector("#notificationMessages");
-  function empty(box,message){
-    box.replaceChildren();
-    const el=document.createElement("div");el.className="empty";el.textContent=message;
-    box.appendChild(el);
-  }
-  function row(box,title,description,url,buttonText){
-    const div=document.createElement("div");div.className="notification-row";
-    const details=document.createElement("div");
-    const strong=document.createElement("strong");strong.textContent=title;
-    const small=document.createElement("span");small.textContent=description;
-    details.append(strong,small);
-    const a=document.createElement("a");a.href=url;a.className="button button-secondary";a.textContent=buttonText;
-    div.append(details,a);box.appendChild(div);
-  }
-  async function refresh(){
-    if(document.hidden)return;
-    try{
-      const snapshot=await AutoTypeBackend.socialNotificationsSnapshot();
-      requests.replaceChildren();messages.replaceChildren();
-      if(!snapshot.incoming.length)empty(requests,"No pending friend requests.");
-      for(const item of snapshot.incoming){
-        const p=item.profile||{};
-        row(requests,"@"+(p.username||"Player")+" sent a friend request","Respond from your Friends page.","friends.html","Respond");
-      }
-      if(!snapshot.messages.length)empty(messages,"All caught up! No unread messages.");
-      for(const item of snapshot.messages){
-        row(messages,"@"+item.username,
-          item.unread+" unread message"+(item.unread===1?"":"s"),
-          "chat.html?u="+encodeURIComponent(item.username),"Read");
-      }
-    }catch(error){
-      empty(requests,"Could not load notifications: "+error.message);
-      empty(messages,"Try again in a moment.");
-    }
-  }
-  await refresh();
-  setInterval(refresh,30000);
-  document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh();});
-});
-</script>
 </body>
 </html>

@@ -261,3 +261,46 @@ body.animations-off .button,
 body.animations-off .home-mode-card,
 body.animations-off .mode-tile,
 body.animations-off .explore-links a { transition:none!important;transform:none!important; }
+
+/* About, privacy and contact pages */
+.information-page{max-width:1130px}
+.information-layout{display:grid;grid-template-columns:minmax(0,1.85fr) minmax(250px,.8fr);gap:16px;align-items:start}
+.information-story,.information-side{padding:25px}
+.information-page h2{margin:0 0 12px;font-size:clamp(17px,2vw,23px);letter-spacing:-.025em}
+.information-page p{font-size:14px;line-height:1.7;color:var(--muted);margin:0 0 15px}
+.information-page p:last-child{margin-bottom:0}
+.information-page .platform-page-heading p{max-width:70ch;font-size:15px}
+.information-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:23px}
+.information-section{margin-top:16px}
+.information-feature-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.information-feature-grid a{display:grid;gap:7px;padding:16px;border:1px solid var(--border);border-radius:11px;background:var(--surface-2)}
+.information-feature-grid a:hover{border-color:var(--blue)}
+.information-feature-grid strong{font-size:14px}
+.information-feature-grid span,.information-date{color:var(--muted);font-size:12px}
+.information-date{display:inline-block;margin-top:12px}
+.policy-copy section+section{padding-top:23px;margin-top:23px;border-top:1px solid var(--border-soft)}
+.policy-copy a:not(.button){color:#82cdff;text-decoration:underline;text-underline-offset:3px}
+.information-side{position:sticky;top:88px}
+.information-aside-links{display:grid;gap:0}
+.information-aside-links a{padding:12px 0;border-top:1px solid var(--border-soft);font-size:13px}
+.information-aside-links a:hover{color:#8bd3ff}
+.information-contact-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+.information-contact-grid>.platform-section{display:flex;flex-direction:column;align-items:flex-start;min-height:258px}
+.information-contact-grid p{flex:1}
+.information-contact-grid .information-fineprint,.information-fineprint{font-size:11px;color:var(--muted);line-height:1.5}
+.information-contact-grid .button{margin-top:auto}
+body.theme-light .policy-copy a:not(.button),body.theme-light .information-aside-links a:hover{color:#066998}
+.footer-links{display:flex;align-items:center;flex-wrap:wrap;gap:13px}
+.footer-links a{white-space:nowrap}
+/* Inactive ad slots are invisible on real pages until approved.
+   ?ad-preview=1 reveals layout-only placeholders, without ad tags or tracking. */
+.autotype-ad-slot[hidden]{display:none!important}
+.autotype-ad-slot{display:grid;gap:7px;place-content:center;text-align:center;min-height:126px;margin:18px 0;
+ border:1px dashed color-mix(in srgb,var(--border) 78%,var(--blue) 22%);
+ border-radius:12px;background:color-mix(in srgb,var(--surface) 92%,transparent);color:var(--muted);
+ padding:20px;pointer-events:none}
+.autotype-ad-slot strong{display:block;font-size:14px;letter-spacing:-.01em;color:var(--text)}
+.autotype-ad-slot span{font-size:10px;font-weight:800;letter-spacing:.12em}
+.autotype-ad-slot small{font-size:11px;line-height:1.5}
+@media(max-width:850px){.information-layout{grid-template-columns:1fr}.information-side{position:static}.information-contact-grid{grid-template-columns:1fr}.information-contact-grid>.platform-section{min-height:0}}
+@media(max-width:560px){.information-story,.information-side{padding:17px}.information-feature-grid{grid-template-columns:1fr}.information-page p{font-size:13px}.autotype-ad-slot{margin:15px 0;min-height:100px}}
