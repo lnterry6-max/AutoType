@@ -10,7 +10,9 @@
     const btn=$("installPromptButton");
     if(standalone()){
       document.body.classList.add("pwa-standalone");
-      setStatus("AutoType is already running as an installed web app.");
+      const title=document.querySelector(".pwa-install-copy h2");
+      if(title)title.textContent="AutoType is installed.";
+      setStatus("You're already using the Home Screen app. Jump into a match.");
       if(btn)btn.hidden=true;
       return;
     }
@@ -24,9 +26,9 @@
 
   function addAppDock(){
     if(!standalone())return;
-    const eligible=new Set(["home","explore","leaderboard","achievements","profile","shop","tournaments","how-to","stats","predictions","about","install"]);
+    const excluded=new Set(["admin","account","create","backend-test","plinko"]);
     const page=document.body?.dataset.page||"";
-    if(!eligible.has(page))return;
+    if(excluded.has(page)||location.pathname.endsWith("/404.html"))return;
     // Keep the keyboard and actual game surfaces completely unobstructed.
     document.body.classList.add("pwa-standalone");
     if(document.querySelector(".pwa-app-dock"))return;
@@ -87,8 +89,8 @@
     });
   });
 
-  // Transparent network-first offline recovery. Never cache live game pages,
-  // sign-in screens, responses, player data, scores, or script bundles.
+  // Register only a pass-through worker. It no longer intercepts navigations:
+  // iOS WebKit could mistake a temporary failed fetch for a permanent offline state.
   window.addEventListener("load",()=>{
     if(!("serviceWorker" in navigator)||!window.isSecureContext)return;
     navigator.serviceWorker.register("/service-worker.js",{scope:"/",updateViaCache:"none"})

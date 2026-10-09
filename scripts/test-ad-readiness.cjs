@@ -10,7 +10,7 @@ for(const p of publicPages){
  const h=read(p);
  assert.equal((h.match(/<main\b/g)||[]).length,1,"One main landmark: "+p);
  assert.equal((h.match(/<\/main>/g)||[]).length,1,"One main closure: "+p);
- assert.ok(h.includes('href="site-finish.css?v=20261008-finish-v1"'),"Consistent brand CSS: "+p);
+ assert.ok(h.includes('href="site-finish.css?v=20261009-pwa-polish-v2"'),"Consistent brand CSS: "+p);
  assert.ok(h.includes('href="privacy.html"'),"Public policy must be discoverable: "+p);
  assert.ok(h.includes('href="contact.html"'),"Contact route must be discoverable: "+p);
  assert.ok(h.includes('href="about.html"'),"About must be discoverable: "+p);
