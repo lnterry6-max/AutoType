@@ -1,0 +1,66 @@
+{
+  "id": "/",
+  "name": "AutoType — Autocomplete Typing Game",
+  "short_name": "AutoType",
+  "description": "A typing game where autocomplete fights back. Challenge the predictions, race friends, and unlock achievements.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "any",
+  "background_color": "#141b24",
+  "theme_color": "#1f2328",
+  "icons": [
+    {
+      "src": "/assets/pwa/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/pwa/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/pwa/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/assets/pwa/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Play AutoType",
+      "short_name": "Play",
+      "description": "Choose a typing game mode",
+      "url": "/play.html"
+    },
+    {
+      "name": "Daily Challenge",
+      "short_name": "Daily",
+      "description": "Play today's shared challenge",
+      "url": "/play.html?mode=daily"
+    },
+    {
+      "name": "Leaderboard",
+      "short_name": "Scores",
+      "description": "See today's scores",
+      "url": "/leaderboard.html"
+    }
+  ],
+  "categories": [
+    "games",
+    "entertainment"
+  ]
+}

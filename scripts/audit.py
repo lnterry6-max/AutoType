@@ -55,7 +55,7 @@ def main() -> int:
     issues: list[str] = []
     html_files = sorted(ROOT.glob("*.html"))
 
-    for js in (ROOT / "core.js", ROOT / "game.js", ROOT / "backend.js", ROOT / "plinko.js", ROOT / "content-pack.js", ROOT / "daily-mix.js", ROOT / "shop-rotation.js", ROOT / "how-to-tutorial.js", ROOT / "progression-feedback.js", ROOT / "prediction-picker.js", ROOT / "ad-preview.js"):
+    for js in (ROOT / "core.js", ROOT / "game.js", ROOT / "backend.js", ROOT / "plinko.js", ROOT / "content-pack.js", ROOT / "daily-mix.js", ROOT / "shop-rotation.js", ROOT / "how-to-tutorial.js", ROOT / "progression-feedback.js", ROOT / "prediction-picker.js", ROOT / "ad-preview.js", ROOT / "pwa.js", ROOT / "service-worker.js"):
         if js.exists():
             check_node(js, issues)
 
@@ -166,6 +166,15 @@ def main() -> int:
         proc = subprocess.run(["node", str(ad_readiness_test)], capture_output=True, text=True, timeout=20)
         if proc.returncode:
             fail("Ad-readiness and privacy regression failed:\\n"
+                 + (proc.stderr.strip() or proc.stdout.strip()), issues)
+        else:
+            print(proc.stdout.strip())
+
+    pwa_test = ROOT / "scripts" / "test-pwa.cjs"
+    if pwa_test.exists():
+        proc = subprocess.run(["node", str(pwa_test)], capture_output=True, text=True, timeout=20)
+        if proc.returncode:
+            fail("PWA installability regression failed:\\n"
                  + (proc.stderr.strip() or proc.stdout.strip()), issues)
         else:
             print(proc.stdout.strip())

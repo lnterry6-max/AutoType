@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,"..");
 const read=p=>fs.readFileSync(path.join(root,p),"utf8");
 const all=fs.readdirSync(root).filter(p=>p.endsWith(".html"));
 const asset='<link rel="stylesheet" href="site-finish.css?v=20261008-finish-v1">';
-assert.equal(all.length,26,"Unexpected site page count");
+assert.equal(all.length,27,"Unexpected site page count");
 for(const p of all){
   const html=read(p);
   const h=html.match(/<head>([\s\S]*?)<\/head>/i);
@@ -38,4 +38,4 @@ for(const [label,fragment] of [
  assert.ok(css.includes(fragment),"Site finish is missing "+label);
 }
 assert.ok(!css.includes("@import"),"No remote styling dependency should be introduced");
-console.log("Site finish passed: 26 page stylesheets, navigation, onboarding link, themes and motion support.");
+console.log("Site finish passed: 27 page stylesheets, navigation, onboarding link, themes and motion support.");

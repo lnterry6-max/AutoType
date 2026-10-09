@@ -5,7 +5,7 @@ const root=path.resolve(__dirname,"..");
 const read=p=>fs.readFileSync(path.join(root,p),"utf8");
 const pages=fs.readdirSync(root).filter(p=>p.endsWith(".html"));
 const publicPages=["about.html","privacy.html","contact.html"];
-assert.equal(pages.length,26);
+assert.equal(pages.length,27);
 for(const p of publicPages){
  const h=read(p);
  assert.equal((h.match(/<main\b/g)||[]).length,1,"One main landmark: "+p);
@@ -79,4 +79,4 @@ vm.runInNewContext(src,{location:{search:"?ad-preview=1"},document:{
 assert.equal(slot.hidden,false,"Explicit preview must display the reserved area");
 assert.match(slot.innerHTML,/PREVIEW ONLY/);
 assert.match(read("site-finish.css"),/autotype-ad-slot\[hidden\]/,"Hidden placeholder guard in site CSS");
-console.log("Ad readiness PASSED: authorized ads.txt, 26 publisher verification tags, 3 preview-only ad placements, zero live ad calls.");
+console.log("Ad readiness PASSED: authorized ads.txt, 27 publisher verification tags, 3 preview-only ad placements, zero live ad calls.");
