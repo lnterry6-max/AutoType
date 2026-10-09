@@ -91,7 +91,9 @@
         emailRedirectTo:new URL("account.html",location.href).href,
         data:{
           username:cleanUsername,
-          display_name:String(displayName||cleanUsername).trim()
+          display_name:String(displayName||cleanUsername).trim(),
+          // Only registrations made after this change receive a first-login guide.
+          autotype_onboarding_pending:true
         }
       }
     });
@@ -108,6 +110,22 @@
     });
     if(error)throw error;
     return data;
+  }
+
+  // The flag lives in Supabase Auth metadata, so the first-login route
+  // remains consistent across browsers. Existing users have no pending flag.
+  async function postSignInDestination(authUser=null){
+    const current=authUser||await user();
+    if(current?.user_metadata?.autotype_onboarding_pending!==true)return "index.html";
+    try{
+      const db=getClient();
+      const {error}=await db.auth.updateUser({data:{autotype_onboarding_pending:false}});
+      if(error)throw error;
+    }catch(error){
+      // Still show the tutorial; a later sign-in can retry saving the flag.
+      console.warn("Could not save AutoType first-login onboarding state",error);
+    }
+    return "how-to.html#try-it";
   }
 
   async function signOut(){
@@ -1049,6 +1067,7 @@
     user,
     signUp,
     signIn,
+    postSignInDestination,
     signOut,
     myProfile,
     updateMyProfile,

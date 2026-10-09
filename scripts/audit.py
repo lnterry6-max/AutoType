@@ -270,7 +270,10 @@ def main() -> int:
         # mixing old cached components with new HTML markup.
         for path_or_script in ("styles.css", "core.js", "backend.js"):
             for match in re.finditer(re.escape(path_or_script) + r'\?v=([^"]+)', text):
-                if match.group(1) != ("20261008-menu-cleanup-v1" if path_or_script == "core.js" else "20261008-beta-polish-v1"):
+                expected = ("20261008-menu-cleanup-v1" if path_or_script == "core.js"
+                            else "20261008-first-login-v1" if page.name == "account.html" and path_or_script == "backend.js"
+                            else "20261008-beta-polish-v1")
+                if match.group(1) != expected:
                     fail(f"{page.name}: stale shared asset build {match.group(0)}", issues)
 
         # Check cross-page fragment targets, including Inventory deep links.

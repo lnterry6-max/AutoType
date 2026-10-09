@@ -134,7 +134,7 @@
 
 <script src="backend-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="backend.js?v=20261008-beta-polish-v1"></script>
+<script src="backend.js?v=20261008-first-login-v1"></script>
 <script src="core.js?v=20261008-menu-cleanup-v1"></script>
 
 <script>
@@ -255,7 +255,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
       const existing=await AutoTypeBackend.session();
       if(existing){
         await AutoTypeBackend.hydrateLocalMirror();
-        location.href="profile.html";
+        location.href=await AutoTypeBackend.postSignInDestination();
         return;
       }
     }catch(error){
@@ -266,12 +266,12 @@ document.addEventListener("DOMContentLoaded",async()=>{
   $("#loginButton").addEventListener("click",async()=>{
     $("#loginButton").disabled=true;
     try{
-      await AutoTypeBackend.signIn({
+      const login=await AutoTypeBackend.signIn({
         email:$("#loginIdentity").value,
         password:$("#loginPassword").value
       });
       await AutoTypeBackend.hydrateLocalMirror();
-      location.href="how-to.html#try-it";
+      location.href=await AutoTypeBackend.postSignInDestination(login.user);
     }catch(e){
       AutoType.toast(e.message);
     }finally{
@@ -317,7 +317,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
 
       if(data.session){
         await AutoTypeBackend.hydrateLocalMirror();
-        location.href="how-to.html#try-it";
+        location.href=await AutoTypeBackend.postSignInDestination(data.user);
       }else{
         AutoType.toast("Account created. Check your email to confirm it, then sign in.");
         setTab("login");
