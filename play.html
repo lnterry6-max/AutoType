@@ -19,6 +19,7 @@
 <link rel="stylesheet" href="styles.css?v=20261008-beta-polish-v1">
 <link rel="stylesheet" href="onboarding-races.css?v=20261008-onboarding-v2">
 <link rel="stylesheet" href="sentence-mode.css?v=20261009-sentence-v1">
+<link rel="stylesheet" href="completion-feedback.css?v=20261009-round-done-v1">
 <link rel="stylesheet" href="site-finish.css?v=20261009-pwa-polish-v3">
 <link rel="stylesheet" href="progression-polish.css?v=20261008-progression-v1">
 </head>
@@ -252,6 +253,7 @@
   </section>
 </main>
 
+<div id="roundDoneOverlay" class="round-done-overlay" role="status" aria-live="polite" aria-atomic="true" hidden><strong class="round-done-word">DONE</strong></div>
 
 <footer class="footer">
   <div class="container footer-inner">
@@ -412,7 +414,8 @@ document.addEventListener("DOMContentLoaded",()=>{
 <script src="progression-feedback.js?v=20261008-progression-v1"></script>
 <script src="prediction-picker.js?v=20261009-random-clues-v1"></script>
 <script src="sentence-forecast.js?v=20261009-sentence-v1"></script>
-<script src="game.js?v=20261009-sentence-v1"></script>
+<script src="completion-feedback.js?v=20261009-round-done-v1"></script>
+<script src="game.js?v=20261009-round-done-v1"></script>
 
 </body>
 </html>
