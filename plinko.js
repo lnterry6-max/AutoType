@@ -55,6 +55,7 @@
       resetBtn.disabled = !!ball;
     }
     function resetRound() {
+      window.AutoTypeCompletion?.hide();
       ball = null;
       score = 0;
       drops = 0;
@@ -92,6 +93,7 @@
       saveBest();
       lastResult = "+" + points + " arcade points!";
       if (drops === MAX_DROPS) {
+        window.AutoTypeCompletion?.show();
         stateLabel.textContent = "Round complete! " + score + " arcade points. Try to beat your best.";
         scoreAnnouncement.textContent = lastResult + " Round complete with " + score + " points.";
       } else {
