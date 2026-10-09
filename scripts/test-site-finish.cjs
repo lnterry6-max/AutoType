@@ -13,7 +13,12 @@ for(const p of all){
   assert.ok(h,"No page head on "+p);
   const links=[...h[1].matchAll(/<link[^>]*rel="stylesheet"[^>]*>/g)].map(m=>m[0]);
   assert.equal(links.filter(x=>x===asset).length,1,"Each page should include one finish stylesheet: "+p);
-  assert.equal(links.at(-1),asset,"Site finish should load after existing page styles: "+p);
+  const finishIndex=links.indexOf(asset);
+  assert.ok(finishIndex>=1,"Site finish should load after core styles: "+p);
+  const progression='<link rel="stylesheet" href="progression-polish.css?v=20261008-progression-v1">';
+  const extra=links.filter((x,i)=>i>finishIndex);
+  assert.ok(extra.every(x=>x===progression),"Only approved page-specific styles may follow site finish: "+p);
+  if(extra.length)assert.equal(extra.length,1,"Progression styles should load exactly once: "+p);
   assert.match(html,/href="(?:index\.html|play\.html|how-to\.html)"/,"Navigation entry missing: "+p);
 }
 const home=read("index.html");
