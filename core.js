@@ -1277,8 +1277,7 @@
         ]},
         {label:"Your profile",links:[
           ["My profile","profile.html","profile"],["Stats","stats.html","stats"],
-          ["Achievements","achievements.html","achievements"],["Settings","settings.html","settings"],
-          ["Account","account.html","account"]
+          ["Achievements","achievements.html","achievements"],["Settings","settings.html","settings"]
         ]},
         {label:"Explore",links:[
           ["How to play","how-to.html","help"],["All features","explore.html","explore"],

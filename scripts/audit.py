@@ -270,7 +270,7 @@ def main() -> int:
         # mixing old cached components with new HTML markup.
         for path_or_script in ("styles.css", "core.js", "backend.js"):
             for match in re.finditer(re.escape(path_or_script) + r'\?v=([^"]+)', text):
-                if match.group(1) != "20261008-beta-polish-v1":
+                if match.group(1) != ("20261008-menu-cleanup-v1" if path_or_script == "core.js" else "20261008-beta-polish-v1"):
                     fail(f"{page.name}: stale shared asset build {match.group(0)}", issues)
 
         # Check cross-page fragment targets, including Inventory deep links.
@@ -311,6 +311,10 @@ def main() -> int:
 
     # Mobile shell and focus handling must stay paired with the shared styles.
     mobile_core = (ROOT / "core.js").read_text(encoding="utf-8")
+    if '["Account","account.html","account"]' in mobile_core:
+        fail("Mobile navigation repeats Account beside My profile", issues)
+    if '["My profile","profile.html","profile"]' not in mobile_core:
+        fail("Mobile navigation is missing My profile", issues)
     mobile_game = (ROOT / "game.js").read_text(encoding="utf-8")
     mobile_styles = (ROOT / "styles.css").read_text(encoding="utf-8")
     for label, present in (
