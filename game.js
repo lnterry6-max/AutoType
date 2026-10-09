@@ -638,7 +638,7 @@ AutoType.ready().then(async()=>{
     );
     const dailyMixResult=$("dailyMixResult");
     if(dailyMixResult){
-      const show=!!cleared&&(!activeAccount?.online||verifiedSaved);
+      const show=!npc&&!!cleared&&(!activeAccount?.online||verifiedSaved);
       dailyMixResult.hidden=!show;
       dailyMixResult.innerHTML=show
         ? '<strong>Daily Mix goal complete: '+AutoType.escapeHTML(cleared.title)+
