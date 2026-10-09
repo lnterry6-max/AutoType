@@ -38,19 +38,19 @@
       "name": "Play AutoType",
       "short_name": "Play",
       "description": "Choose a typing game mode",
-      "url": "/play.html"
+      "url": "/play"
     },
     {
       "name": "Daily Challenge",
       "short_name": "Daily",
       "description": "Play today's shared challenge",
-      "url": "/play.html?mode=daily"
+      "url": "/play?mode=daily"
     },
     {
       "name": "Leaderboard",
       "short_name": "Scores",
       "description": "See today's scores",
-      "url": "/leaderboard.html"
+      "url": "/leaderboard"
     }
   ],
   "categories": [
