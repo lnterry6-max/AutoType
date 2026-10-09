@@ -1,0 +1,37 @@
+/* Universal completion cue: no clicks, no guessing whether the round ended. */
+#roundDoneOverlay[hidden]{display:none!important}
+#roundDoneOverlay{
+  position:fixed;inset:0;z-index:400;pointer-events:none;
+  display:grid;place-items:center;padding:24px;
+  box-sizing:border-box;background:rgba(6,15,25,.35);
+  color:#fff;text-align:center;
+}
+#roundDoneOverlay .round-done-word{
+  display:block;font-size:clamp(64px,16vw,140px);
+  line-height:1;font-weight:900;letter-spacing:.075em;
+  color:#fff;text-shadow:0 4px 40px rgba(0,0,0,.5),
+    0 0 25px rgba(0,162,255,.38);
+}
+#roundDoneOverlay.is-visible{animation:roundDoneFade 1.65s ease-out both}
+#roundDoneOverlay.is-visible .round-done-word{
+  animation:roundDoneWord 1.65s cubic-bezier(.18,.75,.24,1) both
+}
+@keyframes roundDoneFade{
+  0%{opacity:0}18%{opacity:1}72%{opacity:1}100%{opacity:0}
+}
+@keyframes roundDoneWord{
+  0%{transform:scale(.88) translateY(10px)}
+  24%{transform:scale(1) translateY(0)}
+  75%{transform:scale(1) translateY(0)}
+  100%{transform:scale(1.04) translateY(-4px)}
+}
+@media(prefers-reduced-motion:reduce){
+  #roundDoneOverlay.is-visible,
+  #roundDoneOverlay.is-visible .round-done-word{animation:none!important}
+}
+body.reduced-motion #roundDoneOverlay.is-visible,
+body.reduced-motion #roundDoneOverlay.is-visible .round-done-word,
+body.animations-off #roundDoneOverlay.is-visible,
+body.animations-off #roundDoneOverlay.is-visible .round-done-word{
+  animation:none!important
+}
