@@ -138,6 +138,7 @@ AutoType.ready().then(async()=>{
     fixed=true;
   }
 
+  if(mode==="npc"){predictorMode="classic";fixed=true}
   if(mode==="custom"){predictorMode=params.get("predictor")||"classic";fixed=true}
   if(mode==="daily"){predictorMode="classic";fixed=true}
 
@@ -182,11 +183,39 @@ AutoType.ready().then(async()=>{
   let cluesThisWord=0,recentGuesses=[],justKeptAI=0;
   let started=false,startTime=0,timer=null;
 
-  const names={classic:"Word",context:"Context",sentence:"Sentence",evil:"Evil",daily:"Daily Challenge",custom:"Custom",race:"Friend Race",tournament:"Tournament"};
+  const names={classic:"Word",context:"Context",sentence:"Sentence",evil:"Evil",daily:"Daily Challenge",custom:"Custom",race:"Friend Race",tournament:"Tournament",npc:"NPC Race"};
+  const npcProfiles={
+    easy:{name:"Rookie Bot",label:"Easy",msPerWord:5200,pointsPerWord:65},
+    medium:{name:"Rival Bot",label:"Medium",msPerWord:3500,pointsPerWord:90},
+    hard:{name:"Ace Bot",label:"Hard",msPerWord:2200,pointsPerWord:110}
+  };
+  const npc=mode==="npc"?(npcProfiles[params.get("skill")]||npcProfiles.easy):null;
+  let npcMilestones=[],npcFinishMs=0;
+  if(npc)document.body.classList.add("npc-practice");
+  function setupNpc(){
+    if(!npc)return;
+    let total=0;
+    npcMilestones=words.map((word,i)=>{
+      const adjustment=1+(((word.length+i*3)%5)-2)*.065;
+      total+=Math.round(npc.msPerWord*adjustment);
+      return total;
+    });
+    npcFinishMs=total;
+    $("npcRaceHud").hidden=false;
+    $("npcRaceName").textContent=npc.name+" · "+npc.label;
+    updateNpc(0);
+  }
+  function updateNpc(ms=elapsed()){
+    if(!npc)return;
+    const completed=npcMilestones.filter(t=>t<=ms).length;
+    $("npcRacePace").textContent=completed+"/"+words.length+" words · "+(completed*npc.pointsPerWord)+" pts";
+    $("npcRaceProgress").style.width=(words.length?completed/words.length*100:0)+"%";
+  }
   const quickMatch=mode==="race"&&race?.room?.match_type==="matchmaking";
   $("modeName").textContent=quickMatch?"Quick Match":(names[mode]||"Word");
   $("newBtn").disabled=fixed;
   if(mode==="tournament"||quickMatch)$("againBtn").hidden=true;
+  if(npc)$("againBtn").textContent="Race again";
 
   function elapsed(){return started?Date.now()-startTime:0}
   function fmt(ms){return AutoType.formatTime(ms)}
@@ -347,7 +376,14 @@ AutoType.ready().then(async()=>{
     $("predictionQueue").innerHTML=q.length?q.map((x,i)=>`<div class="prediction-item"><span>${AutoType.escapeHTML(x)}</span><span>${i===0&&x===visible?"current":`#${i+1}`}</span></div>`).join(""):`<div class="empty">Start typing to see candidates.</div>`;
   }
   function startTimer(){
-    if(started)return;started=true;startTime=Date.now();timer=setInterval(()=>$("time").textContent=fmt(elapsed()),250)
+    if(started)return;
+    started=true;
+    startTime=Date.now();
+    timer=setInterval(()=>{
+      const ms=elapsed();
+      $("time").textContent=fmt(ms);
+      updateNpc(ms);
+    },250);
   }
   function reset(newSentence=sentence){
     roundId=crypto.randomUUID();
@@ -360,6 +396,7 @@ AutoType.ready().then(async()=>{
     $("mobileTypingInput").value="";
     $("mobileStartButton").textContent="Tap to start typing ⌨";
     if($("verifiedResult"))$("verifiedResult").hidden=true;
+    setupNpc();
     render()
   }
 
@@ -380,6 +417,14 @@ AutoType.ready().then(async()=>{
     }
   }
 
+  function pulse(el,className){
+    if(!el||settings.animations===false||
+        document.body.classList.contains("reduced-motion")||
+        matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+    el.classList.remove(className);
+    void el.offsetWidth;
+    el.classList.add(className);
+  }
   function typeLetter(ch){
     if(index>=words.length)return;
     startTimer();
@@ -405,6 +450,7 @@ AutoType.ready().then(async()=>{
     promoteCorrectAI();
     spawnTypingTrail();
     render();
+    pulse($("guess"),"guess-pop");
   }
 
   function backspace(){
@@ -441,6 +487,8 @@ AutoType.ready().then(async()=>{
       recentGuesses=[];
       justKeptAI=0;
       if(index>=words.length)finish();else render();
+      pulse($("score"),"score-pop");
+      pulse(document.querySelector("#gameArea .arena"),"word-locked");
     }else{
       errors++;
       streak=0;
@@ -514,7 +562,7 @@ AutoType.ready().then(async()=>{
     let verifiedSaved=false;
     const activeAccount=AutoType.currentAccount();
 
-    if(activeAccount?.online){
+    if(activeAccount?.online&&!npc){
       $("resultCoins").textContent="Saving…";
       try{
         const result=await AutoTypeBackend.recordRound({
@@ -544,7 +592,7 @@ AutoType.ready().then(async()=>{
         if($("verifiedResult"))$("verifiedResult").hidden=true;
         AutoType.toast(error.message||"Round finished, but the backend could not save it.");
       }
-    }else{
+    }else if(!npc){
       const p=AutoType.currentProfile();
       p.rounds++;
       if(["classic","context","sentence","evil"].includes(mode)){
@@ -584,7 +632,7 @@ AutoType.ready().then(async()=>{
     // Optional daily goals are read from verified backend results for online players.
     // Guests may keep local-only progress; neither path mints coins or modifies scores.
     const dailyMixRound={mode,score,words:words.length,errors,max_streak:maxStreak};
-    if(!activeAccount?.online)AutoTypeDailyMix.recordGuestRound(dailyMixRound);
+    if(!activeAccount?.online&&!npc)AutoTypeDailyMix.recordGuestRound(dailyMixRound);
     const cleared=AutoTypeDailyMix.plan().find(goal=>
       AutoTypeDailyMix.isComplete(goal,dailyMixRound)
     );
@@ -619,7 +667,18 @@ AutoType.ready().then(async()=>{
     $("resultKeys").textContent=keyCount;
     $("resultErrors").textContent=errors;
     $("resultErased").textContent=erased;
-    $("resultCoins").textContent=activeAccount?`+${coinsEarned}`:"Sign in";
+    $("resultCoins").textContent=npc?"Practice only":activeAccount?`+${coinsEarned}`:"Sign in";
+    if(npc){
+      updateNpc(ms);
+      const botFinished=ms>=npcFinishMs;
+      const verdict=botFinished?"NPC wins":"You win!";
+      const botSeconds=(npcFinishMs/1000).toFixed(1);
+      const box=$("matchResult");
+      box.hidden=false;
+      box.innerHTML=`<strong>${verdict}</strong><span>${AutoType.escapeHTML(npc.name)} · ${npc.label} ·
+        ${botFinished?"Finished in "+botSeconds+"s":"Still racing ("+Math.floor(ms/1000)+"s elapsed)"}
+        · practice only</span>`;
+    }
 
     const unlockBox=$("achievementUnlocks");
     if(newlyUnlocked.length){
