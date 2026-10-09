@@ -182,6 +182,9 @@ AutoType.ready().then(async()=>{
   let roundId=crypto.randomUUID();
   let cluesThisWord=0,recentGuesses=[],justKeptAI=0;
   let started=false,startTime=0,timer=null;
+  // One continuation forecast for the current unfinished part of Sentence Mode.
+  // It only advances when the player correctly locks a word.
+  let sentenceForecast=[];
 
   const names={classic:"Word",context:"Context",sentence:"Sentence",evil:"Evil",daily:"Daily Challenge",custom:"Custom",race:"Friend Race",tournament:"Tournament",npc:"NPC Race"};
   const npcProfiles={
@@ -280,6 +283,9 @@ AutoType.ready().then(async()=>{
     // draw for each accepted clue, never from the fixed preview-queue ranking.
     const chosen=predictorMode==="context"
       ?(options[0]||prefix)
+      :predictorMode==="sentence"&&index>0&&
+        sentenceForecast[0]?.startsWith(prefix)&&sentenceForecast[0].length>prefix.length
+      ?sentenceForecast[0]
       :AutoTypePredictionPicker.choose({
         prefix,candidates:options,recent:recentGuesses,
         previous:recentGuesses[recentGuesses.length-1]||"",
@@ -316,15 +322,50 @@ AutoType.ready().then(async()=>{
     justKeptAI=kept;
     return kept;
   }
+  function refreshSentenceForecast(){
+    if(mode!=="sentence"||index===0||index>=words.length){sentenceForecast=[];return;}
+    sentenceForecast=AutoTypeSentenceForecast.predict({
+      completed:words.slice(0,index),totalWords:words.length,corpus:sentences
+    });
+  }
   function sentencePrediction(){
-    if(settings.showPrediction===false||!["sentence","evil"].includes(predictorMode)||!index)return"";
+    if(settings.showPrediction===false||predictorMode!=="evil"||!index)return"";
     let prev=words[index-1],out=[];
     for(let i=index;i<words.length;i++){
       const opts=nextWord[prev]||extended;
-      const n=(predictorMode==="context"?opts[0]:opts[guessScore(String(i),prev)%opts.length])||"the";
+      const n=opts[guessScore(String(i),prev)%opts.length]||"the";
       out.push(n);prev=n;
     }
     return `Prediction: ${words.slice(0,index).join(" ")} ${out.join(" ")}`;
+  }
+  function renderSentenceForecast(){
+    const panel=$("sentencePrediction");
+    if(mode!=="sentence"){
+      panel.classList.remove("is-active");
+      panel.textContent=sentencePrediction();
+      return;
+    }
+    panel.classList.add("is-active");
+    if(index===0){
+      panel.innerHTML='<strong class="sentence-forecast-label">Full-sentence prediction</strong>'+
+        '<span class="sentence-forecast-hint">Finish the first word and AutoType will guess the entire rest of the sentence.</span>';
+      return;
+    }
+    // As the player corrects the current AI word, the rest of the sentence
+    // is previewed from that correction. Accepting the word locks in a new forecast.
+    let forecast=sentenceForecast;
+    if(prefix&&visible&&visible!==sentenceForecast[0]){
+      forecast=[visible,...AutoTypeSentenceForecast.predict({
+        completed:[...words.slice(0,index),visible],
+        totalWords:words.length,corpus:sentences
+      })];
+    }
+    const chips=forecast.map((word,i)=>
+      `<span class="sentence-forecast-word${i===0?" is-next":""}">${AutoType.escapeHTML(word)}</span>`
+    ).join("");
+    panel.innerHTML='<strong class="sentence-forecast-label">AutoType predicts the rest</strong>'+
+      '<span class="sentence-forecast-words">'+chips+'</span>'+
+      '<span class="sentence-forecast-hint">Correct the next guessed word using your clues. The whole prediction changes as you progress.</span>';
   }
   function render(){
     $("target").innerHTML=words.map((w,i)=>`<span class="${i<index?"done":i===index?"current":"future"}">${AutoType.escapeHTML(w)}</span>`).join(" ");
@@ -346,7 +387,7 @@ AutoType.ready().then(async()=>{
     $("wordCount").textContent=`${Math.min(index+1,words.length)} / ${words.length}`;
     $("progress").style.width=`${index/words.length*100}%`;
     $("typedPrefix").textContent=prefix||"_";
-    $("sentencePrediction").textContent=sentencePrediction();
+    renderSentenceForecast();
 
     const g=visible||"";
     const targetWord=words[index]||"";
@@ -397,7 +438,7 @@ AutoType.ready().then(async()=>{
     roundId=crypto.randomUUID();
     if(timer)clearInterval(timer);started=false;startTime=0;
     sentence=newSentence;words=sentence.split(" ");index=0;prefix="";visible="";score=0;streak=0;maxStreak=0;keyCount=0;erased=0;errors=0;clueCounts=[];
-    cluesThisWord=0;recentGuesses=[];justKeptAI=0;
+    cluesThisWord=0;recentGuesses=[];justKeptAI=0;sentenceForecast=[];
     $("time").textContent="0:00";$("results").hidden=true;
     if($("roundProgression"))$("roundProgression").hidden=true;
     if($("dailyMixResult"))$("dailyMixResult").hidden=true;
@@ -492,6 +533,7 @@ AutoType.ready().then(async()=>{
       index++;
       prefix="";
       visible="";
+      refreshSentenceForecast();
       cluesThisWord=0;
       recentGuesses=[];
       justKeptAI=0;
