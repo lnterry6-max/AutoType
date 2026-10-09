@@ -32,7 +32,12 @@ for(const text of ["Supabase","Resend","GitHub Pages","Google AdSense","cookies"
 const contact=read("contact.html");
 assert.match(contact,/href="feedback\.html"/,"Private signed-in feedback is primary contact path");
 assert.match(contact,/github\.com\/lnterry6-max\/AutoType\/issues/,"Public technical issue fallback exists");
-assert.match(contact,/public email support inbox has not been established/,"Do not invent a support mailbox");
+for(const address of ["support@auto-type.net","privacy@auto-type.net"]){
+ assert.ok(contact.includes('href="mailto:'+address+'"'),"Contact page must link "+address);
+ assert.ok(privacy.includes('href="mailto:'+address+'"'),"Privacy page must link "+address);
+}
+assert.doesNotMatch(contact,/public email support inbox has not been established/,"Stale support warning must be removed");
+assert.match(read("ADS_READINESS.md"),/Inbound delivery has not yet been verified/,"Do not claim forwarding was tested");
 const previewPages={"index.html":"home-discovery","leaderboard.html":"leaderboard-bottom","how-to.html":"guide-bottom"};
 for(const [p,slot] of Object.entries(previewPages)){
  const page=read(p);

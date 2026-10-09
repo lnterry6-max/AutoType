@@ -4,7 +4,7 @@ This is a staged layout plan, not permission to run ads or an approval guarantee
 
 ## Currently implemented
 - Public About, Privacy Policy and Contact & Support pages, linked from the site footer.
-- Existing signed-in feedback form and public technical issue tracker; **no verified public support mailbox** is configured.
+- Support and privacy forwarding aliases are configured in Squarespace: `support@auto-type.net` and `privacy@auto-type.net`. **Inbound delivery has not yet been verified** by a test message.
 - Responsive, **hidden** ad-inventory landmarks below homepage discovery, leaderboard content and How to Play content.
 - A site-owned preview via `?ad-preview=1` on those three pages. Preview never loads third-party ads, sets cookies, or pays out.
 - No ad scripts, Google publisher verification IDs, ad slots, forced ad clicks, rewarded viewing, overlays or automatic placements.
@@ -13,7 +13,7 @@ This is a staged layout plan, not permission to run ads or an approval guarantee
 
 ## Pending before any real AdSense integration
 1. Use only an **eligible account holder** and provide accurate payment/identity information. AdSense requires publishers to be at least 18; a parent or guardian can own an account if the site operator is younger.
-2. Establish a monitored support/privacy contact inbox and update `contact.html` and `privacy.html` with the real working contact option.
+2. Send separate test messages to `support@auto-type.net` and `privacy@auto-type.net` from another mailbox; confirm both reach the monitored forwarding inbox and can be replied to. Forwarding does not automatically make outgoing mail appear to come from the AutoType domain.
 3. Review the drafted privacy disclosures with the site operator, including all current provider and retention details, and revise as needed.
 4. Configure required consent and privacy tools in the provider dashboard (including a Google-certified CMP for applicable regional personalized ads). Keep auto ads **off**.
 5. Submit the live website for review, using official site-verification code/meta **only from the authorized approved publisher account**. Do not copy guessed IDs.
