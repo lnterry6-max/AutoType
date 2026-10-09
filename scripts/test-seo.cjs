@@ -11,7 +11,7 @@ const publicPaths = [
 ];
 const canonical = filename => filename === "index.html"
   ? "https://auto-type.net/"
-  : "https://auto-type.net/" + filename;
+  : "https://auto-type.net/" + filename.replace(/\.html$/, "");
 const sitemap = read("sitemap.xml");
 const found = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m=>m[1]);
 assert.match(sitemap, /xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9"/);
