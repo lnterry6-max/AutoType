@@ -409,7 +409,7 @@
     const frame=equippedItem("frame",a);
     const frameColor=frame?.color&&frame.color!=="transparent"?frame.color:"transparent";
     const frameStyle=frameColor!=="transparent"?`box-shadow:0 0 0 2px ${frameColor},0 0 0 4px rgba(0,0,0,.18);`:"";
-    if(a?.avatarImage) return `<span class="${cls}" style="${frameStyle}"><img src="${a.avatarImage}" alt="${escapeHTML(name)}"></span>`;
+    if(a?.avatarImage) return `<span class="${cls}" style="${frameStyle}"><img src="${escapeHTML(a.avatarImage)}" alt="${escapeHTML(name)}"></span>`;
     return `<span class="${cls}" style="background:${avatarColor(a)};${frameStyle}">${escapeHTML(name.slice(0,1).toUpperCase())}</span>`;
   }
   function escapeHTML(s){
@@ -905,6 +905,9 @@
     const dropdown=document.querySelector("#accountDropdown");
     if(!btn||!dropdown)return;
     const a=currentAccount(), name=accountName(a);
+    btn.setAttribute("aria-label",name==="Guest"?"Guest account menu":`Account menu for ${name}`);
+    btn.setAttribute("aria-controls","accountDropdown");
+    btn.setAttribute("aria-expanded",String(!dropdown.hasAttribute("hidden")));
     btn.innerHTML=`${avatarMarkup(a,"nav-avatar")}<span class="account-name">${escapeHTML(name)}</span><span class="chevron">▾</span>`;
 
     if(a){
@@ -1244,15 +1247,24 @@
 
     const accountBtn=document.querySelector("#accountMenuButton");
     const dropdown=document.querySelector("#accountDropdown");
+    const setAccountMenuOpen=open=>{
+      if(!accountBtn||!dropdown)return;
+      dropdown.hidden=!open;
+      accountBtn.classList.toggle("open",open);
+      accountBtn.setAttribute("aria-expanded",String(open));
+    };
     accountBtn?.addEventListener("click",e=>{
       e.stopPropagation();
-      const isHidden=dropdown.hasAttribute("hidden");
-      if(isHidden){dropdown.removeAttribute("hidden");accountBtn.classList.add("open")}
-      else{dropdown.setAttribute("hidden","");accountBtn.classList.remove("open")}
+      setAccountMenuOpen(dropdown.hasAttribute("hidden"));
+    });
+    document.addEventListener("keydown",e=>{
+      if(e.key!=="Escape"||!dropdown||dropdown.hidden)return;
+      e.preventDefault();setAccountMenuOpen(false);
+      accountBtn?.focus({preventScroll:true});
     });
     document.addEventListener("click",e=>{
       if(dropdown && !dropdown.contains(e.target) && !accountBtn?.contains(e.target)){
-        dropdown.setAttribute("hidden","");accountBtn?.classList.remove("open");
+        setAccountMenuOpen(false);
       }
       document.querySelectorAll(".nav-more[open]").forEach(menu=>{
         if(!menu.contains(e.target))menu.removeAttribute("open");
@@ -1318,8 +1330,7 @@
         if(restoreFocus)mobBtn.focus({preventScroll:true});
       };
       const openMenu=()=>{
-        document.querySelector("#accountDropdown")?.setAttribute("hidden","");
-        document.querySelector("#accountMenuButton")?.classList.remove("open");
+        setAccountMenuOpen(false);
         mobNav.classList.add("open");
         document.body.classList.add("mobile-nav-open");
         scrim.hidden=false;

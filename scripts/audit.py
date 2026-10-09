@@ -179,6 +179,15 @@ def main() -> int:
         else:
             print(proc.stdout.strip())
 
+    integrity_test = ROOT / "scripts" / "test-release-integrity.cjs"
+    if integrity_test.exists():
+        proc = subprocess.run(["node", str(integrity_test)], capture_output=True, text=True, timeout=20)
+        if proc.returncode:
+            fail("Release accessibility and dependency contract regression failed:\\n"
+                 + (proc.stderr.strip() or proc.stdout.strip()), issues)
+        else:
+            print(proc.stdout.strip())
+
     canonical_more = [
         "predictions.html", "leaderboard.html", "how-to.html", "explore.html", "settings.html"
     ]
@@ -324,7 +333,7 @@ def main() -> int:
         # mixing old cached components with new HTML markup.
         for path_or_script in ("styles.css", "core.js", "backend.js"):
             for match in re.finditer(re.escape(path_or_script) + r'\?v=([^"]+)', text):
-                expected = ("20261008-menu-cleanup-v1" if path_or_script == "core.js"
+                expected = ("20261009-accessibility-v1" if path_or_script == "core.js"
                             else "20261008-first-login-v1" if page.name == "account.html" and path_or_script == "backend.js"
                             else "20261008-beta-polish-v1")
                 if match.group(1) != expected:

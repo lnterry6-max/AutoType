@@ -51,7 +51,7 @@
     <div class="nav-currency" id="navCurrency" hidden></div>
     <button class="mobile-toggle" id="mobileToggle" aria-label="Open navigation">☰</button>
     <div class="nav-account">
-      <button class="account-button" id="accountMenuButton"></button>
+      <button type="button" class="account-button" id="accountMenuButton" aria-label="Account menu" aria-controls="accountDropdown" aria-expanded="false"></button>
       <div class="account-dropdown" id="accountDropdown" hidden></div>
     </div>
   </div>
@@ -95,7 +95,7 @@
 <script src="backend-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="backend.js?v=20261008-beta-polish-v1"></script>
-<script src="core.js?v=20261008-menu-cleanup-v1"></script>
+<script src="core.js?v=20261009-accessibility-v1"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded",async()=>{

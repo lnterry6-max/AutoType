@@ -49,7 +49,7 @@
     <div class="nav-currency" id="navCurrency" hidden></div>
     <button class="mobile-toggle" id="mobileToggle" aria-label="Open navigation">☰</button>
     <div class="nav-account">
-      <button class="account-button" id="accountMenuButton"></button>
+      <button type="button" class="account-button" id="accountMenuButton" aria-label="Account menu" aria-controls="accountDropdown" aria-expanded="false"></button>
       <div class="account-dropdown" id="accountDropdown" hidden></div>
     </div>
   </div>
@@ -130,7 +130,7 @@
     <section class="admin-section" id="players" data-developer-only>
       <div class="admin-section-head">
         <div><span class="section-kicker">PLAYERS</span><h2>Player Manager</h2></div>
-        <input class="input admin-search" id="playerSearch" placeholder="Search username">
+        <input type="search" class="input admin-search" id="playerSearch" placeholder="Search username" aria-label="Search players by username" autocomplete="off">
       </div>
       <div class="admin-player-list" id="adminPlayerList"></div>
     </section>
@@ -219,7 +219,7 @@
 <script src="backend-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="backend.js?v=20261008-beta-polish-v1"></script>
-<script src="core.js?v=20261008-menu-cleanup-v1"></script>
+<script src="core.js?v=20261009-accessibility-v1"></script>
 <script>
 document.addEventListener("DOMContentLoaded",async()=>{
   await AutoType.ready();
@@ -453,7 +453,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
           <div class="admin-role-controls">
             <div class="admin-role-control-group">
               <label>Permission level</label>
-              <select class="select" data-staff-role ${role==="developer"?"disabled":""}>
+              <select class="select" data-staff-role aria-label="Permission level for ${AutoType.escapeHTML(a.username)}" ${role==="developer"?"disabled":""}>
                 <option value="player" ${role==="player"?"selected":""}>Player</option>
                 <option value="admin" ${role==="admin"?"selected":""}>Admin</option>
                 ${role==="developer"?'<option value="developer" selected>Developer (protected)</option>':""}
@@ -462,7 +462,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
             </div>
             <div class="admin-role-control-group">
               <label>Display badge</label>
-              <select class="select" data-role-badge>
+              <select class="select" data-role-badge aria-label="Display badge for ${AutoType.escapeHTML(a.username)}">
                 <option value="">Choose a badge…</option>
                 ${roleConfig.badges.map(b=>`<option value="${b.id}">${AutoType.escapeHTML(b.name)}</option>`).join("")}
               </select>
