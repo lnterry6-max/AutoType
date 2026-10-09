@@ -170,6 +170,15 @@ def main() -> int:
         else:
             print(proc.stdout.strip())
 
+    completion_test = ROOT / "scripts" / "test-round-completion.cjs"
+    if completion_test.exists():
+        proc = subprocess.run(["node", str(completion_test)], capture_output=True, text=True, timeout=20)
+        if proc.returncode:
+            fail("Round completion regression failed:\\n"
+                 + (proc.stderr.strip() or proc.stdout.strip()), issues)
+        else:
+            print(proc.stdout.strip())
+
     ad_readiness_test = ROOT / "scripts" / "test-ad-readiness.cjs"
     if ad_readiness_test.exists():
         proc = subprocess.run(["node", str(ad_readiness_test)], capture_output=True, text=True, timeout=20)
