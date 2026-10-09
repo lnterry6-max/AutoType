@@ -161,6 +161,15 @@ def main() -> int:
         else:
             print(proc.stdout.strip())
 
+    sentence_forecast_test = ROOT / "scripts" / "test-sentence-forecast.cjs"
+    if sentence_forecast_test.exists():
+        proc = subprocess.run(["node", str(sentence_forecast_test)], capture_output=True, text=True, timeout=20)
+        if proc.returncode:
+            fail("Sentence Mode full prediction regression failed:\\n"
+                 + (proc.stderr.strip() or proc.stdout.strip()), issues)
+        else:
+            print(proc.stdout.strip())
+
     ad_readiness_test = ROOT / "scripts" / "test-ad-readiness.cjs"
     if ad_readiness_test.exists():
         proc = subprocess.run(["node", str(ad_readiness_test)], capture_output=True, text=True, timeout=20)
