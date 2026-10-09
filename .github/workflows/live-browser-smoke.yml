@@ -1,0 +1,34 @@
+name: Live AutoType browser QA
+
+on:
+  push:
+    branches: ["qa/live-browser-smoke"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install pinned Playwright browser driver
+        run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright-core@1.56.1
+      - name: Verify runner Chrome
+        run: google-chrome --version
+      - name: Test live AutoType desktop and mobile guest flows
+        env:
+          AUTOTYPE_URL: https://auto-type.net
+        run: node scripts/test-live-browser.cjs
+      - name: Save screenshots and QA report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: autotype-live-qa
+          path: qa-screenshots/
+          if-no-files-found: ignore
