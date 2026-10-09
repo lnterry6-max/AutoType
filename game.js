@@ -182,6 +182,7 @@ AutoType.ready().then(async()=>{
   let roundId=crypto.randomUUID();
   let cluesThisWord=0,recentGuesses=[],justKeptAI=0;
   let started=false,startTime=0,timer=null;
+  let roundFinishing=false;
   // One continuation forecast for the current unfinished part of Sentence Mode.
   // It only advances when the player correctly locks a word.
   let sentenceForecast=[];
@@ -343,6 +344,12 @@ AutoType.ready().then(async()=>{
   }
   function renderSentenceForecast(){
     const panel=$("sentencePrediction");
+    if(index>=words.length){
+      panel.hidden=true;
+      if($("sentenceAcceptButton"))$("sentenceAcceptButton").hidden=true;
+      return;
+    }
+    panel.hidden=false;
     const acceptButton=$("sentenceAcceptButton");
     if(mode!=="sentence"){
       if(acceptButton)acceptButton.hidden=true;
@@ -400,10 +407,22 @@ AutoType.ready().then(async()=>{
     $("scoreNextWord").textContent="Current word: "+currentBasePoints+" base + "+upcomingStreakBonus+" streak";
     $("keyboardHint").textContent=(settings.confirmKey==="Enter"?"ENTER":"SPACE")+" lock · "+
       (settings.eraseKey==="Delete"?"DELETE":"BACKSPACE")+" erase";
-    $("wordCount").textContent=`${Math.min(index+1,words.length)} / ${words.length}`;
+    $("wordCount").textContent=`${Math.min(index,words.length)} / ${words.length}`;
     $("progress").style.width=`${index/words.length*100}%`;
     $("typedPrefix").textContent=prefix||"_";
     renderSentenceForecast();
+
+    if(index>=words.length){
+      $("comboBadge").hidden=true;
+      $("scoreNextWord").textContent="All words completed";
+      $("guess").classList.add("guess-correct");
+      $("guess").textContent="DONE";
+      $("typedPrefix").textContent="✓";
+      $("message").textContent="Round complete. Results are below.";
+      $("message").className="message good";
+      $("predictionQueue").innerHTML="";
+      return;
+    }
 
     const g=visible||"";
     const targetWord=words[index]||"";
@@ -451,6 +470,11 @@ AutoType.ready().then(async()=>{
     },250);
   }
   function reset(newSentence=sentence){
+    roundFinishing=false;
+    window.AutoTypeCompletion?.hide();
+    for(const id of ["restartBtn","newBtn","againBtn"]){
+      const button=$(id);if(button)button.disabled=false;
+    }
     roundId=crypto.randomUUID();
     if(timer)clearInterval(timer);started=false;startTime=0;
     sentence=newSentence;words=sentence.split(" ");index=0;prefix="";visible="";score=0;streak=0;maxStreak=0;keyCount=0;erased=0;errors=0;clueCounts=[];
@@ -650,9 +674,22 @@ AutoType.ready().then(async()=>{
   }
 
   async function finish(){
+    if(roundFinishing||index<words.length)return;
+    roundFinishing=true;
     if(timer)clearInterval(timer);
     const ms=elapsed();
     $("time").textContent=fmt(ms);
+
+    // Commit the final target, counter, score, and progress bar immediately,
+    // before any awaited save. Both a final Lock and Accept Phrase use this path.
+    render();
+    $("mobileGameControls").hidden=true;
+    $("mobileTypingInput").blur();
+    document.body.classList.remove("mobile-keyboard-active");
+    for(const id of ["restartBtn","newBtn","againBtn"]){
+      const button=$(id);if(button)button.disabled=true;
+    }
+    window.AutoTypeCompletion?.show();
 
     let coinsEarned=0;
     let newlyUnlocked=[];
@@ -815,9 +852,19 @@ AutoType.ready().then(async()=>{
 
     $("results").hidden=false;
     if($("sentenceAcceptButton"))$("sentenceAcceptButton").hidden=true;
-    $("progress").style.width="100%";
-    $("mobileGameControls").hidden=true;
-    $("mobileTypingInput").blur();
+    for(const id of ["restartBtn","newBtn","againBtn"]){
+      const button=$(id);if(button)button.disabled=false;
+    }
+    // After results save (success or failure), bring the summary into view.
+    // Never force the mobile keyboard back open on a finished round.
+    const results=$("results");
+    setTimeout(()=>{
+      if(results.hidden||!roundFinishing)return;
+      const reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches||
+        document.body.classList.contains("reduced-motion")||
+        document.body.classList.contains("animations-off");
+      results.scrollIntoView?.({behavior:reduced?"auto":"smooth",block:"start"});
+    },200);
   }
 
   // A real, visible text input is required to summon iOS/Android virtual keyboards.
