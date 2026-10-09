@@ -222,7 +222,7 @@ def main() -> int:
         # portrait phones, and place it alongside the board in landscape.
         if page.name == "plinko.html":
             for required in (
-                'href="plinko-mobile.css?v=20261008-plinko-mobile-v1"',
+                'href="plinko-mobile.css?v=20261008-plinko-mobile-v2"',
                 'id="plinkoBoard"', 'id="plinkoAim"',
                 'id="plinkoDrop"', 'id="plinkoReset"',
             ):
