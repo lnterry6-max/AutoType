@@ -20,6 +20,37 @@
   }
   syncDeviceMode();
   const $=id=>document.getElementById(id);
+
+  // Publish concise page addresses while retaining the existing .html files.
+  // GitHub Pages resolves /play to play.html without an additional web server.
+  // Preserve query parameters and fragments used by races and account recovery.
+  function cleanLocalPageUrl(value){
+    try{
+      const url=new URL(value,location.href);
+      if(url.origin!==location.origin||!/\\/[a-z0-9-]+\\.html$/i.test(url.pathname)||
+         url.pathname==="/404.html")return null;
+      url.pathname=url.pathname==="/index.html"?"/":url.pathname.replace(/\\.html$/i,"");
+      return url;
+    }catch{return null;}
+  }
+  function upgradeLink(link){
+    const target=cleanLocalPageUrl(link.href);
+    if(target)link.href=target.pathname+target.search+target.hash;
+  }
+  function syncCleanUrls(){
+    // Existing navigation, profile links and deep-links keep working as before.
+    if(!document.querySelectorAll)return;
+    for(const link of document.querySelectorAll("a[href]"))upgradeLink(link);
+    const current=cleanLocalPageUrl(location.href);
+    if(current&&window.history?.replaceState){
+      window.history.replaceState(window.history.state,"",current.pathname+current.search+current.hash);
+    }
+  }
+  document.addEventListener("click",event=>{
+    const link=event.target?.closest?.("a[href]");
+    if(link)upgradeLink(link); // Covers dynamically generated links too.
+  },true);
+
   const setStatus=(message)=>{const el=$("installStatus");if(el)el.textContent=message;};
 
   function setInstallUI(){
@@ -70,9 +101,9 @@
     dock.setAttribute("aria-label","Installed app navigation");
     const links=[
       {href:"/",label:"Home",symbol:"⌂",page:"home"},
-      {href:"/play.html",label:"Play",symbol:"▶",page:"play"},
-      {href:"/leaderboard.html",label:"Ranks",symbol:"♜",page:"leaderboard"},
-      {href:"/profile.html",label:"Profile",symbol:"◉",page:"profile"}
+      {href:"/play",label:"Play",symbol:"▶",page:"play"},
+      {href:"/leaderboard",label:"Ranks",symbol:"♜",page:"leaderboard"},
+      {href:"/profile",label:"Profile",symbol:"◉",page:"profile"}
     ];
     for(const link of links){
       const a=document.createElement("a");
@@ -105,6 +136,7 @@
     setInstallUI();
   });
   document.addEventListener("DOMContentLoaded",()=>{
+    syncCleanUrls();
     setInstallUI();
     addAppDock();
     $("installPromptButton")?.addEventListener("click",async()=>{
