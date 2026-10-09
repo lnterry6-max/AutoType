@@ -19,6 +19,7 @@
 <link rel="stylesheet" href="styles.css?v=20261008-beta-polish-v1">
 <link rel="stylesheet" href="onboarding-races.css?v=20261008-onboarding-v2">
 <link rel="stylesheet" href="site-finish.css?v=20261009-pwa-polish-v3">
+<link rel="stylesheet" href="sentence-mode.css?v=20261009-sentence-v1">
 <link rel="stylesheet" href="progression-polish.css?v=20261008-progression-v1">
 </head>
 <body data-page="play">
@@ -121,7 +122,7 @@
       <a class="mode-tile plinko-mode surprise-mode" data-surprise-mode href="play.html?mode=classic"><span class="mode-number">01</span><div><small>RANDOM MODE</small><h2>Surprise Me</h2><p>Jump into a random mode.</p></div><b>Shuffle →</b></a>
       <a class="mode-tile primary-mode" href="play.html?mode=classic"><span class="mode-number">02</span><div><small>CORE</small><h2>Word</h2><p>Type a clue and see what AutoType guesses.</p></div><b>Play →</b></a>
       <a class="mode-tile" href="play.html?mode=context"><span class="mode-number">03</span><div><small>SMARTER</small><h2>Context</h2><p>The previous word influences the next prediction.</p></div><b>Play →</b></a>
-      <a class="mode-tile" href="play.html?mode=sentence"><span class="mode-number">04</span><div><small>FULL VIEW</small><h2>Sentence</h2><p>See what AutoType thinks comes next.</p></div><b>Play →</b></a>
+      <a class="mode-tile" href="play.html?mode=sentence"><span class="mode-number">04</span><div><small>FULL VIEW</small><h2>Sentence</h2><p>AutoType predicts the whole sentence. Your clues steer its next guess.</p></div><b>Play →</b></a>
       <a class="mode-tile evil-mode" href="play.html?mode=evil"><span class="mode-number">05</span><div><small>CHAOS</small><h2>Evil</h2><p>Unexpected slang and wildly unhelpful guesses keep you on your toes.</p></div><b>Play →</b></a>
       <a class="mode-tile plinko-mode" href="plinko.html"><span class="mode-number">06</span><div><small>ARCADE · FREE</small><h2>Plinko</h2><p>Drop five free balls through a maze of pegs. Score arcade points and beat your personal best — no coins involved.</p></div><b>Drop →</b></a>
     </div>
@@ -162,7 +163,7 @@
     <div class="target-wrap">
       <div class="target-label">Target sentence</div>
       <div class="target" id="target"></div>
-      <div class="sentence-prediction" id="sentencePrediction"></div>
+      <div class="sentence-prediction" id="sentencePrediction" role="group" aria-label="Full-sentence AI prediction" aria-live="off"></div>
     </div>
 
     <div class="panel arena">
@@ -408,7 +409,8 @@ document.addEventListener("DOMContentLoaded",()=>{
 </script>
 <script src="progression-feedback.js?v=20261008-progression-v1"></script>
 <script src="prediction-picker.js?v=20261009-random-clues-v1"></script>
-<script src="game.js?v=20261009-random-clues-v1"></script>
+<script src="sentence-forecast.js?v=20261009-sentence-v1"></script>
+<script src="game.js?v=20261009-sentence-v1"></script>
 
 </body>
 </html>
