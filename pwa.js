@@ -27,9 +27,9 @@
   function cleanLocalPageUrl(value){
     try{
       const url=new URL(value,location.href);
-      if(url.origin!==location.origin||!/\\/[a-z0-9-]+\\.html$/i.test(url.pathname)||
+      if(url.origin!==location.origin||!/\/[a-z0-9-]+\.html$/i.test(url.pathname)||
          url.pathname==="/404.html")return null;
-      url.pathname=url.pathname==="/index.html"?"/":url.pathname.replace(/\\.html$/i,"");
+      url.pathname=url.pathname==="/index.html"?"/":url.pathname.replace(/\.html$/i,"");
       return url;
     }catch{return null;}
   }
