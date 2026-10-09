@@ -271,7 +271,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
         password:$("#loginPassword").value
       });
       await AutoTypeBackend.hydrateLocalMirror();
-      location.href="index.html";
+      location.href="how-to.html#try-it";
     }catch(e){
       AutoType.toast(e.message);
     }finally{
@@ -317,7 +317,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
 
       if(data.session){
         await AutoTypeBackend.hydrateLocalMirror();
-        location.href="profile.html";
+        location.href="how-to.html#try-it";
       }else{
         AutoType.toast("Account created. Check your email to confirm it, then sign in.");
         setTab("login");
