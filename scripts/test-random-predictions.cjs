@@ -36,7 +36,7 @@ assert.match(game,/recent:recentGuesses/,"The picker needs history to reduce rep
 assert.match(game,/visible=guess\(\)/,"Typing a clue must actually request a new guess");
 assert.match(game,/if\(wrongTail>0\)/,"Clue typing still respects protected correct letters and incorrect AI tails");
 assert.match(game,/function promoteCorrectAI\(/,"Correct AI overlap must remain intact");
-assert.match(play,/<script src="prediction-picker\.js\?v=20261009-random-clues-v1"><\/script>\s*<script src="sentence-forecast\.js\?v=20261009-sentence-v1"><\/script>\s*<script src="game\.js\?v=20261009-sentence-v1"><\/script>/,
+assert.match(play,/<script src="prediction-picker\.js\?v=20261009-random-clues-v1"><\/script>\s*<script src="sentence-forecast\.js\?v=20261009-sentence-v1"><\/script>\s*<script src="completion-feedback\.js\?v=20261009-round-done-v1"><\/script>\s*<script src="game\.js\?v=20261009-round-done-v1"><\/script>/,
   "Picker must load before the game engine, with a cache-busted URL");
 assert.doesNotMatch(read("prediction-picker.js"),/localStorage|AutoTypeBackend|fetch\(|addCoins|recordRound/,
   "The word picker must not affect progression or the backend");
