@@ -6,6 +6,7 @@
 <title>Play · AutoType</title>
 <link rel="icon" href="assets/logo.png">
 <link rel="stylesheet" href="styles.css?v=20261008-beta-polish-v1">
+<link rel="stylesheet" href="onboarding-races.css?v=20261008-onboarding-v1">
 </head>
 <body data-page="play">
 
@@ -81,7 +82,25 @@
       <div class="quick-match-action">
         <button class="button button-primary" id="quickMatchButton">Find match</button>
         <button class="button button-quiet" id="quickMatchCancel" hidden>Cancel</button>
-        <span id="quickMatchStatus"></span>
+        <span id="quickMatchStatus" role="status" aria-live="polite"></span>
+      </div>
+      <div class="quick-match-npc" id="npcOffer" hidden>
+        <div id="npcDecision">
+          <p><strong>No opponent found.</strong> Want to race an NPC instead?</p>
+          <div class="quick-match-npc-actions">
+            <button class="button button-primary" id="npcOfferYes" type="button">Race an NPC</button>
+            <button class="button button-secondary" id="npcOfferNo" type="button">Not now</button>
+          </div>
+        </div>
+        <div id="npcDifficulty" hidden>
+          <p><strong>Choose your opponent</strong></p>
+          <div class="quick-match-npc-levels">
+            <button class="button button-secondary" type="button" data-npc-skill="easy">Easy · Rookie</button>
+            <button class="button button-secondary" type="button" data-npc-skill="medium">Medium · Rival</button>
+            <button class="button button-primary" type="button" data-npc-skill="hard">Hard · Ace</button>
+          </div>
+          <p class="npc-skill-detail">Practice race · first to finish wins · no leaderboard or wallet rewards.</p>
+        </div>
       </div>
     </section>
 
@@ -119,6 +138,12 @@
         <div><span>Keys</span><strong id="keys">0</strong></div>
         <div><span>AI Erased</span><strong id="erasedCount">0</strong></div>
       </div>
+    </div>
+
+    <div class="npc-race-strip" id="npcRaceHud" hidden>
+      <div class="npc-race-top"><strong id="npcRaceName">Rookie Bot</strong><span id="npcRacePace">0 / 0 words</span></div>
+      <div class="npc-race-progress"><i id="npcRaceProgress"></i></div>
+      <span class="npc-race-note">First to finish wins · NPC practice only</span>
     </div>
 
     <div class="target-wrap">
