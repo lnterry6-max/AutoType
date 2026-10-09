@@ -18,6 +18,7 @@
 
 <link rel="stylesheet" href="styles.css?v=20261008-beta-polish-v1">
 <link rel="stylesheet" href="plinko-mobile.css?v=20261008-plinko-mobile-v2">
+<link rel="stylesheet" href="completion-feedback.css?v=20261009-round-done-v1">
 <link rel="stylesheet" href="site-finish.css?v=20261009-pwa-polish-v3">
 </head>
 <body data-page="plinko">
@@ -128,6 +129,8 @@
   <div class="plinko-live-sr" id="plinkoAnnounce" role="status" aria-live="polite" aria-atomic="true"></div>
 </main>
 
+<div id="roundDoneOverlay" class="round-done-overlay" role="status" aria-live="polite" aria-atomic="true" hidden><strong class="round-done-word">DONE</strong></div>
+
 <footer class="footer">
   <div class="container footer-inner">
     <span><strong>AutoType</strong> <span class="footer-beta">BETA</span></span>
@@ -140,6 +143,7 @@
 <script src="backend.js?v=20261008-beta-polish-v1"></script>
 <script src="core.js?v=20261009-accessibility-v1"></script>
 
-<script src="plinko.js?v=20261008-plinko"></script>
+<script src="completion-feedback.js?v=20261009-round-done-v1"></script>
+<script src="plinko.js?v=20261009-round-done-v1"></script>
 </body>
 </html>
