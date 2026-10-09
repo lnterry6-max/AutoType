@@ -42,6 +42,23 @@ body[data-page="play"] .game-stats strong.score-pop { animation:autotype-score-i
 @keyframes autotype-guess-in { from{opacity:.6;transform:translateY(3px)}to{opacity:1;transform:translateY(0)} }
 @keyframes autotype-score-in { 50%{transform:scale(1.12);color:var(--green)} }
 
+/* Account redirects scroll to the lesson without hiding it beneath the site header. */
+#try-it { scroll-margin-top: 78px; }
+
+/* On phone keyboards, preserve space for the target and prediction. */
+@media(max-width:820px),(pointer:coarse){
+  .mobile-keyboard-active .npc-race-strip {
+    flex:0 0 auto;
+    margin:0;
+    padding:4px 8px;
+    border-radius:6px;
+  }
+  .mobile-keyboard-active .npc-race-top strong {font-size:10px}
+  .mobile-keyboard-active .npc-race-top span {font-size:10px}
+  .mobile-keyboard-active .npc-race-progress {height:3px;margin:3px 0 0}
+  .mobile-keyboard-active .npc-race-note {display:none}
+}
+
 @media(max-width:600px) {
   .guided-tutorial {padding:14px}
   .guided-tutorial-head {align-items:flex-start;flex-wrap:wrap}
