@@ -69,7 +69,7 @@ assert.match(css,/mobile-keyboard-active #gameArea \.sentence-prediction\.is-act
 assert.doesNotMatch(read("sentence-forecast.js"),/AutoTypeBackend|fetch\(|localStorage|addCoins|recordRound/,
   "Forecasting must not affect persistence, rewards or verified round scoring");
 const edge=read("supabase/functions/game-api/index.ts");
-const sql=read("supabase/migrations/20261009183000_sentence_phrase_acceptance.sql");
+const sql=read("supabase/migrations/20261009183747_sentence_phrase_acceptance.sql");
 assert.match(game,/function acceptSentencePhrase\(\)/,"Sentence Mode has a real one-tap acceptance action");
 assert.match(game,/sentencePhraseWords\+=count/);
 assert.match(game,/sentencePhraseActions\+\+/);
