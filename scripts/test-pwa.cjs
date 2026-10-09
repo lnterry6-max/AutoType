@@ -90,7 +90,7 @@ const vm=require("node:vm");
 function simulate({ua="",platform="",points=0,installed=false}){
  const htmlSet=new Set(),bodySet=new Set(),events={};
  const asClassList=set=>({add:v=>set.add(v),toggle:(v,on)=>{if(on)set.add(v);else set.delete(v)}});
- const status={textContent:""},button={hidden:true,disabled:false};
+ const status={textContent:""},button={hidden:true,disabled:false,addEventListener:()=>{}};
  const doc={
   documentElement:{classList:asClassList(htmlSet)},
   body:{dataset:{page:"admin"},classList:asClassList(bodySet)},
