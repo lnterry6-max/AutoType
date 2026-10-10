@@ -5,23 +5,25 @@ import os
 from pathlib import Path
 import subprocess
 import re
+import time
 import urllib.error
 import urllib.request
 
 assert os.environ.get("GITHUB_ACTIONS") == "true"
 directory = Path(os.environ["AUTOTYPE_STACK_DIR"])
 def diagnostics():
-    names = subprocess.check_output(["docker", "ps", "-a", "--format", "{{.Names}}"], text=True).splitlines()
+    names = subprocess.check_output(["docker", "ps", "-a", "--format", "{{.Names}}"], text=True, timeout=15).splitlines()
     for name in names:
         if name.endswith("_autotype-phase1-ci"):
             print("FIXTURE DIAGNOSTIC", name, flush=True)
-            logs = subprocess.run(["docker", "logs", "--tail", "50", name], capture_output=True, text=True)
+            logs = subprocess.run(["docker", "logs", "--tail", "50", name], capture_output=True, text=True, timeout=15)
             text = logs.stdout + logs.stderr
             text = re.sub(r"eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+", "[local JWT redacted]", text)
             text = text.replace("super-secret-jwt-token-with-at-least-32-characters-long", "[local JWT secret redacted]")
             print(text, flush=True)
 
 print("Starting fixture services with an eight-minute bound", flush=True)
+started = time.monotonic()
 try:
     result = subprocess.run(["supabase", "start"], cwd=directory, capture_output=True, text=True, timeout=480)
 except subprocess.TimeoutExpired as error:
@@ -34,7 +36,9 @@ if result.returncode:
     print(result.stderr)
     diagnostics()
     raise SystemExit(result.returncode)
-status = json.loads(subprocess.check_output(["supabase", "status", "-o", "json"], cwd=directory))
+print(f"CLI start completed in {time.monotonic()-started:.1f}s; reading local status with a 60s bound", flush=True)
+status = json.loads(subprocess.check_output(["supabase", "status", "-o", "json"], cwd=directory, timeout=60))
+print("Local status returned; warming local function imports", flush=True)
 for name in ("ANON_KEY", "SERVICE_ROLE_KEY", "JWT_SECRET", "DB_URL"):
     if status.get(name):
         print("::add-mask::" + status[name], flush=True)
@@ -47,11 +51,11 @@ for name in ("game-api", "stripe-webhook", "create-checkout-session", "delete-ac
         data=b"{}", headers={"Authorization": "Bearer " + status["ANON_KEY"],
                              "apikey": status["ANON_KEY"], "Content-Type": "application/json"})
     try:
-        response = urllib.request.urlopen(req, timeout=120)
+        response = urllib.request.urlopen(req, timeout=30)
         code = response.status
     except urllib.error.HTTPError as error:
         code = error.code
     if code not in (400, 401, 503):
         raise RuntimeError(f"Unexpected warm-up status for {name}: {code}")
     print(f"Warmed {name}: {code} (unauthenticated/unconfigured; no payment requests)")
-subprocess.run(["docker", "ps", "--format", "{{.Names}} {{.Image}} {{.Status}}"], check=True)
+subprocess.run(["docker", "ps", "--format", "{{.Names}} {{.Image}} {{.Status}}"], check=True, timeout=15)

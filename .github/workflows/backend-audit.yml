@@ -127,4 +127,4 @@ jobs:
         run: python3 scripts/test_phase1_fullstack_native.py
       - name: Stop and remove only this disposable fixture stack
         if: always() && env.AUTOTYPE_STACK_DIR != ''
-        run: supabase stop --workdir "$AUTOTYPE_STACK_DIR" --no-backup
+        run: timeout 120s supabase stop --workdir "$AUTOTYPE_STACK_DIR" --no-backup
