@@ -27,6 +27,11 @@ the 37-test `npm ci` / `npm run test:phase1` job remain separate required eviden
 Each worker owns a distinct libpq connection and backend PID. Thread barriers
 start competing calls together; `pg_blocking_pids` verifies controlled lock waits.
 Tests use bounded statement/lock timeouts and PostgreSQL's real deadlock detector.
+Fixture defaults are an eight-second statement timeout, four-second lock timeout
+and 100ms deadlock detection; timeout tests shorten the relevant limit to 150ms.
+These settings belong only to the disposable cluster/connections. Production and
+hosted database timeout settings were neither read nor changed. Match request
+deadlines, retry policy and representative load during approved staging.
 
 - Original tournament award versus normal round save for one player: reproduce
   the inherited wallet/stats lock inversion, assert SQLSTATE `40P01`, retry the
@@ -86,9 +91,47 @@ three times, including a late event with no competing credit and recovery by exa
 attachment retry. Additional cases cover concurrent stale/terminal fake disputes
 and four distinct game modes updating one player's counters.
 
-The expanded 15-case fixed suite is pending the next Actions run. The original
-functions are restored only temporarily inside disposable fixtures to retain
-proof that both regression scenarios can detect the prior failures.
+[Run 510](https://github.com/lnterry6-max/AutoType/actions/runs/38016971919),
+implementation/test commit `db234e5616939c04482ccbae3d4a788a7a22c3d5`, passed:
+
+- **15 native cases, 0 failures**, PostgreSQL 16.15, distinct real backend
+  connections and controlled waits. The bootstrap plus **52 migrations** applied
+  successfully: 46 prior, four original Phase 1 and two corrective migrations.
+- **37 Phase 1 regressions, 0 failures**, Node 22, locked `npm ci`, lifecycle
+  scripts disabled and `npm run test:phase1` without external networking.
+- **Release audit passed**, 27 HTML pages and existing regression checks.
+
+The two original functions are restored only temporarily inside disposable
+fixtures to prove the tests detect the old failures. Fixed contention cases
+then execute the final migrated functions and pass without deadlock. Forced
+SQLSTATE `55P03` lock timeout and `57014` statement timeout roll back partial
+round writes; fake Stripe lock-timeout application retains its error pending,
+rolls back order/wallet/ledger writes, and retries once safely. No server-side
+automatic retry was added: tests explicitly retry immutable receipts/events.
+
+Late legacy events can remain pending even after a competing metadata credit:
+that credit may have scanned the legacy row before the session binding became
+visible. The exact attachment/event retry or service-only reconciliation drains
+the row without a second credit. Monitoring and reconciliation ownership remain
+release requirements; an HTTP 200/pending acknowledgement is not final settlement.
+
+The initial native runs fixed fixture-only setup/decoder/assertion issues before
+the final pass. No additional financial/accounting defect was found in the tested
+matrix. Small synthetic fixtures and controlled interleavings are bounded
+evidence, not an exhaustive load test or proof that every transaction pairing
+is deadlock-free.
+
+## Migration review
+
+Both corrections replace existing functions only: no tables/columns/indexes,
+credential changes, data deletion, wallet reset or history rewrites. Existing
+function signatures and service-only execution grants remain. Prize eligibility,
+reward amounts, ledger/audit writes and session/user/order binding checks remain.
+The award now fails closed if the winner's stats row is missing; target preflight
+must review missing stats/wallet support records in addition to uniqueness gates.
+The Checkout array is sorted and never expands after the order lock. All prior
+migration files retain their committed contents. Apply both corrections after
+the four original Phase 1 files in any separately approved target.
 
 ## Remaining staging requirements
 

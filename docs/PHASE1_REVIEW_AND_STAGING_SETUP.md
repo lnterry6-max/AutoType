@@ -2,9 +2,11 @@
 
 Review scope: PR #30, based on `beta-friends` at
 `809e4a12bd8a18d070f8612b7e6a380a63fd13b6`; reviewed implementation head
-`9617b43ac6da67b899324f7e6770ea68294be710`. This follow-up changes testing and
-review documentation only. It does not change application/Edge Function behavior,
-SQL migrations, production configuration, credentials or infrastructure.
+`9617b43ac6da67b899324f7e6770ea68294be710`. The original CI follow-up changed
+testing and review documentation only.
+The subsequent native-concurrency follow-up adds two corrective migrations and
+real PostgreSQL fixtures; it changes no Edge Functions, production configuration,
+credentials or infrastructure. See [native evidence](PHASE1_NATIVE_CONCURRENCY.md).
 
 ## Compatibility and security review
 
@@ -20,18 +22,19 @@ All 52 files in the implementation PR were reviewed by category:
 | Existing audit/regression script changes | Expected asset versions and intentional practice assertions updated; existing checks retained. |
 | Hardening/staging documentation and ignore rules | Intentional behavior, preservation of historical data, approval boundaries, recovery and test limitations documented; node_modules/test caches excluded. |
 
-No confirmed new application regression or additional reward-minting path was found
-in this review/local validation. That is bounded evidence, not a claim of complete
+The original read-only review found no additional reward-minting path. Subsequent
+native execution confirmed and fixed two database deadlocks, described below. That is bounded evidence, not a claim of complete
 production compatibility or tamper-proof gameplay. Preserve these explicit release
 risks and proposed checks:
 
-1. **Native lock contention remains untested.** Round save locks player stats before
-   wallet; tournament award credits wallet before updating player stats (tournament
-   migration around the reward/save and award sections). This inherited lock-order
-   inversion can plausibly deadlock when a non-tournament save and an award target
-   the same account. Treat it as a concrete contention risk, not an observed failure.
-   Include award-versus-normal-round and retry tests in native staging. If reproduced,
-   align lock ordering across affected mutations before release.
+1. **Two lock inversions were reproduced and corrected.** Native PostgreSQL 16.15
+   reproduced award/round stats-wallet deadlock and late pending Checkout intent/order
+   deadlock. Two forward migrations align stats-before-wallet and capture a fixed
+   intent-lock set before the order. The original four migrations remain unchanged.
+   Native tests cover separate sessions, both reset/completion orders, duplicate
+   receipts, rollback after timeouts, fake payment reconciliation and safe retries.
+   Repeat the relevant matrix on the approved Supabase/PostgreSQL 17 target; native
+   Auth/Storage stubs and small fixtures do not establish hosted or load behavior.
 2. **Migration compatibility requires target preflight.** Duplicate challenge/intent
    bindings prevent unique index creation. Same-named existing objects, divergent
    migration history/default grants and historical adjustment/ledger counters need
@@ -81,7 +84,10 @@ PGlite is instantiated without a disk path/remote URL. SQL roles/Auth/Storage ar
 local stubs; service clients and canonical Stripe reads are mocked. No Stripe
 payment/refund API is called. The suite still has 37 regression tests; isolation
 self-check probes are separate and do not inflate that count. Unit/SQL/DOM evidence
-is deliberately separate from the native/hosted/physical staging requirements.
+is deliberately separate from native, hosted and physical evidence. An additional
+`Phase 1 native PostgreSQL concurrency` job now uses preinstalled PostgreSQL 16 and
+libpq on ubuntu-24.04, a fresh private Unix-socket cluster and external-network
+isolation. It installs nothing and accepts no database URL or service credentials.
 
 ## Read-only staging inventory
 
@@ -105,7 +111,9 @@ logs, keys, credentials or database contents were accessed; no service changes o
    if available. If unavailable, stop for a specific cost approval rather than upgrading
    or using a paid project. Nothing has been provisioned or cost-approved.
 2. Start empty. Apply only the reviewed bootstrap/prior migrations and four Phase 1
-   migrations after separate staging-write approval. Seed synthetic accounts A/B/C,
+   migrations plus `20261010022038_phase1_native_lock_order.sql` and
+   `20261010022312_phase1_checkout_lock_snapshot.sql` after separate staging-write
+   approval. Seed synthetic accounts A/B/C,
    staff, challenges, rooms, tournaments and fake payment records. Do not branch/copy
    production rows, backups, Storage objects, Auth users or financial history.
 3. Use newly issued staging-only configuration/credentials, held server-side where
@@ -133,9 +141,10 @@ must not be treated as approval to migrate/deploy or change production.
 
 The reviewed Phase 1 implementation and isolated CI suite are ready to enter approved
 isolated staging validation. They are not ready for production approval. Remaining gates:
-native transaction contention/retries; actual Supabase Auth/RLS/grants/PostgREST/Realtime;
-two-user gameplay; reset/stale challenges under real contention; target preflight and
-upgrade dry run; isolated webhook ordering/reconciliation; physical mobile/PWA/navigation;
-and operational monitoring/recovery ownership. Any native deadlock or target preflight
-conflict must be resolved before release. No hosted migrations/functions or settings
-were changed by this follow-up.
+target PostgreSQL 17 contention/upgrade confirmation; actual Supabase
+Auth/RLS/grants/PostgREST/Realtime; two-user gameplay; target preflight and upgrade dry run; isolated webhook ordering/reconciliation; physical mobile/PWA/navigation;
+and operational monitoring/recovery ownership. The two confirmed native deadlocks
+are corrected; any additional failure or target preflight conflict blocks release.
+Late Checkout events outside attachment's captured set can remain pending until
+delivery/attachment retry or service-only reconciliation; an operational owner is required. No hosted migrations/functions or settings were
+changed by this follow-up.

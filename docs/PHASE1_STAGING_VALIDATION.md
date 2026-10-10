@@ -1,6 +1,9 @@
 # Phase 1 independent review and staging validation
 
-Status: **plan only; staging checks below have not been executed**. Review branch:
+Status: **hosted staging plan only; hosted checks below have not been executed**.
+A native PostgreSQL subset has been exercised on the approved isolated Actions
+runner; see [native results and corrective migrations](PHASE1_NATIVE_CONCURRENCY.md).
+Review branch:
 `phase1/game-integrity-hardening`; draft PR target: `beta-friends`.
 
 The branch push and draft PR are authorized. Merging, deployment, hosted migrations,
@@ -20,9 +23,10 @@ The existing browser Supabase publishable configuration is public client configu
 not a privileged secret. Package manifests/lockfile are intentional reproducible test
 inputs, not generated build output.
 
-These results exercise real application SQL in PGlite with Auth/Storage stubs and a
-stub DOM. They do **not** establish native PostgreSQL lock behavior, hosted JWT/RLS/
-Realtime behavior, or physical mobile/PWA behavior. The PR workflow now runs separate release-audit and Phase 1 checks for every PR
+The original results exercise real application SQL in PGlite with Auth/Storage
+stubs and a stub DOM. The additional native harness uses separate PostgreSQL
+connections and controlled lock barriers. Neither establishes hosted JWT/RLS/
+Realtime behavior or physical mobile/PWA behavior. The PR workflow now runs separate release-audit and Phase 1 checks for every PR
 targeting beta-friends, including drafts and retargeted PRs. It uses npm ci, then
 npm run test:phase1 in a network namespace with no network interfaces. The npm
 script self-checks and preloads a network guard; each worker uses an in-memory
@@ -31,7 +35,8 @@ credentials are supplied to the tests. Dependency installation uses npm registry
 access before test execution, with package lifecycle scripts disabled.
 
 Review the implementation and limitations in [PHASE1_HARDENING.md](PHASE1_HARDENING.md).
-All four Phase 1 migrations are additive files; no earlier migration was edited.
+The original four Phase 1 migrations plus two native-concurrency corrections are
+new files; no previously committed migration was edited.
 
 ## Environment and evidence rules
 
@@ -57,6 +62,13 @@ records in place under separate authorization. These queries use the legacy sche
 
 ```sql
 begin transaction read only;
+-- Support rows required by verified saves and tournament awards.
+select count(*) as profiles_missing_stats
+from public.profiles p left join public.player_stats s on s.user_id=p.id
+where s.user_id is null;
+select count(*) as profiles_missing_wallets
+from public.profiles p left join public.wallets w on w.user_id=p.id
+where w.user_id is null;
 -- Both uniqueness gates must have zero conflicting groups.
 select count(*) as duplicate_challenge_groups from (
   select challenge_id from public.round_results where challenge_id is not null
@@ -98,7 +110,7 @@ rollback;
 Additional review gates:
 
 1. Check the migration history matches the unchanged bootstrap/prior migrations and
-   contains none of the four new versions already applied under different contents.
+   contains none of the six new versions already applied under different contents.
    Review collisions with the new inbox/archive tables, run columns, function signatures,
    triggers and index names. A same-named `round_results_single_challenge_idx` must have
    the intended unique definition: `IF NOT EXISTS` alone does not verify an old object.
@@ -236,8 +248,10 @@ production app/site settings for these tests.
 
 ## Release gates and rollout review
 
-Every matrix case needs evidence and an owner. Failures block release; unexecuted cases
-remain open. Current blockers are native concurrency, hosted Auth/RLS/permissions and
+Every matrix case needs evidence and an owner. Native fixture evidence does not
+close a hosted matrix case without validation against the chosen staging target.
+Failures block release; unexecuted cases
+remain open. Current blockers are target PostgreSQL 17 confirmation, hosted Auth/RLS/permissions and
 two-user Realtime, physical devices, target preflight/migration dry run, and Stripe
 signed-event/reconciliation validation in the chosen isolated staging environment.
 Historical data conflicts may add blockers; none have been measured on a hosted database.
