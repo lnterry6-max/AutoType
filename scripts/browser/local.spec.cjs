@@ -24,7 +24,7 @@ test('navigation and mode links, account menu keyboard focus and axe serious fin
  const modes=await page.locator('.mode-tile').evaluateAll(xs=>xs.map(x=>x.getAttribute('href')));expect(modes.length).toBe(6);
  await page.locator('#accountMenuButton').click();await expect(page.locator('#accountMenuButton')).toHaveAttribute('aria-expanded','true');
  await page.keyboard.press('Escape');await expect(page.locator('#accountMenuButton')).toHaveAttribute('aria-expanded','false');
- for(const route of ['/','/play','/account']){await page.goto(route);const result=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa']).analyze();expect(result.violations.filter(v=>['serious','critical'].includes(v.impact)).map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)}))).toEqual([])}
+ const findings=[];for(const route of ['/','/play','/account']){await page.goto(route);const result=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa']).analyze();findings.push(...result.violations.filter(v=>['serious','critical'].includes(v.impact)).map(v=>({route,id:v.id,nodes:v.nodes.map(n=>({target:n.target,reason:n.failureSummary}))})))}expect(findings).toEqual([]);
 });
 test('PWA worker activates, replaces legacy cache, clean deep link and manifest',async({page})=>{
  await page.goto('/play.html?mode=custom&sentence=hello#game');await expect(page).toHaveURL(/\/play\?mode=custom&sentence=hello#game$/);

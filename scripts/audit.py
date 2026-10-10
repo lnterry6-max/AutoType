@@ -225,7 +225,7 @@ def main() -> int:
     ]
     special_pages = {"404.html", "backend-test.html"}
     # Daily Mix CSS must be cache-busted on both screens when its layout changes.
-    mix_stylesheet_version = "styles.css?v=20261008-beta-polish-v1"
+    mix_stylesheet_version = "styles.css?v=20261010-phase1-contrast-v1"
     mix_script_version = "daily-mix.js?v=20261008-daily-mix-v2"
 
     for page in html_files:
@@ -281,7 +281,7 @@ def main() -> int:
         if page.name == "shop.html":
             for required in (
                 'shop-rotation.js?v=20261008-et-limited',
-                'styles.css?v=20261008-beta-polish-v1',
+                'styles.css?v=20261010-phase1-contrast-v1',
                 'id="shopDailyGrid"', 'id="shopRotationClock"',
                 'href="profile.html#inventory"',
             ):
@@ -345,7 +345,7 @@ def main() -> int:
 
         if page.name == "profile.html":
             for expected in ('id="inventory"', 'inventoryAccordion.open=true',
-                             'styles.css?v=20261008-beta-polish-v1'):
+                             'styles.css?v=20261010-phase1-contrast-v1'):
                 if expected not in text:
                     fail(f"profile.html: missing inventory accordion detail {expected}", issues)
             if 'id="developerPanel"' in text:
@@ -362,7 +362,7 @@ def main() -> int:
             for match in re.finditer(re.escape(path_or_script) + r'\?v=([^"]+)', text):
                 expected = ("20261009-accessibility-v1" if path_or_script == "core.js"
                             else "20261009-phase1-v1" if path_or_script == "backend.js"
-                            else "20261008-beta-polish-v1")
+                            else "20261010-phase1-contrast-v1")
                 if match.group(1) != expected:
                     fail(f"{page.name}: stale shared asset build {match.group(0)}", issues)
 

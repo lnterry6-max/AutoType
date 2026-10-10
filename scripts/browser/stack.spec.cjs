@@ -15,7 +15,7 @@ test.describe('real disposable Auth and gameplay browser integration',()=>{
  });
  test.afterAll(async()=>{await db?.end()});
  async function login(page,user){
-  await isolate(page.context());await page.goto('/account');await page.locator('#loginIdentity').fill(user.email);await page.locator('#loginPassword').fill(user.password);await page.locator('#loginButton').click();
+  await isolate(page.context());await page.goto('/account');await page.locator('#loginIdentity').fill(user.email);await page.locator('#loginPassword').fill(user.password);await page.locator('#loginButton').click();await page.waitForURL('http://127.0.0.1:4173/',{waitUntil:'load'});
   await expect.poll(()=>page.evaluate(()=>window.AutoType?.currentAccount()?.supabaseUserId)).toBe(user.id);
  }
  async function emailLink(email,subject){
@@ -62,10 +62,17 @@ test.describe('real disposable Auth and gameplay browser integration',()=>{
    await a.locator('#quickMatchButton').click();await b.locator('#quickMatchButton').click();
    await expect(a).toHaveURL(/race=/,{timeout:20000});await expect(b).toHaveURL(/race=/,{timeout:20000});
    const raceId=new URL(a.url()).searchParams.get('race');expect(new URL(b.url()).searchParams.get('race')).toBe(raceId);
-   await finish(a);await finish(b);
+   let loseResponse=true;
+   await a.route('**/functions/v1/game-api',async route=>{
+    const request=route.request();const body=request.method()==='POST'?request.postDataJSON():null;
+    if(loseResponse&&body?.action==='submit_race_result'){loseResponse=false;const response=await route.fetch();expect(response.ok()).toBe(true);return route.abort('failed')}
+    return route.continue();
+   });
+   await finish(a);await expect(a.locator('#resultCoins')).toHaveText('Save failed');await finish(b);
+   await a.getByRole('button',{name:'Retry race save'}).click();await expect(a.getByRole('button',{name:'Retry race save'})).toBeHidden();await expect(a.locator('#resultCoins')).toHaveText('Practice only');
    const saved=(await db.query('select score,duration_ms,errors,erased from race_players where race_id=$1 and user_id=$2',[raceId,users[3].id])).rows[0];
-   const duplicate=await a.evaluate(async({raceId,saved})=>AutoTypeBackend.submitRaceResult(raceId,{score:saved.score,durationMs:saved.duration_ms,errors:saved.errors,erased:saved.erased}),{raceId,saved});expect(duplicate.duplicate).toBe(true);
-   await ca.setOffline(true);await ca.setOffline(false);await a.reload();await expect(a.locator('#results')).toBeVisible();await expect(a.locator('#mobileGameControls')).toBeHidden();
+   const duplicate=await a.evaluate(async({raceId,saved})=>AutoTypeBackend.submitRaceResult(raceId,{score:Number(saved.score),durationMs:saved.duration_ms,errors:saved.errors,erased:saved.erased}),{raceId,saved});expect(duplicate.duplicate).toBe(true);
+   await ca.setOffline(true);expect(await a.evaluate(()=>fetch('/manifest.webmanifest').then(()=>false).catch(()=>true))).toBe(true);await ca.setOffline(false);await a.reload();await expect(a.locator('#results')).toBeVisible();await expect(a.locator('#mobileGameControls')).toBeHidden();
   }finally{await ca.close();await cb.close()}
  });
  test('friend race and tournament registration/reset reject stale browser completion',async({page,browser})=>{
