@@ -66,8 +66,29 @@ the winner's stats lock before wallet credit, matching verified/sentence saves.
 It preserves staff/current-run/top-score eligibility, rewards, private execution
 grants and the empty function search path. Prior migrations are unchanged.
 Native regression coverage repeats the forced award/round contention three times
-and checks exact balances, one win and retry behavior. Full fixed-suite evidence
-and the late-Checkout investigation are pending the next Actions run.
+and checks exact balances, one win and retry behavior.
+
+[Run 508](https://github.com/lnterry6-max/AutoType/actions/runs/38016667963)
+passed all 12 initial native cases, including the fixed award ordering, and
+confirmed a second deadlock in the original Checkout attachment. Its first inbox
+scan could be empty, then a legacy session-only event could commit pending while
+attachment held the order. A competing metadata credit held the intent and waited
+for that order; attachment's second scan then tried to acquire that intent.
+An ingress deadlock can be retained as `pending`/`last_error` by the reconciliation
+exception block, rather than surfacing as an HTTP/database exception.
+
+`20261010022312_phase1_checkout_lock_snapshot.sql` captures a sorted intent array
+before taking the order lock and reconciles only that locked set. An exact
+attachment retry also drains its captured pending events. Late arrivals outside
+the set remain durable and are handled by delivery/attachment retry or the existing
+service-only reconciliation RPC. The fixed late-arrival interleaving is repeated
+three times, including a late event with no competing credit and recovery by exact
+attachment retry. Additional cases cover concurrent stale/terminal fake disputes
+and four distinct game modes updating one player's counters.
+
+The expanded 15-case fixed suite is pending the next Actions run. The original
+functions are restored only temporarily inside disposable fixtures to retain
+proof that both regression scenarios can detect the prior failures.
 
 ## Remaining staging requirements
 

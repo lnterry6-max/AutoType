@@ -509,7 +509,8 @@ class NativeConcurrency(unittest.TestCase):
             self.assertEqual(self.count("select count(*) from economy_transactions where user_id=$1 and kind='stripe_coin_purchase'", [player]), 1)
             self.assertEqual(self.count("select count(*) from stripe_event_inbox where payment_intent=$1 and state<>'applied'", [payload["payment_intent"]]), 0)
         finally:
-            gate.query("rollback")
+            if gate.pq.PQtransactionStatus(gate.handle) != 0:
+                gate.query("rollback")
             self.db.query("drop trigger fixture_pause_attach on payment_orders; drop function fixture_pause_attach()")
             self.db.query(fixed)
 
@@ -534,6 +535,74 @@ class NativeConcurrency(unittest.TestCase):
             with self.assertRaisesRegex(DatabaseError, "not running"):
                 self.db.rpc("autotype_award_tournament", [actor, tournament, player])
             self.assertEqual(self.snapshot(player), after)
+
+    def test_13_late_checkout_events_keep_intent_before_order_locking(self):
+        self.db.query("""create function public.fixture_pause_attach() returns trigger language plpgsql as $$begin
+          if current_setting('application_name')='fixture_attach' then
+            perform pg_advisory_xact_lock(910013::bigint);
+          end if; return new; end$$;
+          create trigger fixture_pause_attach before update on public.payment_orders
+          for each row execute function public.fixture_pause_attach();""")
+        try:
+            for with_credit in (True, False, True):
+                player, order, payload = self.order(attach=False)
+                before = self.count("select coins from wallets where user_id=$1", [player])
+                gate, attach, credit = self.connection(), self.connection("fixture_attach"), self.connection()
+                gate.query("begin; select pg_advisory_xact_lock(910013::bigint)")
+                attaching = self.pool.submit(self.transaction, attach, "autotype_attach_checkout_session",
+                                             [order["order_id"], player, payload["session"]])
+                self.blocked(attach, gate)
+                legacy = dict(payload)
+                legacy.pop("order_id")
+                early = self.event("credit", legacy)
+                self.assertEqual(self.db.rpc("autotype_receive_stripe_event", early)["state"], "pending")
+                if with_credit:
+                    incoming = self.pool.submit(self.transaction, credit, "autotype_receive_stripe_event", self.event("credit", payload))
+                    self.blocked(credit, attach)
+                gate.query("rollback")
+                self.assertIs(attaching.result(timeout=10), True)
+                if with_credit:
+                    self.assertEqual(incoming.result(timeout=10)["state"], "applied")
+                else:
+                    # The late row stays pending rather than taking a reverse
+                    # lock. Exact attachment retry captures and drains it.
+                    self.assertEqual(self.db.query("select state from stripe_event_inbox where event_id=$1", [early[0]])[0]["state"], "pending")
+                    self.assertTrue(self.db.rpc("autotype_attach_checkout_session", [order["order_id"], player, payload["session"]]))
+                self.assertEqual(self.count("select coins from wallets where user_id=$1", [player]), before + order["coins"])
+                self.assertEqual(self.count("select count(*) from economy_transactions where user_id=$1 and kind='stripe_coin_purchase'", [player]), 1)
+                self.assertEqual(self.count("select count(*) from stripe_event_inbox where payment_intent=$1 and state<>'applied'", [payload["payment_intent"]]), 0)
+                self.assertEqual(self.db.rpc("autotype_receive_stripe_event", early)["state"], "already_processed")
+        finally:
+            for connection in self.connections:
+                if connection.pq.PQtransactionStatus(connection.handle) == 2:
+                    connection.query("rollback")
+            self.db.query("drop trigger fixture_pause_attach on payment_orders; drop function fixture_pause_attach()")
+
+    def test_14_concurrent_fake_dispute_snapshots_do_not_regress_terminal_state(self):
+        player, order, payload = self.order()
+        before = self.count("select coins from wallets where user_id=$1", [player])
+        self.db.rpc("autotype_receive_stripe_event", self.event("credit", payload))
+        active = {"object_id": "dp_fixture_" + str(uuid.uuid4()), "payment_intent": payload["payment_intent"],
+                  "amount": order["amount_cents"], "status": "needs_response"}
+        won = dict(active, status="won")
+        results = self.simultaneous("autotype_receive_stripe_event", [self.event("dispute", active),
+                                  self.event("dispute", won), self.event("dispute", active), self.event("dispute", won)])
+        self.assertTrue(all(isinstance(x, dict) and x["state"] == "applied" for x in results), results)
+        self.assertEqual(self.count("select coins from wallets where user_id=$1", [player]), before + order["coins"])
+        self.assertEqual(self.db.query("select status from payment_adjustments where order_id=$1", [order["order_id"]])[0]["status"], "won")
+        self.assertEqual(self.count("select coins_reversed+dispute_coins_reversed from payment_orders where id=$1", [order["order_id"]]), 0)
+
+    def test_15_concurrent_distinct_modes_preserve_shared_player_counters(self):
+        player = self.user()
+        challenges = [self.challenge(player, mode) for mode in ("classic", "context", "evil", "daily")]
+        args = [self.metrics(player, challenge) for challenge in challenges]
+        before = self.count("select coins from wallets where user_id=$1", [player])
+        results = self.simultaneous("autotype_record_verified_round", args)
+        self.assertTrue(all(isinstance(x, dict) and x["verified"] for x in results), results)
+        self.assertEqual(self.count("select verified_rounds from player_stats where user_id=$1", [player]), 4)
+        self.assertEqual(self.count("select words from player_stats where user_id=$1", [player]), sum(x[5] for x in args))
+        self.assertEqual(self.count("select coins from wallets where user_id=$1", [player]), before + sum(x["coins_earned"] for x in results))
+        self.assertEqual(self.count("select count(*) from economy_transactions where user_id=$1 and kind='round_reward'", [player]), 4)
 
 
 if __name__ == "__main__":
