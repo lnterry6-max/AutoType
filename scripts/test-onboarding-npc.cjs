@@ -28,8 +28,9 @@ for (const skill of ["easy", "medium", "hard"]) {
   assert.match(play, new RegExp('data-npc-skill="' + skill + '"'));
 }
 assert.match(game, /if\(mode==="npc"\)\{predictorMode="classic";fixed=true\}/);
-assert.match(game, /if\(activeAccount\?\.online&&!npc\)/);
-assert.match(game, /else if\(!npc\)/);
+assert.match(game, /const accountPractice=!!npc\|\|!!AutoType\.currentAccount\(\)\?\.online&&\["custom","race"\]\.includes\(mode\)/);
+assert.match(game, /if\(activeAccount\?\.online&&!accountPractice\)/);
+assert.match(game, /else if\(!npc&&!activeAccount\?\.online\)/);
 assert.match(game, /if\(!activeAccount\?\.online&&!npc\)AutoTypeDailyMix\.recordGuestRound/);
 assert.match(css, /prefers-reduced-motion:reduce/);
 assert.doesNotMatch(script, /AutoTypeBackend|addCoins|recordRound/, "Tutorial may not change saved progression");

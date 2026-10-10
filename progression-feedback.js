@@ -2,6 +2,14 @@
    Calculations use existing profile XP/level snapshots; never grants rewards. */
 (() => {
   "use strict";
+  // Explicit completion states prevent practice or an unknown response from
+  // being presented as a confirmed reward.
+  function outcome(result,{practice=false,failed=false}={}) {
+    if(failed)return {state:"failed_save",label:"Save failed",rewarded:false};
+    if(practice||result?.outcome==="practice")return {state:"practice",label:"Practice · no account rewards",rewarded:false};
+    if(result?.verified===true)return {state:"verified",label:"Verified round",rewarded:true};
+    return {state:"unverified",label:"Unverified · no confirmed rewards",rewarded:false};
+  }
   function snapshot(info, previousBest=0) {
     return {
       xp: Math.max(0,Number(info?.xp)||0),
@@ -69,5 +77,5 @@
     progress.textContent=data.progress;
     next.textContent=data.next;
   }
-  window.AutoTypeProgression={snapshot,compare,render};
+  window.AutoTypeProgression={snapshot,compare,render,outcome};
 })();

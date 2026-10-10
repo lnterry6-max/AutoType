@@ -694,6 +694,8 @@ AutoType.ready().then(async()=>{
     let coinsEarned=0;
     let newlyUnlocked=[];
     let verifiedSaved=false;
+    const accountPractice=!!npc||!!AutoType.currentAccount()?.online&&["custom","race"].includes(mode);
+    let completionState=AutoTypeProgression.outcome(null,{practice:accountPractice});
     const activeAccount=AutoType.currentAccount();
     const previousProfile=AutoType.currentProfile();
     // Preserve the real XP state before any server or guest progression is recorded.
@@ -701,7 +703,7 @@ AutoType.ready().then(async()=>{
       AutoType.levelInfo(previousProfile),previousProfile.bestScore||0
     );
 
-    if(activeAccount?.online&&!npc){
+    if(activeAccount?.online&&!accountPractice){
       $("resultCoins").textContent="Saving…";
       try{
         const result=await AutoTypeBackend.recordRound({
@@ -719,7 +721,8 @@ AutoType.ready().then(async()=>{
           durationMs:Math.max(250,Math.round(ms)),
           oneClue:clueCounts.some(n=>n===1)
         });
-        verifiedSaved=!!result?.verified;
+        completionState=AutoTypeProgression.outcome(result);
+        verifiedSaved=completionState.rewarded;
         coinsEarned=verifiedSaved?Number(result?.coins_earned||0):0;
         newlyUnlocked=verifiedSaved&&Array.isArray(result?.new_achievements)?result.new_achievements:[];
         const verifiedBadge=$("verifiedResult");
@@ -727,17 +730,19 @@ AutoType.ready().then(async()=>{
           verifiedBadge.hidden=!result?.verified;
           verifiedBadge.textContent=result?.verified?"Verified round":"";
         }
-        await AutoTypeBackend.hydrateLocalMirror();
+        try{await AutoTypeBackend.hydrateLocalMirror();}
+        catch(error){console.warn("Round confirmed, profile refresh pending",error);}
       }catch(error){
         console.error("Round save failed",error);
         // Never present unconfirmed backend rewards or level changes as earned.
         verifiedSaved=false;
+        completionState=AutoTypeProgression.outcome(null,{failed:true});
         coinsEarned=0;
         newlyUnlocked=[];
         if($("verifiedResult"))$("verifiedResult").hidden=true;
         AutoType.toast(error.message||"Round finished, but the backend could not save it.");
       }
-    }else if(!npc){
+    }else if(!npc&&!activeAccount?.online){
       const p=AutoType.currentProfile();
       p.rounds++;
       if(["classic","context","sentence","evil"].includes(mode)){
@@ -798,7 +803,8 @@ AutoType.ready().then(async()=>{
           if(quickMatch)await pollQuickMatchResult();
         }catch(error){
           console.error("Race result save failed",error);
-          AutoType.toast(error.message||"Round saved, but the race result could not sync.");
+          completionState=AutoTypeProgression.outcome(null,{failed:true});
+          AutoType.toast(error.message||"Race result could not save. Retry the same completion.");
         }
       }else{
         race.results=race.results||{};
@@ -812,15 +818,21 @@ AutoType.ready().then(async()=>{
     $("resultKeys").textContent=keyCount;
     $("resultErrors").textContent=errors;
     $("resultErased").textContent=erased;
-    const onlinePending=!!activeAccount?.online&&!npc&&!verifiedSaved;
-    $("resultCoins").textContent=npc?"Practice only":onlinePending?"Unconfirmed":activeAccount?`+${coinsEarned}`:"Sign in";
+    const resultState=$("verifiedResult");
+    if(resultState){
+      resultState.hidden=!activeAccount?.online&&!npc;
+      resultState.textContent=completionState.label;
+      resultState.dataset.outcome=completionState.state;
+    }
+    const onlinePending=!!activeAccount?.online&&!accountPractice&&!verifiedSaved;
+    $("resultCoins").textContent=completionState.state==="failed_save"?"Save failed":accountPractice?"Practice only":onlinePending?"Unconfirmed":activeAccount?`+${coinsEarned}`:"Sign in";
     $("resultCoinLabel").textContent=npc?"Rewards":onlinePending?"Coins":"Coins earned";
     const finalProfile=AutoType.currentProfile();
     const afterProgress=AutoTypeProgression.snapshot(
       AutoType.levelInfo(finalProfile),finalProfile.bestScore||0
     );
     const progressSummary=AutoTypeProgression.compare(beforeProgress,afterProgress,{
-      practice:!!npc,
+      practice:!!npc||accountPractice,
       confirmed:!activeAccount?.online||verifiedSaved,
       local:!activeAccount?.online,
       score

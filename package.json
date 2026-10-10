@@ -1,0 +1,11 @@
+{
+  "name": "autotype-development-tests",
+  "private": true,
+  "scripts": {
+    "test:phase1": "node --test scripts/phase1-*.test.cjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "typescript": "5.9.3"
+  }
+}

@@ -109,19 +109,10 @@ Deno.serve(async(req:Request)=>{
           return json(await rpc("autotype_record_verified_round",metrics));
         }
 
-        return json(await rpc("autotype_record_round",{
-          p_user:user.id,
-          p_round:payload.roundId,
-          p_mode:mode,
-          p_score:Number(payload.score||0),
-          p_words:Number(payload.words||0),
-          p_erased:Number(payload.erased||0),
-          p_max_streak:Number(payload.maxStreak||0),
-          p_total_keys:Number(payload.totalKeys||0),
-          p_errors:Number(payload.errors||0),
-          p_duration_ms:Number(payload.durationMs||0),
-          p_one_clue:!!payload.oneClue
-        }));
+        if(!["custom","race","npc"].includes(mode))throw new Error("Invalid round mode.");
+        // Practice never reaches a reward-writing SQL function.
+        return json({outcome:"practice",verified:false,saved:false,
+          coins_earned:0,tickets_earned:0,new_achievements:[]});
       }
 
       case "claim_daily_reward":

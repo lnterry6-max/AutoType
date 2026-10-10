@@ -10,3 +10,5 @@ __pycache__/
 !.env.example
 .supabase/
 supabase/.temp/
+node_modules/
+.phase1-test-cache/
