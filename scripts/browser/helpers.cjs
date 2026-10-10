@@ -17,7 +17,7 @@ async function finish(page,mobile=false){
   for(let action=0;action<150;action++){
    const guess=await page.locator('#guess').textContent();
    const prefix=await page.locator('#typedPrefix').textContent();
-   if(guess===target){if(mobile)await page.locator('#mobileLockButton').tap();else await page.keyboard.press('Space');break;}
+   if(guess===target){await page.waitForTimeout(150);if(mobile)await page.locator('#mobileLockButton').tap();else await page.keyboard.press('Space');break;}
    if(prefix==='_'||guess==='type a letter…'){
     if(mobile)await page.locator('#mobileTypingInput').press(target[0]);else await page.keyboard.press(target[0]);
    }else if(!target.startsWith(guess)){

@@ -31,8 +31,8 @@ file_size_limit = "10MiB"
 
 [auth]
 enabled = true
-site_url = "http://127.0.0.1:54321"
-additional_redirect_urls = ["http://127.0.0.1:54321"]
+site_url = "http://127.0.0.1:4173"
+additional_redirect_urls = ["http://127.0.0.1:54321", "http://127.0.0.1:4173/account.html", "http://127.0.0.1:4173/account.html?reset=1"]
 jwt_expiry = 3600
 enable_signup = true
 enable_refresh_token_rotation = true

@@ -4,6 +4,7 @@ const enabled=process.env.AUTOTYPE_BROWSER_STACK==='true';
 let runtime,db,users=[];
 test.describe('real disposable Auth and gameplay browser integration',()=>{
  test.skip(!enabled,'Requires the isolated GitHub Actions PostgreSQL 17 stack');
+ test.beforeEach(async({page})=>{page.on('console',m=>{if(m.type()==='error')console.log('Synthetic browser error:',m.text())});page.on('response',async r=>{if(r.status()>=400&&r.url().includes('/functions/v1/')){const body=await r.json().catch(()=>({}));console.log('Synthetic gateway rejection:',r.status(),body.error||'unknown')}})});
  test.beforeAll(async()=>{
   runtime=require('../fullstack/runtime.cjs');db=await runtime.database();
   for(let i=0;i<5;i++){
@@ -17,8 +18,31 @@ test.describe('real disposable Auth and gameplay browser integration',()=>{
   await isolate(page.context());await page.goto('/account');await page.locator('#loginIdentity').fill(user.email);await page.locator('#loginPassword').fill(user.password);await page.locator('#loginButton').click();
   await expect.poll(()=>page.evaluate(()=>window.AutoType?.currentAccount()?.supabaseUserId)).toBe(user.id);
  }
+ async function emailLink(email,subject){
+  let found;
+  await expect.poll(async()=>{
+   const list=await fetch('http://127.0.0.1:54324/api/v1/messages').then(r=>r.json());
+   found=list.messages.find(m=>m.To.some(a=>a.Address===email)&&m.Subject.includes(subject));return !!found;
+  },{timeout:15000}).toBe(true);
+  const message=await fetch('http://127.0.0.1:54324/api/v1/message/'+found.ID).then(r=>r.json());
+  const links=[...message.HTML.matchAll(/href="([^"]+)"/g)].map(m=>m[1].replaceAll('&amp;','&'));
+  const link=links.find(l=>l.includes('/auth/v1/verify'));expect(new URL(link).origin).toBe(runtime.url);return link;
+ }
+ test('real UI signup confirmation and email recovery with local Mailpit only',async({page})=>{
+  await isolate(page.context());const username='signup_'+randomUUID().replaceAll('-','').slice(0,12),email=username+'@example.invalid',password=randomUUID()+'!Aa1';
+  await page.goto('/account');await page.evaluate(()=>AutoType.ready());await page.locator('[data-tab="create"]').click();
+  await page.locator('#createUsername').fill(username);await page.locator('#createEmail').fill(email);await page.locator('#createPassword').fill(password);await page.locator('#createPasswordConfirm').fill(password);await page.locator('#createButton').click();
+  await expect(page.locator('.toast')).toContainText('Check your email');
+  await page.goto(await emailLink(email,'Confirm'));await expect.poll(()=>page.evaluate(()=>window.AutoType?.currentAccount()?.username)).toBe(username);
+  await page.evaluate(()=>AutoTypeBackend.signOut());await page.goto('/account');await page.locator('#forgotPasswordButton').click();await page.locator('#resetEmail').fill(email);await page.locator('#sendResetButton').click();
+  await expect(page.locator('.toast')).toContainText('Recovery email sent');await page.goto(await emailLink(email,'Reset'));
+  await expect(page.locator('#recoveryPanel')).toBeVisible();await expect(page.locator('#finishRecoveryButton')).toBeEnabled();
+  const replacement=randomUUID()+'!Aa1';await page.locator('#recoveryPassword').fill(replacement);await page.locator('#recoveryPasswordConfirm').fill(replacement);await page.locator('#finishRecoveryButton').click();
+  await expect(page.locator('#loginPanel')).toBeVisible({timeout:10000});await page.locator('#loginIdentity').fill(email);await page.locator('#loginPassword').fill(replacement);await page.locator('#loginButton').click();await expect.poll(()=>page.evaluate(()=>window.AutoType?.currentAccount()?.username)).toBe(username);
+  await page.goto('/account?reset=1');await page.evaluate(()=>AutoTypeBackend.signOut());await page.reload();await expect(page.locator('#recoveryHelp')).toContainText('invalid or expired');await expect(page.locator('#finishRecoveryButton')).toBeDisabled();
+ });
  test('actual login, verified five modes, practice Custom, profile wallet leaderboard and logout',async({page})=>{
-  const errors=[];page.on('pageerror',e=>errors.push(e.message));await login(page,users[0]);
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});await login(page,users[0]);
   for(const mode of ['classic','context','sentence','evil','daily']){
    await page.goto('/play?mode='+mode);await finish(page);
    await expect(page.locator('#verifiedResult')).toHaveAttribute('data-outcome','verified');
@@ -27,14 +51,14 @@ test.describe('real disposable Auth and gameplay browser integration',()=>{
   const before=(await db.query('select rounds from player_stats where user_id=$1',[users[0].id])).rows[0].rounds;
   await page.goto('/play?mode=custom&sentence=hello%20world');await finish(page);await expect(page.locator('#resultCoins')).toHaveText('Practice only');expect((await db.query('select rounds from player_stats where user_id=$1',[users[0].id])).rows[0].rounds).toBe(before);
   await page.goto('/profile');await expect(page.locator('main')).toContainText(users[0].username);
-  const wallet=await page.evaluate(()=>AutoType.currentAccount().wallet.coins);expect(wallet).toBe((await db.query('select coins from wallets where user_id=$1',[users[0].id])).rows[0].coins);
+  const wallet=await page.evaluate(()=>AutoType.currentAccount().wallet.coins);expect(wallet).toBe(Number((await db.query('select coins from wallets where user_id=$1',[users[0].id])).rows[0].coins));
   await page.goto('/leaderboard');await expect(page.locator('main')).toContainText(users[0].username);
   await page.evaluate(()=>AutoTypeBackend.signOut());await page.reload();await expect.poll(()=>page.evaluate(()=>AutoType.currentAccount())).toBeNull();expect(errors).toEqual([]);
  });
  test('two browser accounts match, finish, duplicate receipt and reconnect without reward',async({browser})=>{
   const ca=await browser.newContext(),cb=await browser.newContext();const a=await ca.newPage(),b=await cb.newPage();
   try{
-   await login(a,users[3]);await login(b,users[4]);await a.goto('/play');await b.goto('/play');
+   await login(a,users[3]);await login(b,users[4]);await a.goto('/play');await b.goto('/play');await a.evaluate(()=>AutoType.ready());await b.evaluate(()=>AutoType.ready());
    await a.locator('#quickMatchButton').click();await b.locator('#quickMatchButton').click();
    await expect(a).toHaveURL(/race=/,{timeout:20000});await expect(b).toHaveURL(/race=/,{timeout:20000});
    const raceId=new URL(a.url()).searchParams.get('race');expect(new URL(b.url()).searchParams.get('race')).toBe(raceId);

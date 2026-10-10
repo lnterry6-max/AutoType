@@ -4,7 +4,7 @@ const {isolate,finish}=require('./helpers.cjs');
 const root=path.resolve(__dirname,'../..');
 test.beforeEach(async({context})=>{await isolate(context)});
 test('27 pages: real scripts, clean URLs, refresh, console and asset failures',async({page})=>{
- const errors=[],failures=[];page.on('pageerror',e=>errors.push(e.message));page.on('response',r=>{if(r.status()>=400)failures.push(r.status()+' '+new URL(r.url()).pathname)});
+ const errors=[],failures=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});page.on('requestfailed',r=>{if(r.failure()?.errorText!=='net::ERR_ABORTED')failures.push(r.failure()?.errorText+' '+new URL(r.url()).pathname)});page.on('response',r=>{if(r.status()>=400)failures.push(r.status()+' '+new URL(r.url()).pathname)});
  for(const file of fs.readdirSync(root).filter(x=>x.endsWith('.html'))){
   const route=file==='index.html'?'/':file==='404.html'?'/404.html':'/'+file.replace('.html','');
   await page.goto(route);await page.waitForTimeout(80);await expect(page.locator('main')).toHaveCount(1);
@@ -19,7 +19,7 @@ for(const mode of ['classic','context','sentence','evil','daily','custom'])test(
  await page.keyboard.press('Space');await expect(page.locator('#guess')).toHaveText('DONE');await expect(page.locator('#roundDoneOverlay')).toBeHidden({timeout:3000});
 });
 test('navigation and mode links, account menu keyboard focus and axe serious findings',async({page})=>{
- await page.goto('/account');await expect(page.locator('#loginPanel').getByLabel('Email',{exact:true})).toHaveAttribute('id','loginIdentity');await page.locator('#loginPanel').getByLabel('Password',{exact:true}).click();await expect(page.locator('#loginPassword')).toBeFocused();
+ await page.goto('/account');await expect(page.locator('#loginPanel').getByLabel('Email',{exact:true}).filter({visible:true})).toHaveAttribute('id','loginIdentity');await page.locator('#loginPanel').getByLabel('Password',{exact:true}).click();await expect(page.locator('#loginPassword')).toBeFocused();
  await page.goto('/');await page.getByRole('link',{name:'Play',exact:true}).first().click();await expect(page).toHaveURL(/\/play$/);
  const modes=await page.locator('.mode-tile').evaluateAll(xs=>xs.map(x=>x.getAttribute('href')));expect(modes.length).toBe(6);
  await page.locator('#accountMenuButton').click();await expect(page.locator('#accountMenuButton')).toHaveAttribute('aria-expanded','true');
