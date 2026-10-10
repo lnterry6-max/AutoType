@@ -160,7 +160,7 @@ jobs:
         timeout-minutes: 6
         run: |
           sudo install -d -o autotype_ci -g "$(id -gn)" "$RUNNER_TEMP/browser-results-stack"
-          sudo -u autotype_ci -- env "PATH=$PATH" GITHUB_ACTIONS=true "RUNNER_TEMP=$RUNNER_TEMP" "AUTOTYPE_CI_RUN_ID=$AUTOTYPE_CI_RUN_ID" "AUTOTYPE_STACK_DIR=$AUTOTYPE_STACK_DIR" AUTOTYPE_BROWSER_STACK=true "AUTOTYPE_BROWSER_OUTPUT=$RUNNER_TEMP/browser-results-stack" "PLAYWRIGHT_BROWSERS_PATH=$RUNNER_TEMP/browser-binaries" npm run test:browser -- stack.spec.cjs
+          sudo -u autotype_ci -- env "PATH=$PATH" GITHUB_ACTIONS=true "RUNNER_TEMP=$RUNNER_TEMP" "AUTOTYPE_CI_RUN_ID=$AUTOTYPE_CI_RUN_ID" "AUTOTYPE_STACK_DIR=$AUTOTYPE_STACK_DIR" AUTOTYPE_BROWSER_STACK=true "AUTOTYPE_BROWSER_OUTPUT=$RUNNER_TEMP/browser-results-stack/results" "PLAYWRIGHT_BROWSERS_PATH=$RUNNER_TEMP/browser-binaries" npm run test:browser -- stack.spec.cjs
       - name: Run 15 real multi-connection scenarios on the actual Supabase PostgreSQL 17 database
         if: ${{ !cancelled() && steps.fullstack_reset.outcome == 'success' }}
         run: >-
