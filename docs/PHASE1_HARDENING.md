@@ -127,3 +127,7 @@ also pass. See [full-stack results and compatibility findings](PHASE1_FULLSTACK_
 for run evidence, synthetic-only boundaries and remaining device/managed-target
 release gates. This closes the earlier runner-level Auth/RLS/PostgreSQL 17 gaps;
 it does not claim hosted production configuration or physical-device validation.
+
+## Final release preparation follow-up
+
+See [the controlled release checklist](PHASE1_RELEASE_CHECKLIST.md) for the current production compatibility matrix, historical migration handling, accepted requester-supplied read-only production preflight, private $0 backup/restore procedure, physical iPhone checklist and explicit deployment stop conditions. This follow-up does not authorize production changes. Earlier statements that target preflight had not run describe earlier evidence; the completed findings were supplied by the requester on 2026-10-10 and were not repeated here.

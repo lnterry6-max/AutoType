@@ -138,3 +138,7 @@ resource hydration. No payment transaction was created; provider-connected test
 validation remains separate. Pending inbox monitoring/reconciliation ownership,
 old-handler maintenance order and accepted client-telemetry anti-cheat scope also
 remain release decisions. Passing CI does not authorize deployment or merge.
+
+## Final release preparation follow-up
+
+See [the controlled release checklist](PHASE1_RELEASE_CHECKLIST.md) for the current production compatibility matrix, historical migration handling, accepted requester-supplied read-only production preflight, private $0 backup/restore procedure, physical iPhone checklist and explicit deployment stop conditions. This follow-up does not authorize production changes. Earlier statements that target preflight had not run describe earlier evidence; the completed findings were supplied by the requester on 2026-10-10 and were not repeated here.
