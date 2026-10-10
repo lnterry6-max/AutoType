@@ -109,7 +109,7 @@ rollback;
 
 Additional review gates:
 
-1. Check the migration history matches the unchanged bootstrap/prior migrations and
+1. Check the migration history matches the reviewed bootstrap/prior migration sequence (including the documented conditional Dashboard-helper compatibility guard) and
    contains none of the six new versions already applied under different contents.
    Review collisions with the new inbox/archive tables, run columns, function signatures,
    triggers and index names. A same-named `round_results_single_challenge_idx` must have
@@ -248,12 +248,13 @@ production app/site settings for these tests.
 
 ## Release gates and rollout review
 
-Every matrix case needs evidence and an owner. Native fixture evidence does not
-close a hosted matrix case without validation against the chosen staging target.
-Failures block release; unexecuted cases
-remain open. Current blockers are target PostgreSQL 17 confirmation, hosted Auth/RLS/permissions and
-two-user Realtime, physical devices, target preflight/migration dry run, and Stripe
-signed-event/reconciliation validation in the chosen isolated staging environment.
+The runner-level PostgreSQL 17, real Auth/RLS/permissions, two-user API/Realtime,
+synthetic upgrade/fresh-install and signed simulated webhook cases now have passing
+full-stack evidence. See the completed follow-up below. This does not attest to
+managed production settings or physical devices. Remaining gates are physical
+mobile/PWA/multiplayer UI, target configuration/preflight, provider-connected Stripe
+test delivery/hydration, and operational rollout/recovery ownership. Failures and
+unexecuted target-specific cases remain open.
 Historical data conflicts may add blockers; none have been measured on a hosted database.
 Plausible forged client telemetry remains an anti-cheat limitation, not proof of human
 input. Reviewers must accept that scope or require further work before competitive release.
@@ -265,3 +266,15 @@ Stripe live mode; old gateways must not remain active alongside the new database
 Keep ledger/history/additive columns during forward recovery. See the hardening document
 for the ordered rollout and rollback cautions. Stop after review/plan publication and
 wait for explicit approval before applying migrations, deploying, merging or publishing.
+
+
+## Completed disposable full-stack follow-up
+
+The authorized zero-cost GitHub Actions matrix now passes on actual Supabase
+PostgreSQL 17.11: **17 upgrade cases, 17 fresh-install cases and 15 native
+concurrency cases**, with real Auth, PostgREST, RLS, Realtime, Storage and Edge
+workers. The 37 regressions, existing PostgreSQL 16 native suite and release audit
+also pass. See [full-stack results and compatibility findings](PHASE1_FULLSTACK_VALIDATION.md)
+for run evidence, synthetic-only boundaries and remaining device/managed-target
+release gates. This closes the earlier runner-level Auth/RLS/PostgreSQL 17 gaps;
+it does not claim hosted production configuration or physical-device validation.

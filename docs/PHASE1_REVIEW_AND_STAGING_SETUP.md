@@ -17,7 +17,7 @@ All 52 files in the implementation PR were reviewed by category:
 | 26 HTML files | Changes are exclusively cache-version updates for backend/game/progression assets; no markup/navigation changes. No CSS files changed. Existing release audit covers inline scripts, PWA/URLs and accessibility landmarks. |
 | `game.js`, `progression-feedback.js`, `backend.js` | Practice mode avoids account progression; verified/failed/unknown outcomes are distinct; race retries keep exact metrics and reconnect restores receipts; snapshots filter current tournament runs. Executable frontend fixtures and existing regressions pass. |
 | Four changed Edge Functions | Gateway uses Auth `getUser` identity, not supplied user IDs; race integer validation routes to atomic RPCs; test-key/live-event guards remain; webhook signature validation precedes canonical resource reads. Auth and Stripe clients are injected in tests. |
-| Four new migrations | Earlier migrations unchanged. Review covered null/bounds validation, exact retry identity, constraints, tournament eligibility/run isolation, locks, accounting and permission revocations. New/replaced security-definer functions use an empty search path; private inbox/archive access and internal-helper permissions are tested. |
+| Four new migrations | The initial four-file review left earlier migrations unchanged; later full-stack testing added the documented conditional optional-helper compatibility repair. Review covered null/bounds validation, exact retry identity, constraints, tournament eligibility/run isolation, locks, accounting and permission revocations. New/replaced security-definer functions use an empty search path; private inbox/archive access and internal-helper permissions are tested. |
 | Package manifests and six Phase 1 fixture files | Fixed dependency versions with integrity-checked lockfile; fresh in-memory PGlite per suite; no hosted connection strings; synthetic users/IDs; real Stripe SDK used for local signature operations only, resource clients mocked. |
 | Existing audit/regression script changes | Expected asset versions and intentional practice assertions updated; existing checks retained. |
 | Hardening/staging documentation and ignore rules | Intentional behavior, preservation of historical data, approval boundaries, recovery and test limitations documented; node_modules/test caches excluded. |
@@ -139,12 +139,26 @@ must not be treated as approval to migrate/deploy or change production.
 
 ## Readiness
 
-The reviewed Phase 1 implementation and isolated CI suite are ready to enter approved
-isolated staging validation. They are not ready for production approval. Remaining gates:
-target PostgreSQL 17 contention/upgrade confirmation; actual Supabase
-Auth/RLS/grants/PostgREST/Realtime; two-user gameplay; target preflight and upgrade dry run; isolated webhook ordering/reconciliation; physical mobile/PWA/navigation;
-and operational monitoring/recovery ownership. The two confirmed native deadlocks
-are corrected; any additional failure or target preflight conflict blocks release.
+The Phase 1 implementation now passes the completed disposable full-stack matrix,
+including PostgreSQL 17 contention/upgrade, actual Auth/RLS/grants/PostgREST,
+two-user API/Realtime gameplay and signed simulated webhook reconciliation.
+Remaining production gates are physical mobile/PWA/navigation and multiplayer UI,
+managed-target configuration differences, existing-record preflight and provider-connected
+Stripe test delivery/hydration, plus operational monitoring/recovery ownership.
+The two confirmed native deadlocks are corrected; a failed check or target preflight
+conflict blocks release. See the completed follow-up below for evidence.
 Late Checkout events outside attachment's captured set can remain pending until
 delivery/attachment retry or service-only reconciliation; an operational owner is required. No hosted migrations/functions or settings were
 changed by this follow-up.
+
+
+## Completed disposable full-stack follow-up
+
+The authorized zero-cost GitHub Actions matrix now passes on actual Supabase
+PostgreSQL 17.11: **17 upgrade cases, 17 fresh-install cases and 15 native
+concurrency cases**, with real Auth, PostgREST, RLS, Realtime, Storage and Edge
+workers. The 37 regressions, existing PostgreSQL 16 native suite and release audit
+also pass. See [full-stack results and compatibility findings](PHASE1_FULLSTACK_VALIDATION.md)
+for run evidence, synthetic-only boundaries and remaining device/managed-target
+release gates. This closes the earlier runner-level Auth/RLS/PostgreSQL 17 gaps;
+it does not claim hosted production configuration or physical-device validation.

@@ -69,7 +69,7 @@ initial run is not a full-suite pass.
 `20261010022038_phase1_native_lock_order.sql` adds a forward migration that takes
 the winner's stats lock before wallet credit, matching verified/sentence saves.
 It preserves staff/current-run/top-score eligibility, rewards, private execution
-grants and the empty function search path. Prior migrations are unchanged.
+grants and the empty function search path. These native corrections did not alter prior migrations. The later full-stack run repaired an optional Dashboard-helper check in one historical security migration; see [full-stack validation](PHASE1_FULLSTACK_VALIDATION.md).
 Native regression coverage repeats the forced award/round contention three times
 and checks exact balances, one win and retry behavior.
 
@@ -142,3 +142,15 @@ on the runner also does not establish the previously inventoried hosted PostgreS
 17 environment's behavior. Existing-record migration preflight and real signed
 Stripe **test** webhook hydration/delivery still need an approved isolated staging
 environment. No production configuration was inspected or changed in this work.
+
+
+## Completed disposable full-stack follow-up
+
+The authorized zero-cost GitHub Actions matrix now passes on actual Supabase
+PostgreSQL 17.11: **17 upgrade cases, 17 fresh-install cases and 15 native
+concurrency cases**, with real Auth, PostgREST, RLS, Realtime, Storage and Edge
+workers. The 37 regressions, existing PostgreSQL 16 native suite and release audit
+also pass. See [full-stack results and compatibility findings](PHASE1_FULLSTACK_VALIDATION.md)
+for run evidence, synthetic-only boundaries and remaining device/managed-target
+release gates. This closes the earlier runner-level Auth/RLS/PostgreSQL 17 gaps;
+it does not claim hosted production configuration or physical-device validation.

@@ -36,21 +36,19 @@ from closing these four P1 paths; do not advertise attested human gameplay.
 `npm ci && npm run test:phase1` first verifies its network guard, then runs executable Node fixtures and in-memory
 PostgreSQL through PGlite. The harness always creates a fresh local database and
 does not accept hosted connection strings. It applies the bootstrap and all
-ordered migrations unchanged, with minimal Supabase Auth/Storage schema stubs.
+ordered release migrations, with minimal Supabase Auth/Storage schema stubs.
 Application SQL, permissions, constraints and transactions run on PostgreSQL.
 
 PGlite serializes queries on one connection. Concurrently scheduled requests test
 replay/final-state behavior, but do not establish native multi-session lock
 contention or deadlock behavior. The separate native PostgreSQL harness now supplies
-that evidence for synthetic SQL fixtures; actual authenticated Supabase users still
-require staging. See [native validation and fixes](PHASE1_NATIVE_CONCURRENCY.md).
+that evidence for synthetic SQL fixtures. The completed [full-stack matrix](PHASE1_FULLSTACK_VALIDATION.md) additionally tests actual authenticated Supabase users and services on PostgreSQL 17.11. See [native validation and fixes](PHASE1_NATIVE_CONCURRENCY.md).
 
 ## Task 2: atomic multiplayer receipts
 
 Previously the gateway updated the player, queried the opponent and finalized the room in separate requests; errors on several writes were unchecked. Both friend and Quick Match finishes now lock the room before the participant in a single transaction. Cancelled, countdown, missing, malformed and unauthorized rooms reject results. An exact retry reads the original receipt; different metrics cannot replace it. Rank uses score, then duration, then errors; identical metrics produce a draw. Creating a friend race and its two participants is atomic too.
 
-Races retain their targets, matchmaking and result history. They do not award account progression (Task 1). The frontend rounds milliseconds for the integer RPC, retains a retry payload and restores a finished receipt on reconnect. A replay needs a new room. Local tests cover both race types, invalid/cancelled submissions, exact retry, replacement attempts, reconnect receipts, ordered ties, authentication and concurrently scheduled finishes. Separate-connection contention is covered by the native harness; the hosted
-PostgreSQL 17/Realtime/user workflow still requires staging.
+Races retain their targets, matchmaking and result history. They do not award account progression (Task 1). The frontend rounds milliseconds for the integer RPC, retains a retry payload and restores a finished receipt on reconnect. A replay needs a new room. Local tests cover both race types, invalid/cancelled submissions, exact retry, replacement attempts, reconnect receipts, ordered ties, authentication and concurrently scheduled finishes. Separate-connection contention is covered by the native harness; actual PostgreSQL 17/Realtime/API behavior is now covered by the full-stack matrix. Managed settings and physical two-user UX remain release checks.
 
 ## Task 3: durable Stripe reconciliation
 
@@ -80,7 +78,7 @@ Deploying this migration abandons legacy outstanding tournament challenges, whic
 
 The final fixtures execute the actual game keyboard completion code against a stub DOM and real local PostgreSQL RPCs for Word, Context, Sentence, Evil and Daily. They also exercise Custom/NPC practice, unknown/failed responses, immutable race reconnects and exact failed-save retry. Sentence phrase-acceptance SQL tests preserve reduced scoring and true input counts. Perfect-round validation checks the score's streak bonus, clue flag, increments and minimum possible key count; impossible combinations reject without rewards. All security-definer functions introduced/replaced by Phase 1 use an empty search path and fully qualified application objects. Browser roles cannot invoke the mutations/internal helpers or read the Stripe inbox/run archives.
 
-Before release, use an isolated full Supabase project to confirm target-version multi-connection contention (both race finishes, same challenge retry, reset versus finish, credit versus adjustment), actual JWT/PostgREST routing, Realtime updates, Auth/Storage policies, two-account friend/Quick Match UX, and physical iOS/Android installed-PWA keyboard/reconnect behavior. Local Auth/Storage stubs and DOM fixtures do not establish these results. The implementation and local checks did not change hosted databases, credentials, payments, Stripe settings or deployments.
+The completed disposable full-stack matrix confirms PostgreSQL 17 contention, JWT/PostgREST routing, Realtime updates, Auth/Storage policies and two-account API gameplay. Physical friend/Quick Match UI, iOS/Android installed-PWA keyboard/reconnect behavior, managed-target setting differences and existing-record preflight remain release checks. No hosted databases, credentials, real payments, Stripe settings or production deployments were changed.
 
 ## Deployment sequence — approval required
 
@@ -88,7 +86,7 @@ Before release, use an isolated full Supabase project to confirm target-version 
 2. Put game result/tournament mutations and checkout/refund operations into a controlled maintenance window. Keep webhook delivery retries available with a temporary retryable response while replacing the handler; do not discard deliveries. This is mandatory because the old race gateway writes tables directly, and old Stripe handlers lack the new beta live guards.
 3. Apply, in order: `20261009231001_phase1_reward_verification.sql`, `20261009231247_phase1_atomic_race_results.sql`, `20261009231719_phase1_stripe_event_reconciliation.sql`, `20261009232126_phase1_tournament_run_isolation.sql`, then the native corrections
    `20261010022038_phase1_native_lock_order.sql` and
-   `20261010022312_phase1_checkout_lock_snapshot.sql`. Check grants, RLS, indexes, the new inbox/archive tables, and PostgREST schema reload. Every earlier deployed migration remains unchanged.
+   `20261010022312_phase1_checkout_lock_snapshot.sql`. Check grants, RLS, indexes, the new inbox/archive tables, and PostgREST schema reload. One historical migration now conditionally hardens the optional `rls_auto_enable()` Dashboard helper so fresh CLI installs can apply it. Existing-helper permissions are preserved; no hosted migration was reapplied. See [full-stack compatibility findings](PHASE1_FULLSTACK_VALIDATION.md).
 4. Deploy the reviewed `game-api`, `create-checkout-session`, `refund-payment` and `stripe-webhook` functions. Confirm existing payment credentials are test credentials and verify the beta rejects live mode; any secret/configuration change needs separate explicit approval. Never test a real payment or refund in production.
 5. Publish the frontend only after explicit approval, using the updated asset query versions on the 26 pages that load the backend (the release audit covers 27 pages, including the 404 page). Run two-account staging smoke checks for verified saves, practice, race retry/reconnect and tournament reset/re-registration. Verify an isolated signed test event's received/pending/applied/duplicate lifecycle and pending reconciliation before restoring traffic.
 6. Monitor pending inbox rows/last errors and ledger/order consistency. If unmatched events remain after a credit/link, review their PaymentIntent and run the service-only reconciliation RPC in the approved environment. Reconcile historical ignored events separately from current traffic using authenticated canonical test objects. No scheduler or hosted service was configured by this phase.
@@ -99,7 +97,7 @@ Prefer maintenance plus a corrective forward migration/function deployment. Do n
 
 Before retrying a payment recovery, compare order snapshots, unique provider object records, wallet debt and ledger deltas. Exact event/receipt retries are safe; replacement metrics/event bindings reject. A failed Stripe application stays pending and exposes its error. An already-applied credit's retry still drains pending adjustment failures without crediting twice. Do not mark pending rows applied manually, remove duplicate guards, replay old currency deltas directly, restore wallet tables independently of the ledger, or re-enable live mode. If a full database restore is unavoidable, reconcile events received after the backup against ledger/order history under explicit approval before reopening traffic.
 
-Readiness: the four P1 paths are implemented and locally testable. Approval for deployment should wait for target-version confirmation, Supabase routing and two-user/mobile smoke checks above. This is not a claim of tamper-proof human gameplay or validation of hosted production configuration. Phase 2 was not started.
+Readiness: the four P1 paths are implemented and locally testable. Runner-level PostgreSQL 17 and Supabase routing now pass. Deployment approval still requires the physical-device, managed-target/preflight and operational checks above. This is not a claim of tamper-proof human gameplay or validation of hosted production configuration. Phase 2 was not started.
 
 ### Final local verification (October 9, 2026)
 
@@ -117,3 +115,15 @@ PostgreSQL 16.15. Two native deadlocks were reproduced and fixed in new forward
 migrations. The expanded harness covers actual separate connections and durable
 retry/rollback behavior; [results and limits](PHASE1_NATIVE_CONCURRENCY.md) distinguish
 that evidence from serialized PGlite, full Supabase and physical-device checks.
+
+
+## Completed disposable full-stack follow-up
+
+The authorized zero-cost GitHub Actions matrix now passes on actual Supabase
+PostgreSQL 17.11: **17 upgrade cases, 17 fresh-install cases and 15 native
+concurrency cases**, with real Auth, PostgREST, RLS, Realtime, Storage and Edge
+workers. The 37 regressions, existing PostgreSQL 16 native suite and release audit
+also pass. See [full-stack results and compatibility findings](PHASE1_FULLSTACK_VALIDATION.md)
+for run evidence, synthetic-only boundaries and remaining device/managed-target
+release gates. This closes the earlier runner-level Auth/RLS/PostgreSQL 17 gaps;
+it does not claim hosted production configuration or physical-device validation.
