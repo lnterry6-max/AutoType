@@ -10,7 +10,7 @@ async function isolate(context){
 }
 async function finish(page,mobile=false){
  await expect(page.locator('#target .current')).toBeVisible();
- if(mobile)await page.locator('#mobileStartButton').tap();else await page.locator('#target').click();
+ if(mobile){if(!await page.locator('#mobileTypingInput').evaluate(el=>document.activeElement===el))await page.locator('#mobileStartButton').tap();}else await page.locator('#target').click();
  for(let word=0;word<40;word++){
   if(!await page.locator('#target .current').count())break;
   const target=await page.locator('#target .current').textContent();
@@ -28,7 +28,8 @@ async function finish(page,mobile=false){
   }
  }
  await expect(page.locator('#guess')).toHaveText('DONE');
- await expect(page.locator('#progress i')).toHaveCSS('width',await page.locator('#progress').evaluate(el=>getComputedStyle(el).width));
+ await expect(page.locator('#roundDoneOverlay')).toBeVisible();
+ await expect.poll(()=>page.locator('#progress').evaluate(el=>el.style.width)).toBe('100%');
  const count=(await page.locator('#wordCount').textContent()).split('/').map(x=>+x.trim());expect(count[0]).toBe(count[1]);
  await expect(page.locator('#results')).toBeVisible();
 }

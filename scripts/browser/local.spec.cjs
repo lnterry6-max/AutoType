@@ -16,10 +16,10 @@ test('27 pages: real scripts, clean URLs, refresh, console and asset failures',a
 for(const mode of ['classic','context','sentence','evil','daily','custom'])test('guest '+mode+' completes final word and progress once',async({page})=>{
  await page.goto('/play?mode='+mode+(mode==='custom'?'&sentence=hello%20world':''));
  await finish(page);await expect(page.locator('#resultCoins')).toHaveText('Sign in');
- await page.keyboard.press('Space');await expect(page.locator('#guess')).toHaveText('DONE');
+ await page.keyboard.press('Space');await expect(page.locator('#guess')).toHaveText('DONE');await expect(page.locator('#roundDoneOverlay')).toBeHidden({timeout:3000});
 });
 test('navigation and mode links, account menu keyboard focus and axe serious findings',async({page})=>{
- await page.goto('/account');await expect(page.getByLabel('Email',{exact:true})).toHaveAttribute('id','loginIdentity');await page.getByLabel('Password',{exact:true}).click();await expect(page.locator('#loginPassword')).toBeFocused();
+ await page.goto('/account');await expect(page.locator('#loginPanel').getByLabel('Email',{exact:true})).toHaveAttribute('id','loginIdentity');await page.locator('#loginPanel').getByLabel('Password',{exact:true}).click();await expect(page.locator('#loginPassword')).toBeFocused();
  await page.goto('/');await page.getByRole('link',{name:'Play',exact:true}).first().click();await expect(page).toHaveURL(/\/play$/);
  const modes=await page.locator('.mode-tile').evaluateAll(xs=>xs.map(x=>x.getAttribute('href')));expect(modes.length).toBe(6);
  await page.locator('#accountMenuButton').click();await expect(page.locator('#accountMenuButton')).toHaveAttribute('aria-expanded','true');
