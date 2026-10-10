@@ -62,7 +62,7 @@ assert.match(game,/sentenceForecast=\[\];[\s\S]*?\$\("time"\)/,
   "Restart clears the previous round's sentence forecast");
 assert.match(play,/sentence-forecast\.js\?v=20261009-sentence-v1/);
 assert.match(play,/sentence-mode\.css\?v=20261009-sentence-v1/);
-assert.match(play,/game\.js\?v=20261009-round-done-v1/);
+assert.match(play,/game\.js\?v=20261009-phase1-v1/);
 assert.match(play,/aria-label="Full-sentence AI prediction"/);
 assert.match(css,/mobile-keyboard-active #gameArea \.sentence-prediction\.is-active\{[\s\S]*?display:block/,
   "The full-sentence forecast stays visible with the mobile keyboard");

@@ -633,6 +633,32 @@ AutoType.ready().then(async()=>{
     unlock("comboKing",p.bestStreak>=10);
     return newly;
   }
+  let pendingRaceResult=null;
+  const retryRaceButton=document.createElement("button");
+  retryRaceButton.type="button";
+  retryRaceButton.textContent="Retry race save";
+  retryRaceButton.hidden=true;
+  $("results").append(retryRaceButton);
+  async function saveRaceCompletion(){
+    retryRaceButton.disabled=true;
+    try{
+      await AutoTypeBackend.submitRaceResult(race.id,pendingRaceResult);
+      retryRaceButton.hidden=true;
+      await pollQuickMatchResult();
+      return true;
+    }catch(error){
+      retryRaceButton.hidden=false;
+      AutoType.toast(error.message||"Race result could not save. Retry this completion.");
+      return false;
+    }finally{retryRaceButton.disabled=false;}
+  }
+  retryRaceButton.addEventListener("click",async()=>{
+    if(await saveRaceCompletion()){
+      $("verifiedResult").textContent="Practice · race result saved";
+      $("verifiedResult").dataset.outcome="practice";
+      $("resultCoins").textContent="Practice only";
+    }
+  });
   function quickMatchOpponent(room){
     const currentId=account?.supabaseUserId;
     return (room?.players||[]).find(p=>p.user_id!==currentId)||null;
@@ -640,7 +666,7 @@ AutoType.ready().then(async()=>{
 
   function renderQuickMatchResult(room){
     const box=$("matchResult");
-    if(!box||!quickMatch)return;
+    if(!box||!race)return;
     box.hidden=false;
     const currentId=account?.supabaseUserId;
     const mine=(room?.players||[]).find(p=>p.user_id===currentId);
@@ -659,13 +685,13 @@ AutoType.ready().then(async()=>{
   }
 
   async function pollQuickMatchResult(attempt=0){
-    if(!quickMatch||!race?.id)return;
+    if(!race?.id)return;
     try{
       const room=await AutoTypeBackend.raceById(race.id);
       if(!room)return;
       race.room=room;
       renderQuickMatchResult(room);
-      if(room.status!=="finished"&&attempt<20){
+      if(!["finished","cancelled"].includes(room.status)&&attempt<20){
         setTimeout(()=>pollQuickMatchResult(attempt+1),1500);
       }
     }catch(error){
@@ -694,6 +720,8 @@ AutoType.ready().then(async()=>{
     let coinsEarned=0;
     let newlyUnlocked=[];
     let verifiedSaved=false;
+    const accountPractice=!!npc||!!AutoType.currentAccount()?.online&&["custom","race"].includes(mode);
+    let completionState=AutoTypeProgression.outcome(null,{practice:accountPractice});
     const activeAccount=AutoType.currentAccount();
     const previousProfile=AutoType.currentProfile();
     // Preserve the real XP state before any server or guest progression is recorded.
@@ -701,7 +729,7 @@ AutoType.ready().then(async()=>{
       AutoType.levelInfo(previousProfile),previousProfile.bestScore||0
     );
 
-    if(activeAccount?.online&&!npc){
+    if(activeAccount?.online&&!accountPractice){
       $("resultCoins").textContent="Saving…";
       try{
         const result=await AutoTypeBackend.recordRound({
@@ -719,7 +747,8 @@ AutoType.ready().then(async()=>{
           durationMs:Math.max(250,Math.round(ms)),
           oneClue:clueCounts.some(n=>n===1)
         });
-        verifiedSaved=!!result?.verified;
+        completionState=AutoTypeProgression.outcome(result);
+        verifiedSaved=completionState.rewarded;
         coinsEarned=verifiedSaved?Number(result?.coins_earned||0):0;
         newlyUnlocked=verifiedSaved&&Array.isArray(result?.new_achievements)?result.new_achievements:[];
         const verifiedBadge=$("verifiedResult");
@@ -727,17 +756,25 @@ AutoType.ready().then(async()=>{
           verifiedBadge.hidden=!result?.verified;
           verifiedBadge.textContent=result?.verified?"Verified round":"";
         }
-        await AutoTypeBackend.hydrateLocalMirror();
+        try{await AutoTypeBackend.hydrateLocalMirror();}
+        catch(error){console.warn("Round confirmed, profile refresh pending",error);}
       }catch(error){
         console.error("Round save failed",error);
         // Never present unconfirmed backend rewards or level changes as earned.
         verifiedSaved=false;
+        completionState=AutoTypeProgression.outcome(null,{failed:true});
         coinsEarned=0;
         newlyUnlocked=[];
         if($("verifiedResult"))$("verifiedResult").hidden=true;
         AutoType.toast(error.message||"Round finished, but the backend could not save it.");
+        if(mode==="tournament"){
+          const registrationLink=document.createElement("a");
+          registrationLink.href="tournaments.html";
+          registrationLink.textContent="Check tournament registration before starting another attempt";
+          $("results").append(registrationLink);
+        }
       }
-    }else if(!npc){
+    }else if(!npc&&!activeAccount?.online){
       const p=AutoType.currentProfile();
       p.rounds++;
       if(["classic","context","sentence","evil"].includes(mode)){
@@ -793,13 +830,8 @@ AutoType.ready().then(async()=>{
 
     if(race&&activeAccount){
       if(activeAccount.online){
-        try{
-          await AutoTypeBackend.submitRaceResult(race.id,{score,durationMs:ms,errors,erased});
-          if(quickMatch)await pollQuickMatchResult();
-        }catch(error){
-          console.error("Race result save failed",error);
-          AutoType.toast(error.message||"Round saved, but the race result could not sync.");
-        }
+        pendingRaceResult={score,durationMs:Math.round(ms),errors,erased};
+        if(!await saveRaceCompletion())completionState=AutoTypeProgression.outcome(null,{failed:true});
       }else{
         race.results=race.results||{};
         race.results[activeAccount.id]={time:ms,errors,erased,score};
@@ -812,15 +844,21 @@ AutoType.ready().then(async()=>{
     $("resultKeys").textContent=keyCount;
     $("resultErrors").textContent=errors;
     $("resultErased").textContent=erased;
-    const onlinePending=!!activeAccount?.online&&!npc&&!verifiedSaved;
-    $("resultCoins").textContent=npc?"Practice only":onlinePending?"Unconfirmed":activeAccount?`+${coinsEarned}`:"Sign in";
+    const resultState=$("verifiedResult");
+    if(resultState){
+      resultState.hidden=!activeAccount?.online&&!npc;
+      resultState.textContent=completionState.label;
+      resultState.dataset.outcome=completionState.state;
+    }
+    const onlinePending=!!activeAccount?.online&&!accountPractice&&!verifiedSaved;
+    $("resultCoins").textContent=completionState.state==="failed_save"?"Save failed":accountPractice?"Practice only":onlinePending?"Unconfirmed":activeAccount?`+${coinsEarned}`:"Sign in";
     $("resultCoinLabel").textContent=npc?"Rewards":onlinePending?"Coins":"Coins earned";
     const finalProfile=AutoType.currentProfile();
     const afterProgress=AutoTypeProgression.snapshot(
       AutoType.levelInfo(finalProfile),finalProfile.bestScore||0
     );
     const progressSummary=AutoTypeProgression.compare(beforeProgress,afterProgress,{
-      practice:!!npc,
+      practice:!!npc||accountPractice,
       confirmed:!activeAccount?.online||verifiedSaved,
       local:!activeAccount?.online,
       score
@@ -853,7 +891,7 @@ AutoType.ready().then(async()=>{
     $("results").hidden=false;
     if($("sentenceAcceptButton"))$("sentenceAcceptButton").hidden=true;
     for(const id of ["restartBtn","newBtn","againBtn"]){
-      const button=$(id);if(button)button.disabled=false;
+      const button=$(id);if(button)button.disabled=!!race&&!!activeAccount?.online;
     }
     // After results save (success or failure), bring the summary into view.
     // Never force the mobile keyboard back open on a finished round.
@@ -1019,4 +1057,30 @@ AutoType.ready().then(async()=>{
     else reset();
   });
   reset();
+  // A reconnect displays the immutable server receipt rather than starting a new
+  // attempt in the same room. A new race requires a new room.
+  const savedRacePlayer=account?.online&&(race?.room?.players||[]).find(p=>p.user_id===account.supabaseUserId&&p.finished_at);
+  if(savedRacePlayer){
+    roundFinishing=true;
+    index=words.length;
+    score=Number(savedRacePlayer.score);
+    errors=savedRacePlayer.errors;
+    erased=savedRacePlayer.erased;
+    render();
+    $("mobileGameControls").hidden=true;
+    $("mobileTypingInput").blur();
+    document.body.classList.remove("mobile-keyboard-active");
+    $("results").hidden=false;
+    for(const id of ["restartBtn","newBtn","againBtn"])$(id).disabled=true;
+    $("resultScore").textContent=savedRacePlayer.score;
+    $("resultTime").textContent=fmt(savedRacePlayer.duration_ms);
+    $("resultKeys").textContent="—";
+    $("resultErrors").textContent=savedRacePlayer.errors;
+    $("resultErased").textContent=savedRacePlayer.erased;
+    $("resultCoins").textContent="Practice only";
+    $("verifiedResult").hidden=false;
+    $("verifiedResult").textContent="Practice · race result saved";
+    $("verifiedResult").dataset.outcome="practice";
+    pollQuickMatchResult();
+  }
 });

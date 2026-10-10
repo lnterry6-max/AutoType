@@ -88,3 +88,8 @@ for(const file of styles){
  assert.ok(!comment&&!quote,"Unclosed CSS comment or string in "+file);
 }
 console.log("Release integrity PASSED: "+pages.length+" page landmarks, "+menuCount+" accessible menus, "+backendCalls+" backend calls, "+styles.length+" balanced stylesheets and safe avatar attributes.");
+const accountHTML=read("account.html");
+for(const label of accountHTML.matchAll(/<label([^>]*)>([\s\S]*?)<\/label>\s*<(?:input|select|textarea)\b([^>]*)>/g)){
+ const id=label[3].match(/\bid="([^"]+)"/);
+ if(id)assert.ok(label[1].includes('for="'+id[1]+'"'),"Account input needs associated label: "+id[1]);
+}

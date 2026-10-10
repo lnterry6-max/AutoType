@@ -1,3 +1,4 @@
+import { type MaintenanceAdmin, maintenanceClosed, maintenanceResponse, isMaintenanceError, beginOperation, endOperation } from "../_shared/maintenance.ts";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import Stripe from "npm:stripe@^22";
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -14,6 +15,7 @@ Deno.serve(async(req:Request)=>{
   if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
   if(req.method!=="POST")return json({error:"Method not allowed"},405);
 
+  let lease:string|undefined;let operationAdmin:MaintenanceAdmin|undefined;let externalStarted=false,finished=false;
   try{
     const auth=req.headers.get("Authorization");
     if(!auth)return json({error:"Unauthorized"},401);
@@ -22,12 +24,7 @@ Deno.serve(async(req:Request)=>{
     const anon=Deno.env.get("SUPABASE_ANON_KEY")!;
     const service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const stripeKey=Deno.env.get("STRIPE_SECRET_KEY")||"";
-    const liveEnabled=(Deno.env.get("STRIPE_LIVE_ENABLED")||"false").toLowerCase()==="true";
-
-    if(!stripeKey)return json({error:"Stripe is not configured"},503);
-    if(stripeKey.startsWith("sk_live_")&&!liveEnabled){
-      return json({error:"Live Stripe refunds are disabled"},503);
-    }
+    if(!/^sk_test_|^rk_test_/.test(stripeKey))return json({error:"Only Stripe test refunds are enabled during beta"},503);
 
     const userClient=createClient(url,anon,{global:{headers:{Authorization:auth}}});
     const token=auth.replace("Bearer ","");
@@ -40,6 +37,7 @@ Deno.serve(async(req:Request)=>{
     if(roleError)throw roleError;
     if(role.role!=="developer")return json({error:"Developer access required"},403);
 
+    operationAdmin=admin;lease=await beginOperation(admin,"refund");
     const body=await req.json().catch(()=>({}));
     const orderId=String(body.orderId||"");
     if(!orderId)return json({error:"Payment order is required"},400);
@@ -56,6 +54,7 @@ Deno.serve(async(req:Request)=>{
     if(!remaining)throw new Error("This payment has already been fully refunded.");
 
     const stripe=new Stripe(stripeKey);
+    externalStarted=true;
     const refund=await stripe.refunds.create({
       payment_intent:order.provider_payment_intent_id,
       amount:remaining,
@@ -79,7 +78,7 @@ Deno.serve(async(req:Request)=>{
     });
     if(applyError)throw applyError;
 
-    await admin.from("admin_audit_log").insert({
+    const {error:auditError}=await admin.from("admin_audit_log").insert({
       actor_id:user.id,
       action:"refund_payment",
       target_type:"payment_order",
@@ -87,9 +86,18 @@ Deno.serve(async(req:Request)=>{
       details:{refund_id:refund.id,amount_cents:refund.amount,status:refund.status}
     });
 
+    if(auditError)throw auditError;
+    if(applied?.error)throw new Error("Refund saved for reconciliation; retry required");
+    finished=true;
     return json({refundId:refund.id,status:refund.status,amount:refund.amount,result:applied});
   }catch(error){
+    if(isMaintenanceError(error))return maintenanceResponse(cors);
     console.error(error);
     return json({error:error instanceof Error?error.message:"Refund failed"},400);
+  }finally{
+    if(lease&&operationAdmin){
+      if(!externalStarted||finished)await endOperation(operationAdmin,lease);
+      else console.error("Uncertain financial outcome: maintenance lease retained for operator reconciliation");
+    }
   }
 });

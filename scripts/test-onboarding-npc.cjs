@@ -18,7 +18,7 @@ assert.ok(backend.includes("auth.updateUser({data:{autotype_onboarding_pending:f
 assert.equal(account.split("AutoTypeBackend.postSignInDestination(").length-1,3, "Login, immediate signup, and existing session each need routing");
 assert.ok(account.includes("postSignInDestination(login.user)"));
 assert.ok(account.includes("postSignInDestination(data.user)"));
-assert.ok(account.includes("backend.js?v=20261008-first-login-v1"), "Auth page must load fresh onboarding logic");
+assert.ok(account.includes("backend.js?v=20261009-phase1-v1"), "Auth page must load fresh onboarding logic");
 assert.match(howto, /id="try-it"/);
 assert.match(howto, /id="tutorialStage"/);
 assert.match(howto, /how-to-tutorial\.js/);
@@ -28,8 +28,9 @@ for (const skill of ["easy", "medium", "hard"]) {
   assert.match(play, new RegExp('data-npc-skill="' + skill + '"'));
 }
 assert.match(game, /if\(mode==="npc"\)\{predictorMode="classic";fixed=true\}/);
-assert.match(game, /if\(activeAccount\?\.online&&!npc\)/);
-assert.match(game, /else if\(!npc\)/);
+assert.match(game, /const accountPractice=!!npc\|\|!!AutoType\.currentAccount\(\)\?\.online&&\["custom","race"\]\.includes\(mode\)/);
+assert.match(game, /if\(activeAccount\?\.online&&!accountPractice\)/);
+assert.match(game, /else if\(!npc&&!activeAccount\?\.online\)/);
 assert.match(game, /if\(!activeAccount\?\.online&&!npc\)AutoTypeDailyMix\.recordGuestRound/);
 assert.match(css, /prefers-reduced-motion:reduce/);
 assert.doesNotMatch(script, /AutoTypeBackend|addCoins|recordRound/, "Tutorial may not change saved progression");
