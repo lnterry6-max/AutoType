@@ -54,8 +54,20 @@ delivery to a hosted service, financial transaction or production data is used.
 
 ## Results
 
-Native execution is pending the first Actions run of this harness. Confirmed
-defects and final run links will be recorded here after obtaining real results.
+[Initial native evidence](https://github.com/lnterry6-max/AutoType/actions/runs/38016538704)
+ran PostgreSQL **16.15**, applied the bootstrap plus all 50 existing/Phase 1
+migrations, and reproduced the award/normal-save deadlock as SQLSTATE `40P01`.
+Race finishes, both reset/completion orderings and timeout rollback passed.
+The run also exposed fixture decoder/error-message issues, now corrected; that
+initial run is not a full-suite pass.
+
+`20261010022038_phase1_native_lock_order.sql` adds a forward migration that takes
+the winner's stats lock before wallet credit, matching verified/sentence saves.
+It preserves staff/current-run/top-score eligibility, rewards, private execution
+grants and the empty function search path. Prior migrations are unchanged.
+Native regression coverage repeats the forced award/round contention three times
+and checks exact balances, one win and retry behavior. Full fixed-suite evidence
+and the late-Checkout investigation are pending the next Actions run.
 
 ## Remaining staging requirements
 

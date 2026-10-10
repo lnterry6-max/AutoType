@@ -70,7 +70,7 @@ class Connection:
         if not name.startswith("autotype_") or not name.replace("_", "").isalnum():
             raise ValueError("Invalid fixture RPC")
         slots = ",".join(f"${i+1}" for i in range(len(args)))
-        return json.loads(self.query(f"select public.{name}({slots}) as result", args)[0]["result"])
+        return json.loads(self.query(f"select to_jsonb(public.{name}({slots})) as result", args)[0]["result"])
 
     def close(self):
         if getattr(self, "handle", None):
@@ -241,7 +241,7 @@ class NativeConcurrency(unittest.TestCase):
             result = connection.rpc(name, args)
             connection.query("commit")
             return result
-        except DatabaseError as error:
+        except Exception as error:
             connection.query("rollback")
             return error
 
@@ -339,7 +339,7 @@ class NativeConcurrency(unittest.TestCase):
             if not conflicting:
                 self.assertEqual(sum(not x.get("duplicate", False) for x in successes), 1)
             else:
-                self.assertTrue(all("already" in str(x).lower() or "consumed" in str(x).lower()
+                self.assertTrue(all(x.code == "P0001" and "no longer active" in str(x).lower()
                                     for x in results if isinstance(x, DatabaseError)), results)
             self.assertEqual(self.count("select verified_rounds from player_stats where user_id=$1", [player]), 1)
             self.assertEqual(self.count("select count(*) from economy_transactions where user_id=$1 and kind='round_reward'", [player]), 1)
@@ -512,6 +512,28 @@ class NativeConcurrency(unittest.TestCase):
             gate.query("rollback")
             self.db.query("drop trigger fixture_pause_attach on payment_orders; drop function fixture_pause_attach()")
             self.db.query(fixed)
+
+    def test_12_award_and_normal_round_follow_stats_before_wallet(self):
+        for _ in range(3):
+            actor, player, tournament, _, _ = self.tournament()
+            args = self.metrics(player, self.challenge(player))
+            before = self.snapshot(player)
+            save, award = self.connection(), self.connection()
+            save.query("begin")
+            save.query("select 1 from player_stats where user_id=$1 for update", [player])
+            future = self.pool.submit(self.transaction, award, "autotype_award_tournament", [actor, tournament, player])
+            self.blocked(award, save)
+            result = self.transaction(save, "autotype_record_verified_round", args)
+            self.assertIsInstance(result, dict)
+            self.assertIsInstance(future.result(timeout=10), dict)
+            after = self.snapshot(player)
+            self.assertEqual(after["wallet"]["coins"], before["wallet"]["coins"] + result["coins_earned"] + 300)
+            self.assertEqual(after["stats"]["verified_rounds"], before["stats"]["verified_rounds"] + 1)
+            self.assertEqual(after["stats"]["tournament_wins"], 1)
+            self.assertTrue(self.db.rpc("autotype_record_verified_round", args)["duplicate"])
+            with self.assertRaisesRegex(DatabaseError, "not running"):
+                self.db.rpc("autotype_award_tournament", [actor, tournament, player])
+            self.assertEqual(self.snapshot(player), after)
 
 
 if __name__ == "__main__":
