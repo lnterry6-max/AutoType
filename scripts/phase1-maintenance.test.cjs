@@ -73,3 +73,31 @@ test('signed Stripe deliveries including ignored types get retryable 503 without
  }
  assert.equal(calls,0);assert.deepEqual(m.writes,[]);
 });
+test('checkout transport failure retains its lease; successful checkout releases only after attachment',async()=>{
+ for(const fail of [true,false]){
+  const calls=[],id=randomUUID(),lease=randomUUID();
+  const admin={auth:{getUser:async()=>({data:{user:{id}}})},rpc:async(name)=>{
+   calls.push(name);if(name==='autotype_begin_operation')return {data:lease};
+   if(name==='autotype_create_payment_order')return {data:{order_id:randomUUID(),currency:'usd',amount_cents:99,coins:500,pack_id:'coins_500'}};
+   return {};
+  }};
+  class StripeFixture{checkout={sessions:{create:async()=>{calls.push('provider');if(fail)throw Error('Simulated uncertain transport failure');return {id:'cs_test_fixture',url:'https://fixture.invalid/checkout'}}}}}
+  const handler=edge('supabase/functions/create-checkout-session/index.ts',{Stripe:StripeFixture,createClient:()=>admin,Deno:{env:{get:key=>key==='STRIPE_SECRET_KEY'?'sk_test_fixture':'fixture'}}});
+  const response=await handler(request({packId:'coins_500',returnBase:'https://fixture.invalid/'}));assert.equal(response.status,fail?400:200);
+  assert.equal(calls.includes('autotype_end_operation'),!fail);
+  if(!fail)assert.ok(calls.indexOf('autotype_end_operation')>calls.indexOf('autotype_attach_checkout_session'));
+ }
+});
+test('refund transport failure retains its lease; success releases after accounting and audit',async()=>{
+ for(const fail of [true,false]){
+  const calls=[],orderId=randomUUID(),id=randomUUID();
+  const admin={auth:{getUser:async()=>({data:{user:{id}}})},
+   rpc:async name=>{calls.push(name);return {data:name==='autotype_begin_operation'?randomUUID():{applied:true}}},
+   from:table=>({select:()=>({eq:()=>({single:async()=>({data:table==='user_roles'?{role:'developer'}:{id:orderId,user_id:id,provider_payment_intent_id:'pi_fixture',status:'paid',amount_cents:99,refunded_amount_cents:0}})})}),insert:async()=>{calls.push('audit');return {}}})};
+  class StripeFixture{refunds={create:async()=>{calls.push('provider');if(fail)throw Error('Simulated uncertain transport failure');return {id:'re_fixture',status:'succeeded',amount:99}}}}
+  const handler=edge('supabase/functions/refund-payment/index.ts',{Stripe:StripeFixture,createClient:()=>admin,Deno:{env:{get:key=>key==='STRIPE_SECRET_KEY'?'sk_test_fixture':'fixture'}}});
+  assert.equal((await handler(request({orderId}))).status,fail?400:200);
+  assert.equal(calls.includes('autotype_end_operation'),!fail);
+  if(!fail)assert.ok(calls.indexOf('autotype_end_operation')>calls.indexOf('audit'));
+ }
+});

@@ -15,7 +15,7 @@ Deno.serve(async(req:Request)=>{
   if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
   if(req.method!=="POST")return json({error:"Method not allowed"},405);
 
-  let lease:string|undefined;let operationAdmin:MaintenanceAdmin|undefined;
+  let lease:string|undefined;let operationAdmin:MaintenanceAdmin|undefined;let externalStarted=false,finished=false;
   try{
     const auth=req.headers.get("Authorization");
     if(!auth)return json({error:"Unauthorized"},401);
@@ -62,6 +62,7 @@ Deno.serve(async(req:Request)=>{
     const stripe=new Stripe(stripeKey);
     const successPage=new URL("shop.html",base).href;
     const cancelPage=new URL("shop.html",base).href;
+    externalStarted=true;
     const session=await stripe.checkout.sessions.create({
       mode:"payment",
       customer_email:user.email||undefined,
@@ -99,10 +100,16 @@ Deno.serve(async(req:Request)=>{
     });
     if(attachError)throw attachError;
 
+    finished=true;
     return json({url:session.url,sessionId:session.id,orderId:order.order_id});
   }catch(error){
     if(isMaintenanceError(error))return maintenanceResponse(cors);
     console.error(error);
     return json({error:error instanceof Error?error.message:"Could not start checkout"},400);
-  }finally{if(lease&&operationAdmin)await endOperation(operationAdmin,lease)}
+  }finally{
+    if(lease&&operationAdmin){
+      if(!externalStarted||finished)await endOperation(operationAdmin,lease);
+      else console.error("Uncertain financial outcome: maintenance lease retained for operator reconciliation");
+    }
+  }
 });

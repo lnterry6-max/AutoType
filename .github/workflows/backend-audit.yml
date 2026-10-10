@@ -168,7 +168,7 @@ jobs:
       - name: Rehearse private synthetic PostgreSQL 17 backup and isolated restore
         if: ${{ !cancelled() && steps.fullstack_reset.outcome == 'success' }}
         timeout-minutes: 5
-        run: node scripts/fullstack/backup-restore.cjs
+        run: node --require ./scripts/fullstack/network-guard.cjs scripts/fullstack/backup-restore.cjs
       - name: Stop and remove only this disposable fixture stack
         if: always() && env.AUTOTYPE_STACK_DIR != ''
         run: timeout 120s supabase stop --workdir "$AUTOTYPE_STACK_DIR" --no-backup

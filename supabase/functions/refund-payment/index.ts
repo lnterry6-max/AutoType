@@ -15,7 +15,7 @@ Deno.serve(async(req:Request)=>{
   if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
   if(req.method!=="POST")return json({error:"Method not allowed"},405);
 
-  let lease:string|undefined;let operationAdmin:MaintenanceAdmin|undefined;
+  let lease:string|undefined;let operationAdmin:MaintenanceAdmin|undefined;let externalStarted=false,finished=false;
   try{
     const auth=req.headers.get("Authorization");
     if(!auth)return json({error:"Unauthorized"},401);
@@ -54,6 +54,7 @@ Deno.serve(async(req:Request)=>{
     if(!remaining)throw new Error("This payment has already been fully refunded.");
 
     const stripe=new Stripe(stripeKey);
+    externalStarted=true;
     const refund=await stripe.refunds.create({
       payment_intent:order.provider_payment_intent_id,
       amount:remaining,
@@ -87,10 +88,16 @@ Deno.serve(async(req:Request)=>{
 
     if(auditError)throw auditError;
     if(applied?.error)throw new Error("Refund saved for reconciliation; retry required");
+    finished=true;
     return json({refundId:refund.id,status:refund.status,amount:refund.amount,result:applied});
   }catch(error){
     if(isMaintenanceError(error))return maintenanceResponse(cors);
     console.error(error);
     return json({error:error instanceof Error?error.message:"Refund failed"},400);
-  }finally{if(lease&&operationAdmin)await endOperation(operationAdmin,lease)}
+  }finally{
+    if(lease&&operationAdmin){
+      if(!externalStarted||finished)await endOperation(operationAdmin,lease);
+      else console.error("Uncertain financial outcome: maintenance lease retained for operator reconciliation");
+    }
+  }
 });

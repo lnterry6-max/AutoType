@@ -1,20 +1,22 @@
 'use strict';
 // Runner-local synthetic rehearsal ONLY. No network/hosted URL options, cloud
 // upload, artifacts, production exports, or platform restore API are accepted.
-const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os');
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {spawnSync}=require('node:child_process'),{createHash,randomUUID}=require('node:crypto');
-const {admin,database,dir}=require('./runtime.cjs');
+const {database,dir}=require('./runtime.cjs');
 const container='supabase_db_autotype-phase1-ci';
 function tool(args,input){const r=spawnSync('docker',['exec','-i','-u','postgres',container,...args],{input,encoding:'utf8',maxBuffer:16*1024*1024,timeout:60000});assert.equal(r.status,0,'Local database tool failed: '+r.stderr);return r.stdout;}
 function sql(db,query){return tool(['psql','-X','-v','ON_ERROR_STOP=1','-U','supabase_admin','-d',db,'-At'],query);}
 function checksum(file){return createHash('sha256').update(fs.readFileSync(file)).digest('hex');}
 function fingerprints(db){
  const names=JSON.parse(sql(db,"select coalesce(json_agg(json_build_object('schema',schemaname,'table',tablename) order by schemaname,tablename),'[]') from pg_tables where schemaname in ('public','auth','storage','supabase_migrations','autotype_maintenance');"));
- const result={};for(const {schema,table} of names){assert.match(schema,/^[a-z_]+$/);assert.match(table,/^[a-z_]+$/);
+ const result={};for(const {schema,table} of names){assert.match(schema,/^[a-z_][a-z0-9_]*$/);assert.match(table,/^[a-z_][a-z0-9_]*$/);
   result[schema+'.'+table]=sql(db,`select count(*)||':'||md5(coalesce(string_agg(to_jsonb(t)::text,E'\\n' order by to_jsonb(t)::text),'')) from "${schema}"."${table}" t;`).trim();
  }return result;
 }
 function security(db){return sql(db,`select jsonb_build_object(
+ 'functions',(select jsonb_agg(jsonb_build_array(n.nspname,p.proname,pg_get_function_identity_arguments(p.oid),p.prosecdef,p.proacl,p.proconfig,pg_get_functiondef(p.oid)) order by n.nspname,p.proname,pg_get_function_identity_arguments(p.oid)) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where p.prokind in ('f','p') and n.nspname in ('public','auth','autotype_maintenance')),
+ 'constraints',(select jsonb_agg(jsonb_build_array(n.nspname,c.relname,k.conname,pg_get_constraintdef(k.oid)) order by n.nspname,c.relname,k.conname) from pg_constraint k join pg_class c on c.oid=k.conrelid join pg_namespace n on n.oid=c.relnamespace where n.nspname in ('public','auth','storage','autotype_maintenance')),
  'policies',(select jsonb_agg(to_jsonb(p) order by schemaname,tablename,policyname) from pg_policies p where schemaname in ('public','auth','storage','autotype_maintenance')),
  'triggers',(select jsonb_agg(jsonb_build_array(n.nspname,c.relname,t.tgname,t.tgenabled,pg_get_triggerdef(t.oid)) order by n.nspname,c.relname,t.tgname) from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_namespace n on n.oid=c.relnamespace where not t.tgisinternal and n.nspname in ('public','auth','storage','autotype_maintenance')),
  'permissions',(select jsonb_agg(jsonb_build_array(n.nspname,c.relname,c.relrowsecurity,c.relforcerowsecurity,c.relacl) order by n.nspname,c.relname) from pg_class c join pg_namespace n on n.oid=c.relnamespace where c.relkind in ('r','p') and n.nspname in ('public','auth','storage','autotype_maintenance'))

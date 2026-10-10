@@ -309,3 +309,13 @@ test('external-operation leases cannot be expired or bypassed to pretend the gat
  try{assert.equal((await admin.rpc('autotype_begin_operation',{p_kind:'checkout'})).error.code,'PT503')}
  finally{await db.query('select autotype_maintenance.set_enabled(false)')}
 });
+test('uncertain fake checkout outcome retains a real DB lease and prevents unsafe close',async()=>{
+ const {edge,request}=require('./phase1-test-helpers.cjs'),user=await account();
+ class StripeFixture{checkout={sessions:{create:async()=>{throw Error('Synthetic transport failure; no provider call')}}}}
+ const handler=edge('supabase/functions/create-checkout-session/index.ts',{Stripe:StripeFixture,createClient:(url,key)=>key===status.SERVICE_ROLE_KEY?admin:user.api,Deno:{env:{get:key=>key==='STRIPE_SECRET_KEY'?'sk_test_fixture':key==='SUPABASE_URL'?url:key==='SUPABASE_ANON_KEY'?status.ANON_KEY:status.SERVICE_ROLE_KEY}}});
+ const result=await handler(request({packId:'coins_500',returnBase:'http://127.0.0.1:54321/'},{Authorization:'Bearer '+user.token}));assert.equal(result.status,400);
+ const leases=(await db.query("select id from autotype_maintenance.operations where kind='checkout'")).rows;assert.equal(leases.length,1);
+ try{await assert.rejects(db.query('select autotype_maintenance.set_enabled(true)'),{code:'55000'})}
+ finally{await rpc('autotype_end_operation',[leases[0].id])}
+ assert.equal((await db.query('select public.autotype_maintenance_status() as closed')).rows[0].closed,false);
+});
