@@ -319,3 +319,16 @@ test('uncertain fake checkout outcome retains a real DB lease and prevents unsaf
  finally{await rpc('autotype_end_operation',[leases[0].id])}
  assert.equal((await db.query('select public.autotype_maintenance_status() as closed')).rows[0].closed,false);
 });
+test('a whole game handler is leased even before its first write and drains before closure',{timeout:15000},async()=>{
+ const {edge,request}=require('./phase1-test-helpers.cjs'),user=await account();let resume;
+ const hold=new Promise(resolve=>resume=resolve),service={rpc:async(name,args)=>{if(name==='autotype_start_round')await hold;return admin.rpc(name,args)}};
+ const handler=edge('supabase/functions/game-api/index.ts',{createClient:(_url,key)=>key===status.SERVICE_ROLE_KEY?service:user.api,Deno:{env:{get:key=>key==='SUPABASE_URL'?url:key==='SUPABASE_ANON_KEY'?status.ANON_KEY:status.SERVICE_ROLE_KEY}}});
+ const response=handler(request({action:'start_round',payload:{mode:'classic'}},{Authorization:'Bearer '+user.token}));
+ try{
+  await eventually(async()=>Number((await db.query("select count(*)::int n from autotype_maintenance.operations where kind='game'")).rows[0].n)===1);
+  await assert.rejects(db.query('select autotype_maintenance.set_enabled(true)'),{code:'55000'});
+ }finally{resume()}
+ assert.equal((await response).status,200);
+ assert.equal((await db.query('select count(*)::int n from autotype_maintenance.operations')).rows[0].n,0);
+ await db.query('select autotype_maintenance.set_enabled(true)');await db.query('select autotype_maintenance.set_enabled(false)');
+});

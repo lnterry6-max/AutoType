@@ -11,9 +11,12 @@ create table if not exists autotype_maintenance.control (
 insert into autotype_maintenance.control(singleton) values(true) on conflict do nothing;
 create table if not exists autotype_maintenance.operations (
  id uuid primary key default gen_random_uuid(),
- kind text not null check(kind in ('checkout','refund','webhook','delete-account')),
+ kind text not null check(kind in ('game','checkout','refund','webhook','delete-account')),
  started_at timestamptz not null default clock_timestamp()
 );
+alter table autotype_maintenance.operations drop constraint if exists operations_kind_check;
+alter table autotype_maintenance.operations add constraint operations_kind_check
+ check(kind in ('game','checkout','refund','webhook','delete-account'));
 alter table autotype_maintenance.control enable row level security;
 alter table autotype_maintenance.operations enable row level security;
 revoke all on all tables in schema autotype_maintenance from public,anon,authenticated,service_role;

@@ -6,7 +6,7 @@ const {spawnSync}=require('node:child_process'),{createHash,randomUUID}=require(
 const {database,dir}=require('./runtime.cjs');
 const container='supabase_db_autotype-phase1-ci';
 function tool(args,input){const r=spawnSync('docker',['exec','-i','-u','postgres',container,...args],{input,encoding:'utf8',maxBuffer:16*1024*1024,timeout:60000});assert.equal(r.status,0,'Local database tool failed: '+r.stderr);return r.stdout;}
-function sql(db,query){return tool(['psql','-X','-v','ON_ERROR_STOP=1','-U','supabase_admin','-d',db,'-At'],query);}
+function sql(db,query){return tool(['psql','-X','-q','-v','ON_ERROR_STOP=1','-U','supabase_admin','-d',db,'-At'],query);}
 function checksum(file){return createHash('sha256').update(fs.readFileSync(file)).digest('hex');}
 function fingerprints(db){
  const names=JSON.parse(sql(db,"select coalesce(json_agg(json_build_object('schema',schemaname,'table',tablename) order by schemaname,tablename),'[]') from pg_tables where schemaname in ('public','auth','storage','supabase_migrations','autotype_maintenance');"));
@@ -14,13 +14,13 @@ function fingerprints(db){
   result[schema+'.'+table]=sql(db,`select count(*)||':'||md5(coalesce(string_agg(to_jsonb(t)::text,E'\\n' order by to_jsonb(t)::text),'')) from "${schema}"."${table}" t;`).trim();
  }return result;
 }
-function security(db){return sql(db,`select jsonb_build_object(
- 'functions',(select jsonb_agg(jsonb_build_array(n.nspname,p.proname,pg_get_function_identity_arguments(p.oid),p.prosecdef,p.proacl,p.proconfig,pg_get_functiondef(p.oid)) order by n.nspname,p.proname,pg_get_function_identity_arguments(p.oid)) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where p.prokind in ('f','p') and n.nspname in ('public','auth','autotype_maintenance')),
+function security(db){return JSON.parse(sql(db,`set search_path=pg_catalog;select jsonb_build_object(
+ 'functions',(select jsonb_agg(jsonb_build_array(n.nspname,p.proname,pg_get_function_identity_arguments(p.oid),p.prosecdef,pg_get_userbyid(p.proowner),(select jsonb_agg(jsonb_build_array(pg_get_userbyid(a.grantor),case when a.grantee=0 then 'PUBLIC' else pg_get_userbyid(a.grantee) end,a.privilege_type,a.is_grantable) order by a.grantor,a.grantee,a.privilege_type) from aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a),p.proconfig,pg_get_functiondef(p.oid)) order by n.nspname,p.proname,pg_get_function_identity_arguments(p.oid)) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where p.prokind in ('f','p') and n.nspname in ('public','auth','autotype_maintenance')),
  'constraints',(select jsonb_agg(jsonb_build_array(n.nspname,c.relname,k.conname,pg_get_constraintdef(k.oid)) order by n.nspname,c.relname,k.conname) from pg_constraint k join pg_class c on c.oid=k.conrelid join pg_namespace n on n.oid=c.relnamespace where n.nspname in ('public','auth','storage','autotype_maintenance')),
  'policies',(select jsonb_agg(to_jsonb(p) order by schemaname,tablename,policyname) from pg_policies p where schemaname in ('public','auth','storage','autotype_maintenance')),
  'triggers',(select jsonb_agg(jsonb_build_array(n.nspname,c.relname,t.tgname,t.tgenabled,pg_get_triggerdef(t.oid)) order by n.nspname,c.relname,t.tgname) from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_namespace n on n.oid=c.relnamespace where not t.tgisinternal and n.nspname in ('public','auth','storage','autotype_maintenance')),
- 'permissions',(select jsonb_agg(jsonb_build_array(n.nspname,c.relname,c.relrowsecurity,c.relforcerowsecurity,c.relacl) order by n.nspname,c.relname) from pg_class c join pg_namespace n on n.oid=c.relnamespace where c.relkind in ('r','p') and n.nspname in ('public','auth','storage','autotype_maintenance'))
- );`).trim();}
+ 'permissions',(select jsonb_agg(jsonb_build_array(n.nspname,c.relname,c.relrowsecurity,c.relforcerowsecurity,pg_get_userbyid(c.relowner),(select jsonb_agg(jsonb_build_array(pg_get_userbyid(a.grantor),case when a.grantee=0 then 'PUBLIC' else pg_get_userbyid(a.grantee) end,a.privilege_type,a.is_grantable) order by a.grantor,a.grantee,a.privilege_type) from aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a)) order by n.nspname,c.relname) from pg_class c join pg_namespace n on n.oid=c.relnamespace where c.relkind in ('r','p') and n.nspname in ('public','auth','storage','autotype_maintenance'))
+ );`).trim());}
 (async()=>{
  let db,closed=false,targetCreated=false;const target='autotype_restore_'+randomUUID().replaceAll('-',''),privateDir=fs.mkdtempSync(path.join(dir,'private-restore-'));fs.chmodSync(privateDir,0o700);
  const dump=path.join(privateDir,'synthetic.dump'),roles=path.join(privateDir,'roles.sql'),archive='/tmp/'+target+'.dump';
@@ -40,7 +40,13 @@ function security(db){return sql(db,`select jsonb_build_object(
   sql('postgres',`create database ${target} template template0;`);targetCreated=true;
   tool(['pg_restore','-U','supabase_admin','--dbname='+target,'--clean','--if-exists','--exit-on-error','--single-transaction',archive]);
   assert.deepEqual(fingerprints(target),expected,'Auth, game/economy/payments, Storage metadata, maintenance state and migration history restore exactly');
-  assert.equal(security(target),permissions,'RLS, grants and trigger enablement restore exactly');
+  const restoredSecurity=security(target);
+  for(const [kind,expectedItems] of Object.entries(permissions)){
+   const actualItems=restoredSecurity[kind];
+   const mismatch=JSON.stringify(actualItems)!==JSON.stringify(expectedItems);
+   if(mismatch){const at=expectedItems?.findIndex((item,i)=>JSON.stringify(item)!==JSON.stringify(actualItems?.[i]));console.error('Restored security mismatch',kind,'object',JSON.stringify(expectedItems?.[at]?.slice?.(0,2)||at));}
+   assert.equal(mismatch,false,'RLS/grants/constraints/function security/trigger restore: '+kind);
+  }
   assert.equal(sql(target,'select public.autotype_maintenance_status();').trim(),'t');
   const blocked=spawnSync('docker',['exec','-i','-u','postgres',container,'psql','-X','-v','ON_ERROR_STOP=1','-U','supabase_admin','-d',target,'-At'],{input:'update public.wallets set coins=coins+1;',encoding:'utf8'});assert.notEqual(blocked.status,0);assert.match(blocked.stderr,/maintenance: writes paused/);
   sql(target,"select autotype_maintenance.set_enabled(false);update public.wallets set coins=coins;");

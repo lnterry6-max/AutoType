@@ -47,7 +47,7 @@ test('friend race creation and participant insertion are one authorized transact
 });
 test('gateway derives participant from authentication and rejects fractional metrics',async()=>{
  const a=randomUUID(),calls=[];
- const handler=edge('supabase/functions/game-api/index.ts',{createClient:()=>({auth:{getUser:async()=>({data:{user:{id:a}}})},rpc:async(name,args)=>{if(name==='autotype_maintenance_status')return {data:false};calls.push({name,args});return {data:{saved:true}}}})});
+ const handler=edge('supabase/functions/game-api/index.ts',{createClient:()=>({auth:{getUser:async()=>({data:{user:{id:a}}})},rpc:async(name,args)=>{if(name==='autotype_begin_operation')return {data:randomUUID()};if(name==='autotype_end_operation')return {};calls.push({name,args});return {data:{saved:true}}}})});
  assert.equal((await handler(request({action:'submit_race_result',payload:{raceId:randomUUID(),userId:randomUUID(),score:80,durationMs:5000,errors:0,erased:0}}))).status,200);
  assert.equal(calls[0].args.p_user,a);
  assert.equal((await handler(request({action:'submit_race_result',payload:{score:80,durationMs:5000.5,errors:0,erased:0}}))).status,400);

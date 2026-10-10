@@ -17,6 +17,7 @@ Deno.serve(async(req:Request)=>{
   if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
   if(req.method!=="POST")return json({error:"Method not allowed"},405);
 
+  let lease:string|undefined;let operationAdmin:MaintenanceAdmin|undefined;
   try{
     const authHeader=req.headers.get("Authorization");
     if(!authHeader)return json({error:"Unauthorized"},401);
@@ -36,7 +37,7 @@ Deno.serve(async(req:Request)=>{
     const action=String(body.action||"");
     const payload=body.payload||{};
     const reads=new Set(['chat_unread_summary','chat_history','chat_blocked','admin_chat_reports','admin_snapshot','developer_role_snapshot']);
-    if(!reads.has(action) && await maintenanceClosed(admin))return maintenanceResponse(cors);
+    if(!reads.has(action)){operationAdmin=admin;lease=await beginOperation(admin,"game")}
 
     async function rpc(name:string,args:Record<string,unknown>){
       const {data,error}=await admin.rpc(name,args);
@@ -454,5 +455,5 @@ Deno.serve(async(req:Request)=>{
   }catch(error){
     if(isMaintenanceError(error))return maintenanceResponse(cors);
     return json({error:error instanceof Error?error.message:"Request failed"},400);
-  }
+  }finally{if(lease&&operationAdmin)await endOperation(operationAdmin,lease)}
 });
