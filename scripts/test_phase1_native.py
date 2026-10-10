@@ -567,7 +567,10 @@ class NativeConcurrency(unittest.TestCase):
                     # The late row stays pending rather than taking a reverse
                     # lock. Exact attachment retry captures and drains it.
                     self.assertEqual(self.db.query("select state from stripe_event_inbox where event_id=$1", [early[0]])[0]["state"], "pending")
-                    self.assertTrue(self.db.rpc("autotype_attach_checkout_session", [order["order_id"], player, payload["session"]]))
+                # Even a competing metadata credit can scan the older legacy
+                # event before the binding commits. Drain any durable late row
+                # via exact attachment retry; neither credit is applied twice.
+                self.assertTrue(self.db.rpc("autotype_attach_checkout_session", [order["order_id"], player, payload["session"]]))
                 self.assertEqual(self.count("select coins from wallets where user_id=$1", [player]), before + order["coins"])
                 self.assertEqual(self.count("select count(*) from economy_transactions where user_id=$1 and kind='stripe_coin_purchase'", [player]), 1)
                 self.assertEqual(self.count("select count(*) from stripe_event_inbox where payment_intent=$1 and state<>'applied'", [payload["payment_intent"]]), 0)
