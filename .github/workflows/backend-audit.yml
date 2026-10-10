@@ -4,6 +4,7 @@ on:
   push:
     branches: ["backend-foundation", "beta-friends"]
   pull_request:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
     branches: ["main", "backend-foundation", "beta-friends"]
   workflow_dispatch:
 
@@ -13,8 +14,11 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
@@ -23,3 +27,24 @@ jobs:
           node-version: "22"
       - name: Run AutoType static audit
         run: python3 scripts/audit.py
+
+  phase1:
+    name: Phase 1 regression tests
+    if: github.event_name == 'pull_request' && github.base_ref == 'beta-friends'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install locked test dependencies
+        run: npm ci
+        env:
+          NPM_CONFIG_IGNORE_SCRIPTS: "true"
+      # PGlite is in memory, Auth/Stripe are mocks, and no service secrets are
+      # supplied. A separate network namespace also blocks unexpected egress.
+      - name: Run isolated Phase 1 regressions
+        run: sudo unshare --net -- env "PATH=$PATH" npm run test:phase1

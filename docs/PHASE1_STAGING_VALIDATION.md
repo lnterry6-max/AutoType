@@ -22,8 +22,13 @@ inputs, not generated build output.
 
 These results exercise real application SQL in PGlite with Auth/Storage stubs and a
 stub DOM. They do **not** establish native PostgreSQL lock behavior, hosted JWT/RLS/
-Realtime behavior, or physical mobile/PWA behavior. GitHub's existing PR workflow runs
-the static audit only; the 37-test suite is currently local evidence, not a CI check.
+Realtime behavior, or physical mobile/PWA behavior. The PR workflow now runs separate release-audit and Phase 1 checks for every PR
+targeting beta-friends, including drafts and retargeted PRs. It uses npm ci, then
+npm run test:phase1 in a network namespace with no network interfaces. The npm
+script self-checks and preloads a network guard; each worker uses an in-memory
+PGlite database and injected Auth/Stripe fixtures. No service secrets or Git
+credentials are supplied to the tests. Dependency installation uses npm registry
+access before test execution, with package lifecycle scripts disabled.
 
 Review the implementation and limitations in [PHASE1_HARDENING.md](PHASE1_HARDENING.md).
 All four Phase 1 migrations are additive files; no earlier migration was edited.
@@ -146,7 +151,7 @@ requests as well as direct service-role SQL in the isolated environment.
 | PG-3 | Drop response after commit; retry identical payload; reload/reconnect | Receipt remains readable and immutable; no replay of the finished room; fresh room required |
 | PG-4 | Finish versus room cancellation; missing/countdown/malformed room; unrelated participant | A serialized valid outcome or explicit rejection, no partial player/room writes or rewards |
 | PG-5 | Same challenge/round retry concurrently, including two distinct round IDs for one challenge | One result/reward only; exact retry adds zero; replacement rejects; rollback on validation failure |
-| PG-6 | Tournament reset/cancel versus finish; two resets; award versus reset | Valid serial outcome with run isolation; no stale rewards, double refunds, mixed standings or deadlocks |
+| PG-6 | Tournament reset/cancel versus finish; two resets; award versus reset and non-tournament round save | Valid serial outcome with run isolation; no stale rewards, double refunds, mixed standings or deadlocks |
 | PG-7 | Stripe credit versus adjustment/reconciliation; same event/object on two connections | One credit, bounded reversal, durable pending/error state; safe retry; no deadlock |
 
 A statement timeout must leave no partial writes. Retry only immutable payloads and

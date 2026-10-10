@@ -33,7 +33,7 @@ from closing these four P1 paths; do not advertise attested human gameplay.
 
 ## Local tests
 
-`npm ci && npm run test:phase1` runs executable Node fixtures and in-memory
+`npm ci && npm run test:phase1` first verifies its network guard, then runs executable Node fixtures and in-memory
 PostgreSQL through PGlite. The harness always creates a fresh local database and
 does not accept hosted connection strings. It applies the bootstrap and all
 ordered migrations unchanged, with minimal Supabase Auth/Storage schema stubs.
