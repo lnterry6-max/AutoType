@@ -29,6 +29,7 @@ Deno.serve(async(req:Request)=>{
     const {data:{user},error:userError}=await userClient.auth.getUser(token);
     if(userError||!user)return json({error:"Unauthorized"},401);
 
+    const authenticatedUserId=user.id;
     const admin=createClient(url,service,{auth:{autoRefreshToken:false,persistSession:false}});
     const body=await req.json().catch(()=>({}));
     const action=String(body.action||"");
@@ -40,7 +41,7 @@ Deno.serve(async(req:Request)=>{
       return data;
     }
     async function staffRole(){
-      const {data,error}=await admin.from("user_roles").select("role").eq("user_id",user.id).single();
+      const {data,error}=await admin.from("user_roles").select("role").eq("user_id",authenticatedUserId).single();
       if(error)throw error;
       return String(data?.role||"player");
     }

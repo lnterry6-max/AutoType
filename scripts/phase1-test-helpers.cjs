@@ -66,7 +66,7 @@ function edge(file,globals){
   const source=read(file).replace(/^import .*;\r?\n/gm,"");
   const code=ts.transpile(source,{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS});
   vm.runInNewContext(code,{console,Response,Request,URL,crypto:globalThis.crypto,
-    Deno:{serve:fn=>handler=fn,env:{get:()=>"fixture"}},...globals});
+    ...globals,Deno:{env:{get:()=>"fixture"},...globals?.Deno,serve:fn=>handler=fn}});
   return handler;
 }
 function request(body,headers={Authorization:"Bearer fixture"}){

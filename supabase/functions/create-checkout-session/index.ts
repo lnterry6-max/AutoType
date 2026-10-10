@@ -22,8 +22,8 @@ Deno.serve(async(req:Request)=>{
     const anon=Deno.env.get("SUPABASE_ANON_KEY")!;
     const service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const stripeKey=Deno.env.get("STRIPE_SECRET_KEY")||"";
-    const liveEnabled=(Deno.env.get("STRIPE_LIVE_ENABLED")||"").toLowerCase()==="true";
-    const stripeMode=stripeKey.startsWith("sk_test_")?"test":stripeKey.startsWith("sk_live_")?"live":"off";
+    const liveEnabled=false; // Beta cannot be unlocked by a secret toggle.
+    const stripeMode=/^sk_test_|^rk_test_/.test(stripeKey)?"test":stripeKey.startsWith("sk_live_")?"live":"off";
 
     const userClient=createClient(url,anon,{global:{headers:{Authorization:auth}}});
     const token=auth.replace("Bearer ","");
@@ -36,8 +36,8 @@ Deno.serve(async(req:Request)=>{
       return json({configured,mode:stripeMode,liveEnabled});
     }
     if(!stripeKey)return json({error:"Stripe test payments are not configured yet."},503);
-    if(stripeMode==="live"&&!liveEnabled){
-      return json({error:"Live Stripe payments are locked until STRIPE_LIVE_ENABLED=true is set on the server."},503);
+    if(stripeMode==="live"){
+      return json({error:"Live Stripe payments are disabled during beta."},503);
     }
     if(stripeMode==="off")return json({error:"Stripe secret key format is not recognized."},503);
 
@@ -85,7 +85,7 @@ Deno.serve(async(req:Request)=>{
       },
       success_url:`${successPage}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:`${cancelPage}?payment=cancelled`
-    });
+    },{idempotencyKey:`autotype-checkout-${order.order_id}`});
 
     if(!session.url)throw new Error("Stripe did not return a checkout URL.");
     const {error:attachError}=await admin.rpc("autotype_attach_checkout_session",{

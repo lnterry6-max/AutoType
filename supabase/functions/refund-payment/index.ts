@@ -22,12 +22,7 @@ Deno.serve(async(req:Request)=>{
     const anon=Deno.env.get("SUPABASE_ANON_KEY")!;
     const service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const stripeKey=Deno.env.get("STRIPE_SECRET_KEY")||"";
-    const liveEnabled=(Deno.env.get("STRIPE_LIVE_ENABLED")||"false").toLowerCase()==="true";
-
-    if(!stripeKey)return json({error:"Stripe is not configured"},503);
-    if(stripeKey.startsWith("sk_live_")&&!liveEnabled){
-      return json({error:"Live Stripe refunds are disabled"},503);
-    }
+    if(!/^sk_test_|^rk_test_/.test(stripeKey))return json({error:"Only Stripe test refunds are enabled during beta"},503);
 
     const userClient=createClient(url,anon,{global:{headers:{Authorization:auth}}});
     const token=auth.replace("Bearer ","");
@@ -79,7 +74,7 @@ Deno.serve(async(req:Request)=>{
     });
     if(applyError)throw applyError;
 
-    await admin.from("admin_audit_log").insert({
+    const {error:auditError}=await admin.from("admin_audit_log").insert({
       actor_id:user.id,
       action:"refund_payment",
       target_type:"payment_order",
@@ -87,6 +82,8 @@ Deno.serve(async(req:Request)=>{
       details:{refund_id:refund.id,amount_cents:refund.amount,status:refund.status}
     });
 
+    if(auditError)throw auditError;
+    if(applied?.error)throw new Error("Refund saved for reconciliation; retry required");
     return json({refundId:refund.id,status:refund.status,amount:refund.amount,result:applied});
   }catch(error){
     console.error(error);
