@@ -337,7 +337,7 @@ img{display:block;max-width:100%}
   border-bottom:2px solid transparent;font-weight:700
 }
 .tab.active{color:#fff;border-bottom-color:var(--blue)}
-.security-note{font-size:11px;color:#858e96;line-height:1.5;margin-top:15px}
+.security-note{font-size:11px;color:var(--muted);line-height:1.5;margin-top:15px}
 
 /* switch account modal */
 .modal-backdrop{

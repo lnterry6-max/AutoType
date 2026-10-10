@@ -39,7 +39,7 @@ test.describe('real disposable Auth and gameplay browser integration',()=>{
   await expect(page.locator('#recoveryPanel')).toBeVisible();await expect(page.locator('#finishRecoveryButton')).toBeEnabled();
   const replacement=randomUUID()+'!Aa1';await page.locator('#recoveryPassword').fill(replacement);await page.locator('#recoveryPasswordConfirm').fill(replacement);await page.locator('#finishRecoveryButton').click();
   await expect(page.locator('#loginPanel')).toBeVisible({timeout:10000});await page.locator('#loginIdentity').fill(email);await page.locator('#loginPassword').fill(replacement);await page.locator('#loginButton').click();await expect.poll(()=>page.evaluate(()=>window.AutoType?.currentAccount()?.username)).toBe(username);
-  await page.goto('/account?reset=1');await page.evaluate(()=>AutoTypeBackend.signOut());await page.reload();await expect(page.locator('#recoveryHelp')).toContainText('invalid or expired');await expect(page.locator('#finishRecoveryButton')).toBeDisabled();
+  await page.evaluate(()=>AutoTypeBackend.signOut());await page.goto('/account?reset=1');await expect(page.locator('#recoveryHelp')).toContainText('invalid or expired');await expect(page.locator('#finishRecoveryButton')).toBeDisabled();
  });
  test('actual login, verified five modes, practice Custom, profile wallet leaderboard and logout',async({page})=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});await login(page,users[0]);
@@ -50,7 +50,7 @@ test.describe('real disposable Auth and gameplay browser integration',()=>{
   }
   const before=(await db.query('select rounds from player_stats where user_id=$1',[users[0].id])).rows[0].rounds;
   await page.goto('/play?mode=custom&sentence=hello%20world');await finish(page);await expect(page.locator('#resultCoins')).toHaveText('Practice only');expect((await db.query('select rounds from player_stats where user_id=$1',[users[0].id])).rows[0].rounds).toBe(before);
-  await page.goto('/profile');await expect(page.locator('main')).toContainText(users[0].username);
+  await page.goto('/profile');await expect(page.locator('main')).toContainText(users[0].username);await expect(page.locator('#achievementText')).not.toBeEmpty();await expect(page.locator('#achievementBadges').locator('*').first()).toBeVisible();
   const wallet=await page.evaluate(()=>AutoType.currentAccount().wallet.coins);expect(wallet).toBe(Number((await db.query('select coins from wallets where user_id=$1',[users[0].id])).rows[0].coins));
   await page.goto('/leaderboard');await expect(page.locator('main')).toContainText(users[0].username);
   await page.evaluate(()=>AutoTypeBackend.signOut());await page.reload();await expect.poll(()=>page.evaluate(()=>AutoType.currentAccount())).toBeNull();expect(errors).toEqual([]);
@@ -82,9 +82,14 @@ test.describe('real disposable Auth and gameplay browser integration',()=>{
    const request=(await db.query('select id from friend_requests where sender_id=$1 and receiver_id=$2',[users[1].id,users[0].id])).rows[0];
    await db.query("select public.autotype_respond_friend_request($1,$2,true)",[users[0].id,request.id]);
    const race=await page.evaluate(friendId=>AutoTypeBackend.createRace(friendId),users[0].id);await page.goto('/play?race='+race.id);await finish(page);await expect(page.locator('#resultCoins')).toHaveText('Practice only');
-   await staff.evaluate(()=>AutoTypeBackend.adminRestoreTournaments());await page.goto('/tournaments');await page.locator('[data-online-join]').first().click();await expect(page.locator('#registrationList')).not.toContainText('No registrations');
+   await staff.evaluate(()=>AutoTypeBackend.adminRestoreTournaments());await page.goto('/tournaments');await page.locator('[data-online-join]').first().click();await expect(page.locator('.tournament-card.registered')).toHaveCount(1);
    const entry=(await db.query('select tournament_id from tournament_entries where user_id=$1 order by joined_at desc limit 1',[users[1].id])).rows[0];
    await staff.evaluate(id=>AutoTypeBackend.adminUpsertTournament({tournamentId:id,status:'running',name:'Browser fixture'}),entry.tournament_id);
+   await page.goto('/play?tournament='+entry.tournament_id);await finish(page);await expect(page.locator('#verifiedResult')).toHaveAttribute('data-outcome','verified');
+   const result=(await db.query('select status,score from tournament_entries where tournament_id=$1 and user_id=$2',[entry.tournament_id,users[1].id])).rows[0];expect(result.status).toBe('finished');expect(Number(result.score)).toBeGreaterThan(0);
+   await page.goto('/tournaments');await expect(page.locator('#registrationList')).toContainText('Score '+Number(result.score).toLocaleString());await expect(page.locator('.tournament-standings')).toContainText(users[1].username);
+   await staff.evaluate(()=>AutoTypeBackend.adminRestoreTournaments());await page.reload();await page.locator('[data-online-join]').first().click();await expect(page.locator('.tournament-card.registered')).toHaveCount(1);
+   await staff.evaluate(id=>AutoTypeBackend.adminUpsertTournament({tournamentId:id,status:'running',name:'Browser fixture reset'}),entry.tournament_id);
    await page.goto('/play?tournament='+entry.tournament_id);await expect(page.locator('#target .current')).toBeVisible();await staff.evaluate(()=>AutoTypeBackend.adminRestoreTournaments());
    await finish(page);await expect(page.locator('#resultCoins')).toHaveText('Save failed');await expect(page.locator('#results')).toContainText('Check tournament registration');
   }finally{await staffContext.close()}
