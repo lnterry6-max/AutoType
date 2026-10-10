@@ -66,3 +66,65 @@ jobs:
         run: >-
           sudo unshare --net -- sudo -u "$(id -un)" -- env "PATH=$PATH"
           python3 scripts/test_phase1_native.py --pg-bin /usr/lib/postgresql/16/bin
+
+  phase1-fullstack:
+    name: Phase 1 full Supabase PostgreSQL 17 integration
+    if: >-
+      github.event_name == 'pull_request' && github.base_ref == 'beta-friends'
+      && github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    concurrency:
+      group: phase1-fullstack-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    env:
+      AUTOTYPE_CI_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+      # Public standard runner compute is free. No cache, artifact upload,
+      # Packages publication, hosted links, service secrets or deployments.
+      - name: Install locked integration dependencies
+        run: npm ci
+        env:
+          NPM_CONFIG_IGNORE_SCRIPTS: "true"
+      - name: Install verified pinned CLI on disposable runner only
+        run: |
+          curl --fail --location --silent --show-error https://github.com/supabase/cli/releases/download/v2.120.0/supabase_linux_amd64.tar.gz -o "$RUNNER_TEMP/supabase.tar.gz"
+          printf '7074584113aa00495beeac661c41fb09f1ddd0a483cd7333894b0d080086dc6e  %s\n' "$RUNNER_TEMP/supabase.tar.gz" | sha256sum --check
+          mkdir "$RUNNER_TEMP/supabase-bin"
+          tar -xzf "$RUNNER_TEMP/supabase.tar.gz" -C "$RUNNER_TEMP/supabase-bin" supabase
+          echo "$RUNNER_TEMP/supabase-bin" >> "$GITHUB_PATH"
+      - name: Discover CLI commands and prepare isolated fixture project
+        run: |
+          supabase --version
+          supabase start --help
+          supabase status --help
+          supabase db reset --help
+          supabase stop --help
+          python3 scripts/fullstack/prepare.py
+      - name: Start actual PostgreSQL 17 and all required Supabase services
+        run: python3 scripts/fullstack/start.py
+      - name: Block external networking after dependency warm-up
+        run: python3 scripts/fullstack/isolate.py
+      - name: Test synthetic upgrade and real Auth RLS gameplay Storage Realtime Functions
+        run: node --require ./scripts/fullstack/network-guard.cjs --test --test-concurrency=1 scripts/fullstack-phase1.test.cjs
+        env:
+          AUTOTYPE_STACK_SCENARIO: upgrade
+      - name: Reset only disposable local stack for fresh-install validation
+        run: |
+          python3 -c 'import os,pathlib,shutil; target=pathlib.Path(os.environ["AUTOTYPE_STACK_DIR"])/"supabase/migrations"; [shutil.copy(p,target/p.name) for p in pathlib.Path("supabase/migrations").glob("*.sql") if "_phase1_" in p.name]'
+          supabase db reset --local --workdir "$AUTOTYPE_STACK_DIR" --no-seed
+      - name: Repeat integration matrix on fresh installation
+        run: node --require ./scripts/fullstack/network-guard.cjs --test --test-concurrency=1 scripts/fullstack-phase1.test.cjs
+        env:
+          AUTOTYPE_STACK_SCENARIO: fresh
+      - name: Run 15 real multi-connection scenarios on the actual Supabase PostgreSQL 17 database
+        run: python3 scripts/test_phase1_fullstack_native.py
+      - name: Stop and remove only this disposable fixture stack
+        if: always() && env.AUTOTYPE_STACK_DIR != ''
+        run: supabase stop --workdir "$AUTOTYPE_STACK_DIR" --no-backup

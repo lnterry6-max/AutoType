@@ -1,0 +1,171 @@
+'use strict';
+const {test,before,after}=require('node:test'),assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),{randomUUID}=require('node:crypto');
+const {status,url,admin,client,database}=require('./fullstack/runtime.cjs');
+const root=path.resolve(__dirname,'..');let db,A,B,C,staff;const clients=[];
+async function account(developer=false){
+ const username='fixture_'+randomUUID().replaceAll('-','').slice(0,12),password=randomUUID()+'!aA1';
+ const email=username+'@example.invalid';
+ const {data,error}=await admin.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{username,display_name:username,role:'developer'}});
+ assert.equal(error,null,'Real Auth user creation: '+error?.message);
+ if(developer)await db.query("update user_roles set role='developer' where user_id=$1",[data.user.id]);
+ const auth=client();clients.push(auth);
+ const login=await auth.auth.signInWithPassword({email,password});assert.equal(login.error,null);
+ const token=login.data.session.access_token;const api=client(status.ANON_KEY,token);clients.push(api);
+ return {id:data.user.id,username,email,password,token,auth,api};
+}
+async function game(user,action,payload={},expected=200){
+ const r=await fetch(url+'/functions/v1/game-api',{method:'POST',headers:{apikey:status.ANON_KEY,Authorization:'Bearer '+user.token,'Content-Type':'application/json'},body:JSON.stringify({action,payload})});
+ const data=await r.json();assert.equal(r.status,expected,JSON.stringify(data));return data;
+}
+async function rpc(name,args){const params=args.map((_,i)=>'$'+(i+1)).join(',');return (await db.query(`select public.${name}(${params}) as result`,args)).rows[0].result;}
+async function snapshot(id){return (await db.query("select jsonb_build_object('stats',to_jsonb(s),'wallet',to_jsonb(w),'ledger',(select coalesce(jsonb_agg(e order by e.id),'[]'::jsonb) from economy_transactions e where e.user_id=$1)) as value from player_stats s join wallets w using(user_id) where s.user_id=$1",[id])).rows[0].value;}
+async function challenge(user,mode='classic',tournamentId){const ch=await game(user,'start_round',{mode,tournamentId});await db.query("update round_challenges set issued_at=now()-interval '20 seconds' where id=$1",[ch.challenge_id]);return ch;}
+function payload(ch){const words=ch.target_text.trim().split(/\s+/).length,score=words*20+Array.from({length:words},(_,i)=>Math.min(i*5,30)).reduce((a,b)=>a+b,0);return {challengeId:ch.challenge_id,roundId:randomUUID(),mode:ch.mode,score,words,erased:0,maxStreak:words,totalKeys:words*8,errors:0,durationMs:5000,oneClue:false};}
+async function subscribe(api,table,filter){
+ const events=[];const channel=api.channel('fixture_'+randomUUID()).on('postgres_changes',{event:'*',schema:'public',table,...(filter?{filter}:{})},event=>events.push(event));
+ await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('Realtime subscription timeout')),15000);channel.subscribe(state=>{if(state==='SUBSCRIBED'){clearTimeout(timer);resolve()}else if(['CHANNEL_ERROR','TIMED_OUT'].includes(state)){clearTimeout(timer);reject(new Error('Realtime '+state))}})});
+ return {events,channel};
+}
+async function eventually(fn,timeout=10000){const deadline=Date.now()+timeout;while(Date.now()<deadline){if(await fn())return;await new Promise(r=>setTimeout(r,100))}throw new Error('Expected asynchronous state was not observed');}
+before(async()=>{
+ db=await database();console.log('REAL STACK', (await db.query('select version()')).rows[0].version, 'scenario',process.env.AUTOTYPE_STACK_SCENARIO);
+ if(process.env.AUTOTYPE_STACK_SCENARIO==='upgrade'){
+  const legacy=await account();await rpc('autotype_record_round',[legacy.id,randomUUID(),'custom',500,5,0,5,40,0,5000,false]);
+  const order=await rpc('autotype_create_payment_order',[legacy.id,'coins_500']);await rpc('autotype_attach_checkout_session',[order.order_id,legacy.id,'cs_test_legacy']);
+  await rpc('autotype_credit_coin_purchase',['evt_legacy','checkout.session.completed',legacy.id,'cs_test_legacy','pi_legacy','coins_500',99,'usd']);
+  const saved=await snapshot(legacy.id);
+  const files=fs.readdirSync(path.join(root,'supabase/migrations')).filter(f=>f.includes('_phase1_')).sort();
+  for(const file of files){await db.query(fs.readFileSync(path.join(root,'supabase/migrations',file),'utf8'));console.log('UPGRADE APPLIED',file)}
+  assert.equal(files.length,6);assert.deepEqual(await snapshot(legacy.id),saved);
+  assert.equal((await db.query('select status from payment_orders where id=$1',[order.order_id])).rows[0].status,'paid');
+  console.log('PASS synthetic legacy upgrade preserved stats, wallet, ledger and paid order');
+  await db.query("notify pgrst, 'reload schema'");
+  await new Promise(r=>setTimeout(r,1500));
+ }
+ A=await account();B=await account();C=await account();staff=await account(true);
+}, {timeout:120000});
+after(async()=>{for(const api of clients)await api.removeAllChannels();await db?.end()});
+
+test('local-only guards reject hosted HTTP, TCP and WebSocket destinations',()=>{
+ assert.throws(()=>fetch('https://example.invalid'),/non-local/);
+ assert.throws(()=>require('node:net').connect(443,'example.invalid'),/non-local/);
+ assert.throws(()=>new WebSocket('wss://example.invalid'),/non-local/);
+});
+test('real Auth login, refresh, logout and revoked refresh token',async()=>{
+ const user=await account(),old=user.auth.auth.getSession;const initial=await user.auth.auth.getSession();assert.equal(initial.error,null);
+ const refreshed=await user.auth.auth.refreshSession();assert.equal(refreshed.error,null);assert.equal(refreshed.data.user.id,user.id);
+ const refresh=refreshed.data.session.refresh_token;
+ const lookup=await user.auth.auth.getUser();assert.equal(lookup.data.user.id,user.id);
+ assert.equal((await user.auth.auth.signOut({scope:'global'})).error,null);
+ const fresh=client();assert.ok((await fresh.auth.refreshSession({refresh_token:refresh})).error);
+ const wrong=await fresh.auth.signInWithPassword({email:user.email,password:'incorrect'});assert.ok(wrong.error);
+});
+test('actual gateway rejects missing/malformed auth and derives identity from JWT',async()=>{
+ for(const headers of [{apikey:status.ANON_KEY},{apikey:status.ANON_KEY,Authorization:'Bearer invalid'}]){
+  const r=await fetch(url+'/functions/v1/game-api',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({action:'start_round',payload:{mode:'classic'}})});assert.equal(r.status,401);
+ }
+ const ch=await game(A,'start_round',{mode:'classic',userId:B.id});assert.equal((await db.query('select user_id from round_challenges where id=$1',[ch.challenge_id])).rows[0].user_id,A.id);
+});
+test('user-editable Auth metadata cannot grant staff privileges',async()=>{
+ assert.equal((await db.query('select role from user_roles where user_id=$1',[A.id])).rows[0].role,'player');
+ await game(A,'admin_restore_tournaments',{},400);
+ await A.api.from('user_roles').update({role:'developer'}).eq('user_id',A.id);
+ assert.equal((await db.query('select role from user_roles where user_id=$1',[A.id])).rows[0].role,'player');
+});
+test('RLS isolates wallets and rejects forged wallet/stat/round writes',async()=>{
+ const wallets=await A.api.from('wallets').select('*');assert.equal(wallets.error,null);assert.deepEqual(wallets.data.map(x=>x.user_id),[A.id]);
+ const original=await snapshot(B.id);await A.api.from('wallets').update({coins:999999}).eq('user_id',B.id);await B.api.from('wallets').update({coins:999999}).eq('user_id',B.id);
+ await B.api.from('player_stats').update({rounds:999999}).eq('user_id',B.id);
+ const insert=await A.api.from('round_results').insert({id:randomUUID(),user_id:A.id,mode:'classic',score:999999});assert.ok(insert.error);
+ assert.deepEqual(await snapshot(B.id),original);
+ const anon=await client().from('wallets').select('*');assert.ok(anon.error||anon.data.length===0);
+});
+test('PostgREST browser roles cannot invoke privileged Phase 1 RPCs or read private inbox/history',async()=>{
+ for(const api of [client(),A.api]){
+  for(const table of ['stripe_event_inbox','tournament_run_history'])assert.ok((await api.from(table).select('*')).error);
+  const ingress=await api.rpc('autotype_receive_stripe_event',{p_event_id:'evt_denied',p_event_type:'checkout.session.completed',p_kind:'credit',p_payload:{},p_livemode:false});assert.ok(ingress.error);
+  assert.ok((await api.rpc('autotype_reset_builtin_tournaments',{p_actor:staff.id})).error);
+ }
+});
+test('every competitive mode saves through actual gateway once; concurrent exact retries preserve progression',async()=>{
+ for(const mode of ['classic','context','evil','daily','sentence']){
+  const user=await account(),ch=await challenge(user,mode),p=payload(ch),original=await snapshot(user.id);
+  if(mode==='sentence'){p.sentencePhraseWords=0;p.sentencePhraseActions=0;}
+  const outcomes=await Promise.all(Array.from({length:6},()=>game(user,'round_complete',p)));
+  assert.equal(outcomes.filter(x=>!x.duplicate).length,1);
+  const saved=await snapshot(user.id);assert.equal(Number(saved.stats.verified_rounds),Number(original.stats.verified_rounds)+1);assert.equal(Number(saved.stats.total_score),Number(original.stats.total_score)+p.score);
+  assert.equal(Number(saved.wallet.coins),Number(original.wallet.coins)+outcomes.find(x=>!x.duplicate).coins_earned);
+  assert.equal((await game(user,'round_complete',p)).duplicate,true);assert.deepEqual(await snapshot(user.id),saved);
+  await game(user,'round_complete',{...p,score:p.score+5},400);assert.deepEqual(await snapshot(user.id),saved);
+ }
+});
+test('practice modes and forged/foreign/expired challenges cannot mint rewards',async()=>{
+ const user=await account(),original=await snapshot(user.id);
+ for(const mode of ['custom','race','npc'])assert.equal((await game(user,'round_complete',{mode,score:999999,userId:B.id})).outcome,'practice');
+ assert.deepEqual(await snapshot(user.id),original);
+ const ch=await challenge(user),p=payload(ch);await game(B,'round_complete',p,400);await game(user,'round_complete',{...p,score:999999},400);
+ await db.query("update round_challenges set expires_at=now()-interval '1 second' where id=$1",[ch.challenge_id]);await game(user,'round_complete',p,400);assert.deepEqual(await snapshot(user.id),original);
+});
+test('two-account friendship and chat use real gateway and enforce outsider denial',async()=>{
+ await game(A,'chat_send',{friendId:B.id,message:'Before friendship'},400);
+ const request=await game(A,'send_friend_request',{username:B.username});
+ const row=(await db.query('select id from friend_requests where sender_id=$1 and receiver_id=$2',[A.id,B.id])).rows[0];assert.ok(row);
+ await game(B,'respond_friend_request',{requestId:row.id,accept:true});
+ await game(A,'chat_send',{friendId:B.id,message:'Synthetic hello'});
+ const history=await game(B,'chat_history',{friendId:A.id});assert.ok(JSON.stringify(history).includes('Synthetic hello'));
+ await game(C,'chat_history',{friendId:A.id},400);
+});
+test('Realtime gives two race participants updates while withholding private race from outsider',{timeout:40000},async()=>{
+ const room=await game(A,'create_race',{friendId:B.id});
+ const a=await subscribe(A.api,'race_rooms','id=eq.'+room.id),b=await subscribe(B.api,'race_rooms','id=eq.'+room.id),c=await subscribe(C.api,'race_rooms','id=eq.'+room.id);
+ try{
+  const hidden=await C.api.from('race_rooms').select('*').eq('id',room.id);assert.equal(hidden.error,null);assert.equal(hidden.data.length,0);
+  await db.query("update race_rooms set status='countdown' where id=$1",[room.id]);
+  await eventually(()=>a.events.length>0&&b.events.length>0);await new Promise(r=>setTimeout(r,750));assert.equal(c.events.length,0);
+  await A.api.removeChannel(a.channel);const again=await subscribe(A.api,'race_rooms','id=eq.'+room.id);
+  await db.query("update race_rooms set status='waiting' where id=$1",[room.id]);await eventually(()=>again.events.length>0);await A.api.removeChannel(again.channel);
+ }finally{await A.api.removeChannel(a.channel);await B.api.removeChannel(b.channel);await C.api.removeChannel(c.channel)}
+});
+test('simultaneous race finishes are immutable/idempotent and do not reward practice',async()=>{
+ const room=await game(A,'create_race',{friendId:B.id});await db.query("update race_rooms set target_text='one two three four',created_at=now()-interval '1 minute',status='waiting' where id=$1",[room.id]);
+ const p={raceId:room.id,score:110,durationMs:5000,errors:0,erased:0},beforeA=await snapshot(A.id),beforeB=await snapshot(B.id);
+ await game(C,'submit_race_result',p,400);
+ await Promise.all([game(A,'submit_race_result',p),game(B,'submit_race_result',{...p,score:130}),game(A,'submit_race_result',p)]);
+ assert.equal((await db.query('select winner_id from race_rooms where id=$1',[room.id])).rows[0].winner_id,B.id);
+ assert.equal((await game(A,'submit_race_result',p)).duplicate,true);await game(A,'submit_race_result',{...p,score:130},400);
+ assert.deepEqual(await snapshot(A.id),beforeA);assert.deepEqual(await snapshot(B.id),beforeB);
+});
+test('tournament reset through staff gateway abandons old challenge; fresh run can finish and award once',async()=>{
+ const tour='11111111-1111-4111-8111-111111111111',user=await account();await game(staff,'admin_restore_tournaments');await game(user,'join_tournament',{tournamentId:tour});
+ await game(staff,'admin_upsert_tournament',{tournamentId:tour,status:'running',name:'Synthetic Tournament',rewardCoins:300});
+ const old=await challenge(user,'tournament',tour),stale=payload(old);await game(staff,'admin_restore_tournaments');
+ await game(user,'join_tournament',{tournamentId:tour});await game(staff,'admin_upsert_tournament',{tournamentId:tour,status:'running',name:'Synthetic Tournament',rewardCoins:300});
+ const original=await snapshot(user.id);await game(user,'round_complete',stale,400);assert.deepEqual(await snapshot(user.id),original);
+ const fresh=await challenge(user,'tournament',tour);assert.notEqual(fresh.tournament_run_id,old.tournament_run_id);const p=payload(fresh);assert.equal((await game(user,'round_complete',p)).verified,true);
+ await game(user,'award_tournament',{tournamentId:tour,winnerId:user.id},400);const award=await game(staff,'award_tournament',{tournamentId:tour,winnerId:user.id});assert.equal(award.verified_score,p.score);
+ await game(staff,'award_tournament',{tournamentId:tour,winnerId:user.id},400);assert.equal((await game(user,'round_complete',p)).duplicate,true);
+});
+test('Storage upload/upsert/delete respects ownership on real service',async()=>{
+ const name=A.id+'/fixture.png',bytes=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a8L8AAAAASUVORK5CYII=','base64');
+ const bucket=A.api.storage.from('backgrounds');assert.equal((await bucket.upload(name,bytes,{contentType:'image/png'})).error,null);assert.equal((await bucket.upload(name,bytes,{contentType:'image/png',upsert:true})).error,null);
+ assert.ok((await B.api.storage.from('backgrounds').upload(name,bytes,{contentType:'image/png',upsert:true})).error);
+ await B.api.storage.from('backgrounds').remove([name]);assert.equal((await bucket.list(A.id)).data.length,1);
+ assert.equal((await bucket.remove([name])).error,null);assert.equal((await bucket.list(A.id)).data.length,0);
+});
+test('signed synthetic Stripe handler drives actual PostgREST reconciliation with mocked canonical reads',async()=>{
+ const Stripe=require('stripe'),{edge,request}=require('./phase1-test-helpers.cjs'),signature=new Stripe('sk_test_fixture'),secret='whsec_fixture';
+ const user=await account(),order=await rpc('autotype_create_payment_order',[user.id,'coins_500']),session='cs_test_'+randomUUID(),intent='pi_'+randomUUID();
+ await rpc('autotype_attach_checkout_session',[order.order_id,user.id,session]);
+ class FakeStripe {constructor(){return {webhooks:signature.webhooks,refunds:{retrieve:async id=>({id,livemode:false,payment_intent:intent,amount:99,status:'succeeded'})},disputes:{retrieve:async id=>({id,livemode:false,payment_intent:intent,amount:99,status:'won'})}}}static createSubtleCryptoProvider=Stripe.createSubtleCryptoProvider;}
+ const handler=edge('supabase/functions/stripe-webhook/index.ts',{Stripe:FakeStripe,createClient:()=>admin,Deno:{env:{get:key=>key==='STRIPE_SECRET_KEY'?'sk_test_fixture':key==='STRIPE_WEBHOOK_SECRET'?secret:key==='SUPABASE_URL'?url:status.SERVICE_ROLE_KEY}}});
+ async function event(id,type,object,expected=200){const body=JSON.stringify({id,type,livemode:false,data:{object}}),header=signature.webhooks.generateTestHeaderString({payload:body,secret});const r=await handler(new Request(url,{method:'POST',headers:{'stripe-signature':header},body}));assert.equal(r.status,expected,await r.clone().text());return r.json();}
+ const refund='re_'+randomUUID();await event('evt_early_'+intent,'refund.created',{id:refund});
+ const object={id:session,payment_status:'paid',payment_intent:intent,amount_total:99,currency:'usd',metadata:{order_id:order.order_id,user_id:user.id,pack_id:'coins_500'}};
+ await Promise.all([event('evt_credit_'+intent,'checkout.session.completed',object),event('evt_credit_'+intent,'checkout.session.completed',object)]);
+ await event('evt_refund_again_'+intent,'refund.updated',{id:refund});
+ assert.equal(Number((await snapshot(user.id)).wallet.coins),500);
+ assert.equal((await db.query("select count(*)::int as n from economy_transactions where user_id=$1 and kind='stripe_coin_purchase'",[user.id])).rows[0].n,1);
+ assert.equal((await db.query("select count(*)::int as n from stripe_event_inbox where payment_intent=$1 and state<>'applied'",[intent])).rows[0].n,0);
+ const invalid=await handler(new Request(url,{method:'POST',headers:{'stripe-signature':'invalid'},body:'{}'}));assert.equal(invalid.status,400);
+});
