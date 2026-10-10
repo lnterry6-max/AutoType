@@ -195,108 +195,19 @@ Deno.serve(async(req:Request)=>{
       case "leave_matchmaking":
         return json({ok:await rpc("autotype_leave_matchmaking",{p_user:user.id})});
 
-      case "create_race": {
-        const friendId=String(payload.friendId||"");
-        const {data:friendship,error:friendError}=await admin.from("friendships")
-          .select("user_a,user_b")
-          .or(`and(user_a.eq.${user.id},user_b.eq.${friendId}),and(user_a.eq.${friendId},user_b.eq.${user.id})`)
-          .maybeSingle();
-        if(friendError)throw friendError;
-        if(!friendship)throw new Error("You can only race a friend.");
-        const sentences=[
-          "the moon looked bright over the quiet city",
-          "our code worked perfectly until somebody touched one line",
-          "the final answer looked obvious only after we solved it",
-          "the keyboard sounded louder in the empty computer lab"
-        ];
-        const sentence=sentences[Math.floor(Math.random()*sentences.length)];
-        const {data:room,error:roomError}=await admin.from("race_rooms")
-          .insert({host_id:user.id,mode:"context",target_text:sentence,status:"waiting"})
-          .select().single();
-        if(roomError)throw roomError;
-        const {error:playersError}=await admin.from("race_players").insert([
-          {race_id:room.id,user_id:user.id,progress:0,score:0},
-          {race_id:room.id,user_id:friendId,progress:0,score:0}
-        ]);
-        if(playersError)throw playersError;
-        return json(room);
-      }
+      case "create_race":
+        return json(await rpc("autotype_create_friend_race",{
+          p_user:user.id,p_friend:String(payload.friendId||"")
+        }));
 
       case "submit_race_result": {
-        const raceId=String(payload.raceId||"");
-        const [{data:participant,error:partError},{data:room,error:roomError}]=await Promise.all([
-          admin.from("race_players")
-            .select("race_id,finished_at").eq("race_id",raceId).eq("user_id",user.id).maybeSingle(),
-          admin.from("race_rooms")
-            .select("id,status,match_type,winner_id").eq("id",raceId).maybeSingle()
-        ]);
-        if(partError)throw partError;
-        if(roomError)throw roomError;
-        if(!participant||!room)throw new Error("You are not in this race.");
-        if(room.match_type==="matchmaking"&&participant.finished_at){
-          throw new Error("Your Quick Match result is already submitted.");
+        for(const key of ["score","durationMs","errors","erased"]){
+          if(!Number.isSafeInteger(payload[key])||payload[key]<0)throw new Error("Invalid race metrics.");
         }
-
-        const submittedScore=Math.max(0,Number(payload.score)||0);
-        const submittedDuration=Math.max(0,Number(payload.durationMs)||0);
-        const submittedErrors=Math.max(0,Number(payload.errors)||0);
-        const submittedErased=Math.max(0,Number(payload.erased)||0);
-
-        if(room.match_type==="matchmaking"){
-          const {data:fullRoom,error:fullRoomError}=await admin.from("race_rooms")
-            .select("target_text").eq("id",raceId).single();
-          if(fullRoomError)throw fullRoomError;
-          const wordCount=String(fullRoom.target_text||"").trim().split(/\s+/).filter(Boolean).length;
-          let maxScore=0;
-          for(let i=0;i<wordCount;i++)maxScore+=120+Math.min(i*5,30);
-          if(submittedScore>maxScore)throw new Error("Quick Match score is outside the valid range.");
-          if(submittedDuration<Math.max(250,wordCount*120)||submittedDuration>1800000){
-            throw new Error("Quick Match time is outside the valid range.");
-          }
-        }
-
-        const {error:updateError}=await admin.from("race_players").update({
-          progress:1,
-          score:submittedScore,
-          duration_ms:submittedDuration,
-          errors:submittedErrors,
-          erased:submittedErased,
-          finished_at:new Date().toISOString()
-        }).eq("race_id",raceId).eq("user_id",user.id);
-        if(updateError)throw updateError;
-
-        const {data:players,error:playersError}=await admin.from("race_players")
-          .select("user_id,progress,score,duration_ms,errors,erased,finished_at,level_at_match")
-          .eq("race_id",raceId);
-        if(playersError)throw playersError;
-
-        let winnerId=room.winner_id||null;
-        const done=(players||[]).length>1&&(players||[]).every((p:any)=>p.finished_at);
-        if(done){
-          const ranked=[...(players||[])].sort((a:any,b:any)=>
-            Number(b.score||0)-Number(a.score||0)
-            || Number(a.duration_ms||0)-Number(b.duration_ms||0)
-            || Number(a.errors||0)-Number(b.errors||0)
-          );
-          if(ranked.length>1){
-            const a=ranked[0],b=ranked[1];
-            const exactTie=Number(a.score||0)===Number(b.score||0)
-              && Number(a.duration_ms||0)===Number(b.duration_ms||0)
-              && Number(a.errors||0)===Number(b.errors||0);
-            winnerId=exactTie?null:a.user_id;
-          }
-          await admin.from("race_rooms").update({
-            status:"finished",
-            finished_at:new Date().toISOString(),
-            winner_id:winnerId
-          }).eq("id",raceId);
-        }else{
-          await admin.from("race_rooms").update({
-            status:"running",
-            started_at:new Date().toISOString()
-          }).eq("id",raceId).eq("status","waiting");
-        }
-        return json({players,winnerId,finished:done,matchType:room.match_type});
+        return json(await rpc("autotype_submit_race_result",{
+          p_user:user.id,p_race:String(payload.raceId||""),p_score:payload.score,
+          p_duration_ms:payload.durationMs,p_errors:payload.errors,p_erased:payload.erased
+        }));
       }
 
       case "join_tournament":

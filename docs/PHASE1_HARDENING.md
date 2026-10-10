@@ -43,3 +43,9 @@ PGlite serializes queries on one connection. Concurrently scheduled requests tes
 replay/final-state behavior, but do not establish native multi-session lock
 contention or deadlock behavior. Those checks require an isolated full Supabase
 or PostgreSQL environment and two authenticated users before deployment.
+
+## Task 2: atomic multiplayer receipts
+
+Previously the gateway updated the player, queried the opponent and finalized the room in separate requests; errors on several writes were unchecked. Both friend and Quick Match finishes now lock the room before the participant in a single transaction. Cancelled, countdown, missing, malformed and unauthorized rooms reject results. An exact retry reads the original receipt; different metrics cannot replace it. Rank uses score, then duration, then errors; identical metrics produce a draw. Creating a friend race and its two participants is atomic too.
+
+Races retain their targets, matchmaking and result history. They do not award account progression (Task 1). The frontend rounds milliseconds for the integer RPC, retains a retry payload and restores a finished receipt on reconnect. A replay needs a new room. Local tests cover both race types, invalid/cancelled submissions, exact retry, replacement attempts, reconnect receipts, ordered ties, authentication and concurrently scheduled finishes. Separate-connection contention still requires staging PostgreSQL testing.

@@ -633,6 +633,32 @@ AutoType.ready().then(async()=>{
     unlock("comboKing",p.bestStreak>=10);
     return newly;
   }
+  let pendingRaceResult=null;
+  const retryRaceButton=document.createElement("button");
+  retryRaceButton.type="button";
+  retryRaceButton.textContent="Retry race save";
+  retryRaceButton.hidden=true;
+  $("results").append(retryRaceButton);
+  async function saveRaceCompletion(){
+    retryRaceButton.disabled=true;
+    try{
+      await AutoTypeBackend.submitRaceResult(race.id,pendingRaceResult);
+      retryRaceButton.hidden=true;
+      await pollQuickMatchResult();
+      return true;
+    }catch(error){
+      retryRaceButton.hidden=false;
+      AutoType.toast(error.message||"Race result could not save. Retry this completion.");
+      return false;
+    }finally{retryRaceButton.disabled=false;}
+  }
+  retryRaceButton.addEventListener("click",async()=>{
+    if(await saveRaceCompletion()){
+      $("verifiedResult").textContent="Practice · race result saved";
+      $("verifiedResult").dataset.outcome="practice";
+      $("resultCoins").textContent="Practice only";
+    }
+  });
   function quickMatchOpponent(room){
     const currentId=account?.supabaseUserId;
     return (room?.players||[]).find(p=>p.user_id!==currentId)||null;
@@ -640,7 +666,7 @@ AutoType.ready().then(async()=>{
 
   function renderQuickMatchResult(room){
     const box=$("matchResult");
-    if(!box||!quickMatch)return;
+    if(!box||!race)return;
     box.hidden=false;
     const currentId=account?.supabaseUserId;
     const mine=(room?.players||[]).find(p=>p.user_id===currentId);
@@ -659,13 +685,13 @@ AutoType.ready().then(async()=>{
   }
 
   async function pollQuickMatchResult(attempt=0){
-    if(!quickMatch||!race?.id)return;
+    if(!race?.id)return;
     try{
       const room=await AutoTypeBackend.raceById(race.id);
       if(!room)return;
       race.room=room;
       renderQuickMatchResult(room);
-      if(room.status!=="finished"&&attempt<20){
+      if(!["finished","cancelled"].includes(room.status)&&attempt<20){
         setTimeout(()=>pollQuickMatchResult(attempt+1),1500);
       }
     }catch(error){
@@ -798,14 +824,8 @@ AutoType.ready().then(async()=>{
 
     if(race&&activeAccount){
       if(activeAccount.online){
-        try{
-          await AutoTypeBackend.submitRaceResult(race.id,{score,durationMs:ms,errors,erased});
-          if(quickMatch)await pollQuickMatchResult();
-        }catch(error){
-          console.error("Race result save failed",error);
-          completionState=AutoTypeProgression.outcome(null,{failed:true});
-          AutoType.toast(error.message||"Race result could not save. Retry the same completion.");
-        }
+        pendingRaceResult={score,durationMs:Math.round(ms),errors,erased};
+        if(!await saveRaceCompletion())completionState=AutoTypeProgression.outcome(null,{failed:true});
       }else{
         race.results=race.results||{};
         race.results[activeAccount.id]={time:ms,errors,erased,score};
@@ -865,7 +885,7 @@ AutoType.ready().then(async()=>{
     $("results").hidden=false;
     if($("sentenceAcceptButton"))$("sentenceAcceptButton").hidden=true;
     for(const id of ["restartBtn","newBtn","againBtn"]){
-      const button=$(id);if(button)button.disabled=false;
+      const button=$(id);if(button)button.disabled=!!race&&!!activeAccount?.online;
     }
     // After results save (success or failure), bring the summary into view.
     // Never force the mobile keyboard back open on a finished round.
@@ -1031,4 +1051,30 @@ AutoType.ready().then(async()=>{
     else reset();
   });
   reset();
+  // A reconnect displays the immutable server receipt rather than starting a new
+  // attempt in the same room. A new race requires a new room.
+  const savedRacePlayer=account?.online&&(race?.room?.players||[]).find(p=>p.user_id===account.supabaseUserId&&p.finished_at);
+  if(savedRacePlayer){
+    roundFinishing=true;
+    index=words.length;
+    score=Number(savedRacePlayer.score);
+    errors=savedRacePlayer.errors;
+    erased=savedRacePlayer.erased;
+    render();
+    $("mobileGameControls").hidden=true;
+    $("mobileTypingInput").blur();
+    document.body.classList.remove("mobile-keyboard-active");
+    $("results").hidden=false;
+    for(const id of ["restartBtn","newBtn","againBtn"])$(id).disabled=true;
+    $("resultScore").textContent=savedRacePlayer.score;
+    $("resultTime").textContent=fmt(savedRacePlayer.duration_ms);
+    $("resultKeys").textContent="—";
+    $("resultErrors").textContent=savedRacePlayer.errors;
+    $("resultErased").textContent=savedRacePlayer.erased;
+    $("resultCoins").textContent="Practice only";
+    $("verifiedResult").hidden=false;
+    $("verifiedResult").textContent="Practice · race result saved";
+    $("verifiedResult").dataset.outcome="practice";
+    pollQuickMatchResult();
+  }
 });
