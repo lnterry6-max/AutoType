@@ -10,7 +10,7 @@ async function isolate(context){
 }
 async function finish(page,mobile=false){
  await expect(page.locator('#target .current')).toBeVisible();
- if(mobile)await page.locator('#mobileStartButton').tap();else await page.locator('h1').click();
+ if(mobile)await page.locator('#mobileStartButton').tap();else await page.locator('#target').click();
  for(let word=0;word<40;word++){
   if(!await page.locator('#target .current').count())break;
   const target=await page.locator('#target .current').textContent();
