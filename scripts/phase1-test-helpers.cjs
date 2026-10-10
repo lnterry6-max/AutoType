@@ -65,7 +65,9 @@ function edge(file,globals){
   let handler;
   const source=read(file).replace(/^import .*;\r?\n/gm,"");
   const code=ts.transpile(source,{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS});
-  vm.runInNewContext(code,{console,Response,Request,URL,crypto:globalThis.crypto,
+  const shared={exports:{},console,Response};
+  vm.runInNewContext(ts.transpile(read('supabase/functions/_shared/maintenance.ts'),{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}),shared);
+  vm.runInNewContext(code,{...shared.exports,console,Response,Request,URL,crypto:globalThis.crypto,
     ...globals,Deno:{env:{get:()=>"fixture"},...globals?.Deno,serve:fn=>handler=fn}});
   return handler;
 }

@@ -165,6 +165,10 @@ jobs:
         if: ${{ !cancelled() && steps.fullstack_reset.outcome == 'success' }}
         run: >-
           sudo -u autotype_ci -- env "PATH=$PATH" GITHUB_ACTIONS=true "RUNNER_TEMP=$RUNNER_TEMP" "AUTOTYPE_CI_RUN_ID=$AUTOTYPE_CI_RUN_ID" "AUTOTYPE_STACK_DIR=$AUTOTYPE_STACK_DIR" python3 scripts/test_phase1_fullstack_native.py
+      - name: Rehearse private synthetic PostgreSQL 17 backup and isolated restore
+        if: ${{ !cancelled() && steps.fullstack_reset.outcome == 'success' }}
+        timeout-minutes: 5
+        run: node scripts/fullstack/backup-restore.cjs
       - name: Stop and remove only this disposable fixture stack
         if: always() && env.AUTOTYPE_STACK_DIR != ''
         run: timeout 120s supabase stop --workdir "$AUTOTYPE_STACK_DIR" --no-backup

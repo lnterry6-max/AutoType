@@ -1,3 +1,4 @@
+import { type MaintenanceAdmin, maintenanceClosed, maintenanceResponse, isMaintenanceError, beginOperation, endOperation } from "../_shared/maintenance.ts";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -34,6 +35,8 @@ Deno.serve(async(req:Request)=>{
     const body=await req.json().catch(()=>({}));
     const action=String(body.action||"");
     const payload=body.payload||{};
+    const reads=new Set(['chat_unread_summary','chat_history','chat_blocked','admin_chat_reports','admin_snapshot','developer_role_snapshot']);
+    if(!reads.has(action) && await maintenanceClosed(admin))return maintenanceResponse(cors);
 
     async function rpc(name:string,args:Record<string,unknown>){
       const {data,error}=await admin.rpc(name,args);
@@ -449,6 +452,7 @@ Deno.serve(async(req:Request)=>{
         return json({error:"Unknown action"},400);
     }
   }catch(error){
+    if(isMaintenanceError(error))return maintenanceResponse(cors);
     return json({error:error instanceof Error?error.message:"Request failed"},400);
   }
 });

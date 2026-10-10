@@ -1,3 +1,4 @@
+import { type MaintenanceAdmin, maintenanceClosed, maintenanceResponse, isMaintenanceError, beginOperation, endOperation } from "../_shared/maintenance.ts";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import Stripe from "npm:stripe@^22";
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -14,6 +15,7 @@ Deno.serve(async(req:Request)=>{
   if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
   if(req.method!=="POST")return json({error:"Method not allowed"},405);
 
+  let lease:string|undefined;let operationAdmin:MaintenanceAdmin|undefined;
   try{
     const auth=req.headers.get("Authorization");
     if(!auth)return json({error:"Unauthorized"},401);
@@ -31,7 +33,11 @@ Deno.serve(async(req:Request)=>{
     if(userError||!user)return json({error:"Unauthorized"},401);
 
     const body=await req.json().catch(()=>({}));
+    const admin=createClient(url,service,{auth:{autoRefreshToken:false,persistSession:false}});
+    operationAdmin=admin;
     if(body.action==="status"){
+      const maintenance=await maintenanceClosed(admin);
+      if(maintenance)return json({configured:false,mode:stripeMode,liveEnabled,maintenance:true});
       const configured=!!stripeKey&&(stripeMode==="test"||(stripeMode==="live"&&liveEnabled));
       return json({configured,mode:stripeMode,liveEnabled});
     }
@@ -49,7 +55,7 @@ Deno.serve(async(req:Request)=>{
     if(!["http:","https:"].includes(base.protocol))return json({error:"Invalid return URL"},400);
     if(requestOrigin&&base.origin!==requestOrigin)return json({error:"Return URL origin mismatch"},400);
 
-    const admin=createClient(url,service,{auth:{autoRefreshToken:false,persistSession:false}});
+    lease=await beginOperation(admin,"checkout");
     const {data:order,error:orderError}=await admin.rpc("autotype_create_payment_order",{p_user:user.id,p_pack:packId});
     if(orderError)throw orderError;
 
@@ -95,7 +101,8 @@ Deno.serve(async(req:Request)=>{
 
     return json({url:session.url,sessionId:session.id,orderId:order.order_id});
   }catch(error){
+    if(isMaintenanceError(error))return maintenanceResponse(cors);
     console.error(error);
     return json({error:error instanceof Error?error.message:"Could not start checkout"},400);
-  }
+  }finally{if(lease&&operationAdmin)await endOperation(operationAdmin,lease)}
 });

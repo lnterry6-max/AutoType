@@ -35,19 +35,27 @@ async function subscribe(api,table,filter){
 async function eventually(fn,timeout=10000){const deadline=Date.now()+timeout;while(Date.now()<deadline){if(await fn())return;await new Promise(r=>setTimeout(r,100))}throw new Error('Expected asynchronous state was not observed');}
 before(async()=>{
  db=await database();console.log('REAL STACK', (await db.query('select version()')).rows[0].version, 'scenario',process.env.AUTOTYPE_STACK_SCENARIO);
+ await db.query(fs.readFileSync(path.join(root,'supabase/maintenance/install.sql'),'utf8'));
  if(process.env.AUTOTYPE_STACK_SCENARIO==='upgrade'){
   const legacy=await account();await rpc('autotype_record_round',[legacy.id,randomUUID(),'custom',500,5,0,5,40,0,5000,false]);
   const order=await rpc('autotype_create_payment_order',[legacy.id,'coins_500']);await rpc('autotype_attach_checkout_session',[order.order_id,legacy.id,'cs_test_legacy']);
   await rpc('autotype_credit_coin_purchase',['evt_legacy','checkout.session.completed',legacy.id,'cs_test_legacy','pi_legacy','coins_500',99,'usd']);
   const saved=await snapshot(legacy.id);
   const files=fs.readdirSync(path.join(root,'supabase/migrations')).filter(f=>f.includes('_phase1_')).sort();
+  await db.query('select autotype_maintenance.set_enabled(true)');
+  await db.query("begin;set local autotype.maintenance_bypass='on'");
   for(const file of files){await db.query(fs.readFileSync(path.join(root,'supabase/migrations',file),'utf8'));console.log('UPGRADE APPLIED',file)}
+  await db.query(fs.readFileSync(path.join(root,'supabase/maintenance/install.sql'),'utf8'));
+  await db.query('commit');
+  assert.equal((await db.query('select public.autotype_maintenance_status() as closed')).rows[0].closed,true);
+  await db.query('select autotype_maintenance.set_enabled(false)');
   assert.equal(files.length,6);assert.deepEqual(await snapshot(legacy.id),saved);
   assert.equal((await db.query('select status from payment_orders where id=$1',[order.order_id])).rows[0].status,'paid');
   console.log('PASS synthetic legacy upgrade preserved stats, wallet, ledger and paid order');
   await db.query("notify pgrst, 'reload schema'");
   await new Promise(r=>setTimeout(r,1500));
  }
+ await db.query("notify pgrst, 'reload schema'");await new Promise(r=>setTimeout(r,1500));
  A=await account();B=await account();C=await account();staff=await account(true);
 }, {timeout:120000});
 after(async()=>{for(const api of clients)await api.removeAllChannels();await db?.end()});
@@ -224,4 +232,80 @@ test('actual Edge webhook validates signed simulated Checkout events and denies 
  assert.equal((await db.query("select count(*)::int as n from economy_transactions where user_id=$1 and kind='stripe_coin_purchase'",[user.id])).rows[0].n,1);
  const live='evt_live_fixture_'+randomUUID();assert.equal((await send(live,true)).status,400);assert.equal((await send('evt_invalid_fixture',false,true)).status,400);
  assert.equal((await db.query('select count(*)::int as n from stripe_event_inbox where event_id=$1',[live])).rows[0].n,0);
+});
+
+async function publicSnapshot(){
+ const result={};for(const {tablename} of (await db.query("select tablename from pg_tables where schemaname='public' order by tablename")).rows){
+  assert.match(tablename,/^[a-z_]+$/);
+  result[tablename]=(await db.query(`select coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text),'[]'::jsonb) as rows from public.${tablename} t`)).rows[0].rows;
+ }return result;
+}
+test('maintenance locks drain actual open transactions and timeout leaves gate open',async()=>{
+ const writer=await database(),closer=await database();
+ try{
+  await writer.query('begin');await writer.query('update public.wallets set coins=coins where user_id=$1',[A.id]);
+  await closer.query("set lock_timeout='150ms'");await assert.rejects(closer.query('select autotype_maintenance.set_enabled(true)'),{code:'55P03'});
+  assert.equal((await db.query('select public.autotype_maintenance_status() as closed')).rows[0].closed,false);
+  await closer.query("set lock_timeout='5s'");let settled=false;
+  const close=closer.query('select autotype_maintenance.set_enabled(true)').then(()=>settled=true);
+  await eventually(async()=>Number((await db.query("select count(*)::int n from pg_locks where locktype='advisory' and not granted and pid=$1",[closer.processID])).rows[0].n)===1);
+  assert.equal(settled,false);await writer.query('commit');await close;assert.equal(settled,true);
+  await assert.rejects(writer.query('update public.wallets set coins=coins where user_id=$1',[A.id]),{code:'PT503'});
+ }finally{await writer.query('rollback');await db.query('select autotype_maintenance.set_enabled(false)');await writer.end();await closer.end()}
+});
+test('REPEATABLE READ snapshot cannot bypass a newly closed maintenance window',async()=>{
+ const old=await database();
+ try{
+  await old.query('begin isolation level repeatable read');await old.query('select public.autotype_maintenance_status()');
+  await db.query('select autotype_maintenance.set_enabled(true)');
+  await assert.rejects(old.query('update public.wallets set coins=coins+1 where user_id=$1',[A.id]),{code:'40001'});
+ }finally{await old.query('rollback');await old.end();await db.query('select autotype_maintenance.set_enabled(false)')}
+});
+test('public writes, old service RPCs, game and financial endpoints freeze; login/read and exact-once retry recover',{timeout:120000},async()=>{
+ const user=await account(),ch=await challenge(user),p=payload(ch);
+ const order=await rpc('autotype_create_payment_order',[user.id,'coins_500']),session='cs_test_'+randomUUID(),intent='pi_fixture_'+randomUUID();
+ await rpc('autotype_attach_checkout_session',[order.order_id,user.id,session]);
+ const Stripe=require('stripe'),signer=new Stripe('sk_test_fixture'),secret=JSON.parse(fs.readFileSync(path.join(dir,'stripe_fixture.json'),'utf8')).webhook_secret;
+ const object={id:session,payment_status:'paid',payment_intent:intent,amount_total:99,currency:'usd',metadata:{order_id:order.order_id,user_id:user.id,pack_id:'coins_500'}};
+ const event='evt_maintenance_'+randomUUID();
+ async function webhook(type='checkout.session.completed'){
+  const body=JSON.stringify({id:event,type,livemode:false,data:{object}});
+  return fetch(url+'/functions/v1/stripe-webhook',{method:'POST',headers:{'Content-Type':'application/json','stripe-signature':signer.webhooks.generateTestHeaderString({payload:body,secret})},body});
+ }
+ await db.query('select autotype_maintenance.set_enabled(true)');const original=await publicSnapshot();
+ try{
+  for(const table of Object.keys(original))await assert.rejects(db.query(`delete from public.${table} where false`),{code:'PT503'});
+  await assert.rejects(db.query('truncate public.wallets cascade'),{code:'PT503'});
+  await db.query("begin;set local role service_role;set local autotype.maintenance_bypass='on'");
+  try{await assert.rejects(rpc('autotype_create_payment_order',[user.id,'coins_500']),{code:'PT503'})}finally{await db.query('rollback')}
+  for(const api of [client(),user.api,admin]){
+   assert.ok((await api.rpc('set_enabled',{p_enabled:false})).error);
+   assert.ok((await api.from('control').select('*')).error);
+  }
+  const legacy=await admin.rpc('autotype_record_round',{p_user:user.id,p_round:randomUUID(),p_mode:'classic',p_score:100,p_words:2,p_erased:0,p_max_streak:2,p_total_keys:16,p_errors:0,p_duration_ms:5000,p_one_clue:false});assert.ok(legacy.error);
+  for(const action of ['round_complete','start_round','submit_race_result','join_tournament','award_tournament','admin_restore_tournaments','admin_adjust_coins','developer_set_staff_role'])await game(staff,action,p,503);
+  for(const name of ['create-checkout-session','refund-payment','delete-account']){
+   const response=await fetch(url+'/functions/v1/'+name,{method:'POST',headers:{apikey:status.ANON_KEY,Authorization:'Bearer '+staff.token,'Content-Type':'application/json'},body:JSON.stringify({packId:'coins_500',returnBase:url+'/',orderId:order.order_id})});
+   assert.equal(response.status,503,await response.clone().text());assert.equal(response.headers.get('Retry-After'),'60');
+  }
+  for(const type of ['checkout.session.completed','ignored.fixture']){const response=await webhook(type);assert.equal(response.status,503);assert.equal(response.headers.get('Cache-Control'),'no-store')}
+  await assert.rejects(rpc('autotype_receive_stripe_event',['evt_direct_maintenance','checkout.session.completed','credit',{session,order_id:order.order_id,user_id:user.id,pack_id:'coins_500',payment_intent:intent,amount:99,currency:'usd'},false]),{code:'PT503'});
+  const login=await user.auth.auth.signInWithPassword({email:user.email,password:user.password});assert.equal(login.error,null);
+  assert.equal((await user.auth.auth.refreshSession()).error,null);assert.equal((await user.api.from('wallets').select('*')).error,null);
+  assert.deepEqual(await publicSnapshot(),original,'Every public table, including all payment/stats/wallet records, stayed unchanged');
+ }finally{await db.query('select autotype_maintenance.set_enabled(false)')}
+ assert.equal((await game(user,'round_complete',p)).verified,true);assert.equal((await game(user,'round_complete',p)).duplicate,true);
+ const before=await snapshot(user.id);for(let i=0;i<2;i++){const response=await webhook();assert.equal(response.status,200,await response.clone().text())}
+ assert.equal(Number((await snapshot(user.id)).wallet.coins),Number(before.wallet.coins)+500);
+ assert.equal((await db.query('select count(*)::int n from payment_events where event_id=$1',[event])).rows[0].n,1);
+});
+test('external-operation leases cannot be expired or bypassed to pretend the gate is closed',async()=>{
+ const lease=await admin.rpc('autotype_begin_operation',{p_kind:'refund'});assert.equal(lease.error,null);
+ try{
+  await assert.rejects(db.query('select autotype_maintenance.set_enabled(true)'),{code:'55000'});
+  assert.equal((await db.query('select public.autotype_maintenance_status() as closed')).rows[0].closed,false);
+ }finally{assert.equal((await admin.rpc('autotype_end_operation',{p_id:lease.data})).error,null)}
+ await db.query('select autotype_maintenance.set_enabled(true)');
+ try{assert.equal((await admin.rpc('autotype_begin_operation',{p_kind:'checkout'})).error.code,'PT503')}
+ finally{await db.query('select autotype_maintenance.set_enabled(false)')}
 });

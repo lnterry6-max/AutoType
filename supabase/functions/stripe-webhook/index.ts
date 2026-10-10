@@ -1,3 +1,4 @@
+import { type MaintenanceAdmin, maintenanceClosed, maintenanceResponse, isMaintenanceError, beginOperation, endOperation } from "../_shared/maintenance.ts";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import Stripe from "npm:stripe@^22";
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -22,13 +23,15 @@ Deno.serve(async(req:Request)=>{
     return new Response("Bad signature",{status:400});
   }
 
-  if(event.livemode!==false)return new Response("Live payments are disabled during beta",{status:400});
 
+  let lease:string|undefined;let operationAdmin:MaintenanceAdmin|undefined;
   try{
     const url=Deno.env.get("SUPABASE_URL")!;
     const service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin=createClient(url,service,{auth:{autoRefreshToken:false,persistSession:false}});
 
+    operationAdmin=admin;lease=await beginOperation(admin,"webhook");
+    if(event.livemode!==false)return new Response("Live payments are disabled during beta",{status:400});
     let kind:string|null=null;
     let payload:Record<string,unknown>={};
     const intentId=(value:unknown)=>typeof value==="string"?value:(value as {id?:string}|null)?.id||"";
@@ -72,7 +75,8 @@ Deno.serve(async(req:Request)=>{
     }
     return Response.json({received:true});
   }catch(error){
+    if(isMaintenanceError(error))return maintenanceResponse();
     console.error("Stripe webhook processing failed",error);
     return new Response("Webhook processing failed",{status:500});
-  }
+  }finally{if(lease&&operationAdmin)await endOperation(operationAdmin,lease)}
 });

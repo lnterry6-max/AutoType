@@ -74,7 +74,7 @@ function webhook({key='sk_test_fixture',fail=false}={}){
  MockStripe.createSubtleCryptoProvider=Stripe.createSubtleCryptoProvider;
  const handler=edge('supabase/functions/stripe-webhook/index.ts',{Stripe:MockStripe,
  Deno:{env:{get:name=>name==='STRIPE_SECRET_KEY'?key:name==='STRIPE_WEBHOOK_SECRET'?secret:'fixture'},serve:undefined},
- createClient:()=>({rpc:async(name,args)=>{calls.push({name,args});return fail?{error:new Error('database unavailable')}:{data:{state:'pending',received:true}}}})});
+ createClient:()=>({rpc:async(name,args)=>{if(name==='autotype_begin_operation')return {data:randomUUID()};if(name==='autotype_end_operation')return {};calls.push({name,args});return fail?{error:new Error('database unavailable')}:{data:{state:'pending',received:true}}}})});
  return {calls,secret,handler,stripe};
 }
 async function delivery(w,{live=false,signature=true,type='refund.updated'}={}){

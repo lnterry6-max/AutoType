@@ -58,7 +58,7 @@ test("browser roles cannot invoke reward-writing RPCs",async()=>{
 });
 test("gateway validates user and practice never calls reward SQL",async()=>{
   const calls=[],dbMock={auth:{getUser:async()=>({data:{user:{id:randomUUID()}},error:null})},
-    rpc:async(name,args)=>{calls.push({name,args});return {data:{verified:true},error:null}}};
+    rpc:async(name,args)=>{if(name==='autotype_maintenance_status')return {data:false};calls.push({name,args});return {data:{verified:true},error:null}}};
   const handler=edge("supabase/functions/game-api/index.ts",{createClient:()=>dbMock});
   for(const mode of ["custom","race","npc"]){
     const response=await handler(request({action:"round_complete",payload:{mode,words:0,score:1000000}}));

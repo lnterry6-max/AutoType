@@ -1,3 +1,4 @@
+import { type MaintenanceAdmin, maintenanceClosed, maintenanceResponse, isMaintenanceError, beginOperation, endOperation } from "../_shared/maintenance.ts";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import Stripe from "npm:stripe@^22";
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -14,6 +15,7 @@ Deno.serve(async(req:Request)=>{
   if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
   if(req.method!=="POST")return json({error:"Method not allowed"},405);
 
+  let lease:string|undefined;let operationAdmin:MaintenanceAdmin|undefined;
   try{
     const auth=req.headers.get("Authorization");
     if(!auth)return json({error:"Unauthorized"},401);
@@ -35,6 +37,7 @@ Deno.serve(async(req:Request)=>{
     if(roleError)throw roleError;
     if(role.role!=="developer")return json({error:"Developer access required"},403);
 
+    operationAdmin=admin;lease=await beginOperation(admin,"refund");
     const body=await req.json().catch(()=>({}));
     const orderId=String(body.orderId||"");
     if(!orderId)return json({error:"Payment order is required"},400);
@@ -86,7 +89,8 @@ Deno.serve(async(req:Request)=>{
     if(applied?.error)throw new Error("Refund saved for reconciliation; retry required");
     return json({refundId:refund.id,status:refund.status,amount:refund.amount,result:applied});
   }catch(error){
+    if(isMaintenanceError(error))return maintenanceResponse(cors);
     console.error(error);
     return json({error:error instanceof Error?error.message:"Refund failed"},400);
-  }
+  }finally{if(lease&&operationAdmin)await endOperation(operationAdmin,lease)}
 });
