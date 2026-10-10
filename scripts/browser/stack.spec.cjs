@@ -33,12 +33,13 @@ test.describe('real disposable Auth and gameplay browser integration',()=>{
   await page.goto('/account');await page.evaluate(()=>AutoType.ready());await page.locator('[data-tab="create"]').click();
   await page.locator('#createUsername').fill(username);await page.locator('#createEmail').fill(email);await page.locator('#createPassword').fill(password);await page.locator('#createPasswordConfirm').fill(password);await page.locator('#createButton').click();
   await expect(page.locator('.toast')).toContainText('Check your email');
-  await page.goto(await emailLink(email,'Confirm'));await expect.poll(()=>page.evaluate(()=>window.AutoType?.currentAccount()?.username)).toBe(username);
+  await page.goto(await emailLink(email,'Confirm'));await expect.poll(()=>page.evaluate(()=>window.AutoType?.currentAccount()?.username)).toBe(username);await page.waitForURL('http://127.0.0.1:4173/how-to#try-it',{waitUntil:'load'});
   await page.evaluate(()=>AutoTypeBackend.signOut());await page.goto('/account');await page.locator('#forgotPasswordButton').click();await page.locator('#resetEmail').fill(email);await page.locator('#sendResetButton').click();
-  await expect(page.locator('.toast')).toContainText('Recovery email sent');await page.goto(await emailLink(email,'Reset'));
-  await expect(page.locator('#recoveryPanel')).toBeVisible();await expect(page.locator('#finishRecoveryButton')).toBeEnabled();
+  await expect(page.locator('.toast')).toContainText('Recovery email sent');
+  let releaseQuestion;const questionGate=new Promise(resolve=>releaseQuestion=resolve);await page.route('**/rest/v1/security_questions*',async route=>{await questionGate;await route.continue()});
+  await page.goto(await emailLink(email,'Reset'));await expect(page.locator('#recoveryPanel')).toBeVisible();await expect(page.locator('#finishRecoveryButton')).toBeDisabled();releaseQuestion();await expect(page.locator('#finishRecoveryButton')).toBeEnabled();await page.unroute('**/rest/v1/security_questions*');
   const replacement=randomUUID()+'!Aa1';await page.locator('#recoveryPassword').fill(replacement);await page.locator('#recoveryPasswordConfirm').fill(replacement);await page.locator('#finishRecoveryButton').click();
-  await expect(page.locator('#loginPanel')).toBeVisible({timeout:10000});await page.locator('#loginIdentity').fill(email);await page.locator('#loginPassword').fill(replacement);await page.locator('#loginButton').click();await expect.poll(()=>page.evaluate(()=>window.AutoType?.currentAccount()?.username)).toBe(username);
+  await expect(page.locator('#loginPanel')).toBeVisible({timeout:10000});await page.locator('#loginIdentity').fill(email);await page.locator('#loginPassword').fill(replacement);await page.locator('#loginButton').click();await expect.poll(()=>page.evaluate(()=>window.AutoType?.currentAccount()?.username)).toBe(username);await page.waitForURL('http://127.0.0.1:4173/',{waitUntil:'load'});
   await page.evaluate(()=>AutoTypeBackend.signOut());await page.goto('/account?reset=1');await expect(page.locator('#recoveryHelp')).toContainText('invalid or expired');await expect(page.locator('#finishRecoveryButton')).toBeDisabled();
  });
  test('actual login, verified five modes, practice Custom, profile wallet leaderboard and logout',async({page})=>{
@@ -50,7 +51,7 @@ test.describe('real disposable Auth and gameplay browser integration',()=>{
   }
   const before=(await db.query('select rounds from player_stats where user_id=$1',[users[0].id])).rows[0].rounds;
   await page.goto('/play?mode=custom&sentence=hello%20world');await finish(page);await expect(page.locator('#resultCoins')).toHaveText('Practice only');expect((await db.query('select rounds from player_stats where user_id=$1',[users[0].id])).rows[0].rounds).toBe(before);
-  await page.goto('/profile');await expect(page.locator('main')).toContainText(users[0].username);await expect(page.locator('#achievementText')).not.toBeEmpty();await expect(page.locator('#achievementBadges').locator('*').first()).toBeVisible();
+  await page.goto('/profile');await expect(page.locator('main')).toContainText(users[0].username);const earned=await page.evaluate(()=>AutoType.unlockedAchievements().map(a=>a.name));await expect(page.locator('#achievementText')).toContainText(earned.length+' / ');await expect(page.locator('#achievementBadges .badge')).toHaveCount(earned.length);for(const name of earned)await expect(page.locator('#achievementBadges').getByRole('img',{name,exact:true})).toBeVisible();
   const wallet=await page.evaluate(()=>AutoType.currentAccount().wallet.coins);expect(wallet).toBe(Number((await db.query('select coins from wallets where user_id=$1',[users[0].id])).rows[0].coins));
   await page.goto('/leaderboard');await expect(page.locator('main')).toContainText(users[0].username);
   await page.evaluate(()=>AutoTypeBackend.signOut());await page.reload();await expect.poll(()=>page.evaluate(()=>AutoType.currentAccount())).toBeNull();expect(errors).toEqual([]);

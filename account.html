@@ -81,15 +81,15 @@
         <div class="form-group"><label class="label" for="loginIdentity">Email</label><input class="input" id="loginIdentity" type="email" autocomplete="email"></div>
         <div class="form-group"><label class="label" for="loginPassword">Password</label><input class="input" id="loginPassword" type="password" autocomplete="current-password"></div>
         <div class="row-wrap">
-          <button class="button button-primary" id="loginButton">Sign in</button>
-          <button class="button button-quiet" id="forgotPasswordButton" type="button">Forgot password?</button>
+          <button class="button button-primary" id="loginButton" disabled>Sign in</button>
+          <button class="button button-quiet" id="forgotPasswordButton" disabled type="button">Forgot password?</button>
         </div>
         <div id="forgotPasswordPanel" hidden style="margin-top:16px">
           <div class="divider"></div>
           <h3 class="section-title">Reset your password</h3>
           <p class="help">Enter the email on your AutoType account. We’ll send a secure recovery link.</p>
           <div class="form-group"><label class="label" for="resetEmail">Email</label><input class="input" id="resetEmail" type="email" autocomplete="email"></div>
-          <button class="button button-primary" id="sendResetButton" type="button">Send recovery email</button>
+          <button class="button button-primary" id="sendResetButton" disabled type="button">Send recovery email</button>
         </div>
       </div>
       <div id="createPanel" hidden>
@@ -108,7 +108,7 @@
           </div>
         </div>
         <div class="form-group"><label class="label" for="createPasswordConfirm">Confirm password</label><input class="input" id="createPasswordConfirm" type="password" autocomplete="new-password"></div>
-        <button class="button button-primary" id="createButton">Create account</button>
+        <button class="button button-primary" id="createButton" disabled>Create account</button>
       </div>
       <div id="recoveryPanel" hidden>
         <span class="section-kicker">PASSWORD RECOVERY</span>
@@ -127,7 +127,7 @@
           <label class="label" for="recoveryPasswordConfirm">Confirm new password</label>
           <input class="input" id="recoveryPasswordConfirm" type="password" autocomplete="new-password">
         </div>
-        <button class="button button-primary" id="finishRecoveryButton" type="button">Set new password</button>
+        <button class="button button-primary" id="finishRecoveryButton" disabled type="button">Set new password</button>
       </div>
       <div class="security-note">Your password is protected separately from your game profile and inventory.</div>
     </section>
@@ -203,6 +203,9 @@ document.addEventListener("DOMContentLoaded",async()=>{
     finally{$("#sendResetButton").disabled=false}
   });
 
+  $("#forgotPasswordButton").disabled=false;
+  $("#sendResetButton").disabled=false;
+
   const params=new URLSearchParams(location.search);
   const recovery=params.get("reset")==="1";
   if(recovery){
@@ -251,6 +254,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
         $("#finishRecoveryButton").disabled=false;
       }
     });
+    $("#finishRecoveryButton").disabled=!recoverySession;
     return;
   }
 
@@ -340,6 +344,8 @@ document.addEventListener("DOMContentLoaded",async()=>{
       $("#createButton").disabled=false;
     }
   });
+  $("#loginButton").disabled=false;
+  $("#createButton").disabled=false;
 });
 </script>
 

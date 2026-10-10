@@ -210,6 +210,14 @@ document.addEventListener("DOMContentLoaded",async()=>{
   const showcaseContainer=document.querySelector("#showcaseOptions");
   const chosenShowcase=new Set(a?.showcaseAchievements||[]);
   const earned=AutoType.unlockedAchievements(p);
+  $("achievementBadges").replaceChildren(...earned.map(achievement=>{
+    const badge=document.createElement("span");badge.className="badge";
+    badge.textContent=achievement.icon;badge.title=achievement.name;
+    badge.setAttribute("role","img");badge.setAttribute("aria-label",achievement.name);
+    return badge;
+  }));
+  $("achievementText").textContent=`${earned.length} / ${AutoType.achievementDefs.length} achievements unlocked`;
+
   if(!earned.length){
     const label=document.createElement("p");label.className="help";label.textContent="Unlock achievements while playing to showcase them here.";
     showcaseContainer.appendChild(label);

@@ -24,6 +24,7 @@ test('navigation and mode links, account menu keyboard focus and axe serious fin
  const modes=await page.locator('.mode-tile').evaluateAll(xs=>xs.map(x=>x.getAttribute('href')));expect(modes.length).toBe(6);
  await page.locator('#accountMenuButton').click();await expect(page.locator('#accountMenuButton')).toHaveAttribute('aria-expanded','true');
  await page.keyboard.press('Escape');await expect(page.locator('#accountMenuButton')).toHaveAttribute('aria-expanded','false');
+ await page.goto('/');await page.evaluate(()=>AutoType.patchCurrentSettings({backgroundColor:'#ffffff'}));await expect(page.locator('body')).toHaveClass(/theme-light/);const preview=await new AxeBuilder({page}).include('.home-game-preview').withTags(['wcag2a','wcag2aa']).analyze();expect(preview.violations.filter(v=>['serious','critical'].includes(v.impact))).toEqual([]);await page.evaluate(()=>AutoType.patchCurrentSettings({backgroundColor:'#1f2328'}));
  const findings=[];for(const route of ['/','/play','/account']){await page.goto(route);if(route==='/account')await expect(page.locator('.toast')).toHaveCSS('opacity','1');const result=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa']).analyze();findings.push(...result.violations.filter(v=>['serious','critical'].includes(v.impact)).map(v=>({route,id:v.id,nodes:v.nodes.map(n=>({target:n.target,reason:n.failureSummary}))})))}expect(findings).toEqual([]);
 });
 test('PWA worker activates, replaces legacy cache, clean deep link and manifest',async({page})=>{
