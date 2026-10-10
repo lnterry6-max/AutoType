@@ -107,6 +107,20 @@ test('practice modes and forged/foreign/expired challenges cannot mint rewards',
  const ch=await challenge(user),p=payload(ch);await game(B,'round_complete',p,400);await game(user,'round_complete',{...p,score:999999},400);
  await db.query("update round_challenges set expires_at=now()-interval '1 second' where id=$1",[ch.challenge_id]);await game(user,'round_complete',p,400);assert.deepEqual(await snapshot(user.id),original);
 });
+test('live leaderboard and core XP/level calculations agree with real saved progression',async()=>{
+ const user=await account(),ch=await challenge(user),p=payload(ch);await game(user,'round_complete',p);
+ const browser={AUTOTYPE_SUPABASE:{url,publishableKey:status.ANON_KEY},supabase:{createClient:()=>user.api}};
+ vm.runInNewContext(fs.readFileSync(path.join(root,'backend.js'),'utf8'),{window:browser,console});
+ const row=(await browser.AutoTypeBackend.leaderboard(100)).find(x=>x.user_id===user.id);assert.ok(row);
+ const saved=await snapshot(user.id),awards=(await db.query('select achievement_id from user_achievements where user_id=$1',[user.id])).rows;
+ assert.equal(row.words,Number(saved.stats.words));assert.equal(row.rounds,Number(saved.stats.rounds));assert.equal(row.best_streak,Number(saved.stats.best_streak));assert.equal(Object.keys(row.achievements).length,awards.length);
+ const core=fs.readFileSync(path.join(root,'core.js'),'utf8'),defs=core.match(/const achievementDefs = (\[[\s\S]*?\n  \]);/)[1];
+ const xp=core.match(/function totalXP\([\s\S]*?\n  \}/)[0],level=core.match(/function levelInfo\([\s\S]*?\n  \}/)[0],context={};
+ vm.runInNewContext('const achievementDefs='+defs+';'+xp+';'+level+';globalThis.calculate=levelInfo;',context);
+ const info=context.calculate({words:row.words,rounds:row.rounds,bestStreak:row.best_streak,achievements:row.achievements});
+ const expected=Number(saved.stats.words)*10+Number(saved.stats.rounds)*50+Number(saved.stats.best_streak)*20+awards.length*200;
+ assert.equal(info.xp,expected);assert.equal(info.level,Math.floor(expected/500)+1);assert.ok(info.xp>0);
+});
 test('two-account friendship and chat use real gateway and enforce outsider denial',async()=>{
  await game(A,'chat_send',{friendId:B.id,message:'Before friendship'},400);
  const request=await game(A,'send_friend_request',{username:B.username});
