@@ -111,6 +111,7 @@ jobs:
         timeout-minutes: 12
         run: python3 scripts/fullstack/start.py
       - name: Block external networking after dependency warm-up
+        id: fullstack_isolated
         run: python3 scripts/fullstack/isolate.py
       - name: Test synthetic upgrade and real Auth RLS gameplay Storage Realtime Functions
         timeout-minutes: 5
@@ -119,16 +120,20 @@ jobs:
         env:
           AUTOTYPE_STACK_SCENARIO: upgrade
       - name: Reset only disposable local stack for fresh-install validation
+        id: fullstack_reset
+        if: ${{ !cancelled() && steps.fullstack_isolated.outcome == 'success' }}
         run: |
           python3 -c 'import os,pathlib,shutil; target=pathlib.Path(os.environ["AUTOTYPE_STACK_DIR"])/"supabase/migrations"; [shutil.copy(p,target/p.name) for p in pathlib.Path("supabase/migrations").glob("*.sql") if "_phase1_" in p.name]'
           supabase db reset --local --workdir "$AUTOTYPE_STACK_DIR" --no-seed
       - name: Repeat integration matrix on fresh installation
+        if: ${{ !cancelled() && steps.fullstack_reset.outcome == 'success' }}
         timeout-minutes: 5
         run: >-
           sudo -u autotype_ci -- env "PATH=$PATH" GITHUB_ACTIONS=true "RUNNER_TEMP=$RUNNER_TEMP" "AUTOTYPE_CI_RUN_ID=$AUTOTYPE_CI_RUN_ID" "AUTOTYPE_STACK_DIR=$AUTOTYPE_STACK_DIR" "AUTOTYPE_STACK_SCENARIO=$AUTOTYPE_STACK_SCENARIO" node --require ./scripts/fullstack/network-guard.cjs --test --test-concurrency=1 scripts/fullstack-phase1.test.cjs
         env:
           AUTOTYPE_STACK_SCENARIO: fresh
       - name: Run 15 real multi-connection scenarios on the actual Supabase PostgreSQL 17 database
+        if: ${{ !cancelled() && steps.fullstack_reset.outcome == 'success' }}
         run: >-
           sudo -u autotype_ci -- env "PATH=$PATH" GITHUB_ACTIONS=true "RUNNER_TEMP=$RUNNER_TEMP" "AUTOTYPE_CI_RUN_ID=$AUTOTYPE_CI_RUN_ID" "AUTOTYPE_STACK_DIR=$AUTOTYPE_STACK_DIR" python3 scripts/test_phase1_fullstack_native.py
       - name: Stop and remove only this disposable fixture stack

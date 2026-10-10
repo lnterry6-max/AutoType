@@ -24,8 +24,12 @@ async function snapshot(id){return (await db.query("select jsonb_build_object('s
 async function challenge(user,mode='classic',tournamentId){const ch=await game(user,'start_round',{mode,tournamentId});await db.query("update round_challenges set issued_at=now()-interval '20 seconds' where id=$1",[ch.challenge_id]);return ch;}
 function payload(ch){const words=ch.target_text.trim().split(/\s+/).length,score=words*20+Array.from({length:words},(_,i)=>Math.min(i*5,30)).reduce((a,b)=>a+b,0);return {challengeId:ch.challenge_id,roundId:randomUUID(),mode:ch.mode,score,words,erased:0,maxStreak:words,totalKeys:words*8,errors:0,durationMs:5000,oneClue:false};}
 async function subscribe(api,table,filter){
- const events=[];const channel=api.channel('fixture_'+randomUUID()).on('postgres_changes',{event:'*',schema:'public',table,...(filter?{filter}:{})},event=>events.push(event));
+ const events=[],systems=[];const channel=api.channel('fixture_'+randomUUID()).on('system','*',event=>systems.push(event)).on('postgres_changes',{event:'*',schema:'public',table,...(filter?{filter}:{})},event=>events.push(event));
  await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('Realtime subscription timeout')),15000);channel.subscribe(state=>{if(state==='SUBSCRIBED'){clearTimeout(timer);resolve()}else if(['CHANNEL_ERROR','TIMED_OUT'].includes(state)){clearTimeout(timer);reject(new Error('Realtime '+state))}})});
+ // SUBSCRIBED is the WebSocket join, not proof the WAL listener is ready.
+ // https://supabase.com/docs/guides/troubleshooting/realtime-postgres-changes-troubleshooting
+ try{await eventually(()=>systems.some(event=>event.extension==='postgres_changes'&&event.status==='ok'),15000)}
+ catch(error){console.log('Realtime readiness diagnostics',JSON.stringify(systems));throw error}
  return {events,channel};
 }
 async function eventually(fn,timeout=10000){const deadline=Date.now()+timeout;while(Date.now()<deadline){if(await fn())return;await new Promise(r=>setTimeout(r,100))}throw new Error('Expected asynchronous state was not observed');}
@@ -131,8 +135,9 @@ test('two-account friendship and chat use real gateway and enforce outsider deni
  const history=await game(B,'chat_history',{friendId:A.id});assert.ok(JSON.stringify(history).includes('Synthetic hello'));
  await game(C,'chat_history',{friendId:A.id},400);
 });
-test('Realtime gives two race participants updates while withholding private race from outsider',{timeout:40000},async()=>{
+test('Realtime gives two race participants updates while withholding private race from outsider',{timeout:90000},async()=>{
  const room=await game(A,'create_race',{friendId:B.id});
+ for(const user of [A,B]){const visible=await user.api.from('race_rooms').select('*').eq('id',room.id);assert.equal(visible.error,null);assert.equal(visible.data.length,1);}
  const a=await subscribe(A.api,'race_rooms','id=eq.'+room.id),b=await subscribe(B.api,'race_rooms','id=eq.'+room.id),c=await subscribe(C.api,'race_rooms','id=eq.'+room.id);
  try{
   const hidden=await C.api.from('race_rooms').select('*').eq('id',room.id);assert.equal(hidden.error,null);assert.equal(hidden.data.length,0);
