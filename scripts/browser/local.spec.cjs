@@ -19,6 +19,7 @@ for(const mode of ['classic','context','sentence','evil','daily','custom'])test(
  await page.keyboard.press('Space');await expect(page.locator('#guess')).toHaveText('DONE');
 });
 test('navigation and mode links, account menu keyboard focus and axe serious findings',async({page})=>{
+ await page.goto('/account');await expect(page.getByLabel('Email',{exact:true})).toHaveAttribute('id','loginIdentity');await page.getByLabel('Password',{exact:true}).click();await expect(page.locator('#loginPassword')).toBeFocused();
  await page.goto('/');await page.getByRole('link',{name:'Play',exact:true}).first().click();await expect(page).toHaveURL(/\/play$/);
  const modes=await page.locator('.mode-tile').evaluateAll(xs=>xs.map(x=>x.getAttribute('href')));expect(modes.length).toBe(6);
  await page.locator('#accountMenuButton').click();await expect(page.locator('#accountMenuButton')).toHaveAttribute('aria-expanded','true');

@@ -6,7 +6,7 @@ test.describe('real disposable Auth and gameplay browser integration',()=>{
  test.skip(!enabled,'Requires the isolated GitHub Actions PostgreSQL 17 stack');
  test.beforeAll(async()=>{
   runtime=require('../fullstack/runtime.cjs');db=await runtime.database();
-  for(let i=0;i<3;i++){
+  for(let i=0;i<5;i++){
    const username='browser_'+randomUUID().replaceAll('-','').slice(0,12),email=username+'@example.invalid',password=randomUUID()+'!Aa1';
    const {data,error}=await runtime.admin.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{username}});expect(error).toBeNull();users.push({id:data.user.id,username,email,password});
   }
@@ -34,12 +34,12 @@ test.describe('real disposable Auth and gameplay browser integration',()=>{
  test('two browser accounts match, finish, duplicate receipt and reconnect without reward',async({browser})=>{
   const ca=await browser.newContext(),cb=await browser.newContext();const a=await ca.newPage(),b=await cb.newPage();
   try{
-   await login(a,users[0]);await login(b,users[1]);await a.goto('/play');await b.goto('/play');
+   await login(a,users[3]);await login(b,users[4]);await a.goto('/play');await b.goto('/play');
    await a.locator('#quickMatchButton').click();await b.locator('#quickMatchButton').click();
    await expect(a).toHaveURL(/race=/,{timeout:20000});await expect(b).toHaveURL(/race=/,{timeout:20000});
    const raceId=new URL(a.url()).searchParams.get('race');expect(new URL(b.url()).searchParams.get('race')).toBe(raceId);
    await finish(a);await finish(b);
-   const saved=(await db.query('select score,duration_ms,errors,erased from race_players where race_id=$1 and user_id=$2',[raceId,users[0].id])).rows[0];
+   const saved=(await db.query('select score,duration_ms,errors,erased from race_players where race_id=$1 and user_id=$2',[raceId,users[3].id])).rows[0];
    const duplicate=await a.evaluate(async({raceId,saved})=>AutoTypeBackend.submitRaceResult(raceId,{score:saved.score,durationMs:saved.duration_ms,errors:saved.errors,erased:saved.erased}),{raceId,saved});expect(duplicate.duplicate).toBe(true);
    await ca.setOffline(true);await ca.setOffline(false);await a.reload();await expect(a.locator('#results')).toBeVisible();await expect(a.locator('#mobileGameControls')).toBeHidden();
   }finally{await ca.close();await cb.close()}
