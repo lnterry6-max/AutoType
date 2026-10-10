@@ -1,7 +1,7 @@
 'use strict';
 const {test,before,after}=require('node:test'),assert=require('node:assert/strict');
-const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),{randomUUID}=require('node:crypto');
-const {status,url,admin,client,database}=require('./fullstack/runtime.cjs');
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),{randomUUID,createHmac,createPrivateKey,sign:cryptoSign,verify:cryptoVerify}=require('node:crypto');
+const {status,url,dir,admin,client,database}=require('./fullstack/runtime.cjs');
 const root=path.resolve(__dirname,'..');let db,A,B,C,staff;const clients=[];
 async function account(developer=false){
  const username='fixture_'+randomUUID().replaceAll('-','').slice(0,12),password=randomUUID()+'!aA1';
@@ -11,7 +11,8 @@ async function account(developer=false){
  if(developer)await db.query("update user_roles set role='developer' where user_id=$1",[data.user.id]);
  const auth=client();clients.push(auth);
  const login=await auth.auth.signInWithPassword({email,password});assert.equal(login.error,null);
- const token=login.data.session.access_token;const api=client(status.ANON_KEY,token);clients.push(api);
+ // Use the actual signed-in session for REST, Storage and Realtime alike.
+ const token=login.data.session.access_token;const api=auth;
  return {id:data.user.id,username,email,password,token,auth,api};
 }
 async function game(user,action,payload={},expected=200){
@@ -182,4 +183,40 @@ test('signed synthetic Stripe handler drives actual PostgREST reconciliation wit
  assert.equal((await db.query("select count(*)::int as n from economy_transactions where user_id=$1 and kind='stripe_coin_purchase'",[user.id])).rows[0].n,1);
  assert.equal((await db.query("select count(*)::int as n from stripe_event_inbox where payment_intent=$1 and state<>'applied'",[intent])).rows[0].n,0);
  const invalid=await handler(new Request(url,{method:'POST',headers:{'stripe-signature':'invalid'},body:'{}'}));assert.equal(invalid.status,400);
+});
+
+
+test('validly signed expired JWT is rejected by actual Auth and Edge gateway',async()=>{
+ const [header,body,signature]=A.token.split('.'),algorithm=JSON.parse(Buffer.from(header,'base64url'));
+ let sign;
+ if(algorithm.alg==='HS256'){
+  sign=value=>createHmac('sha256',status.JWT_SECRET).update(value).digest('base64url');
+  assert.equal(sign(header+'.'+body),signature,'Fixture signing secret matches the real Auth issuer');
+ }else{
+  assert.ok(['ES256','RS256'].includes(algorithm.alg));
+  const jwk=status.CI_AUTH_SIGNING_KEYS.find(key=>key.kid===algorithm.kid);assert.ok(jwk?.d,'Private key belongs only to disposable issuer');
+  const key=createPrivateKey({key:jwk,format:'jwk'}),options=algorithm.alg==='ES256'?{key,dsaEncoding:'ieee-p1363'}:{key};
+  assert.ok(cryptoVerify('sha256',Buffer.from(header+'.'+body),options,Buffer.from(signature,'base64url')));
+  sign=value=>cryptoSign('sha256',Buffer.from(value),options).toString('base64url');
+ }
+ const claims=JSON.parse(Buffer.from(body,'base64url'));claims.exp=Math.floor(Date.now()/1000)-60;
+ const expiredBody=Buffer.from(JSON.stringify(claims)).toString('base64url'),expired=header+'.'+expiredBody+'.'+sign(header+'.'+expiredBody);
+ assert.ok((await A.auth.auth.getUser(expired)).error);
+ await game({...A,token:expired},'start_round',{mode:'classic'},401);
+});
+test('actual Edge webhook validates signed simulated Checkout events and denies live/invalid signatures',async()=>{
+ const Stripe=require('stripe'),signer=new Stripe('sk_test_fixture'),secret=JSON.parse(fs.readFileSync(path.join(dir,'stripe_fixture.json'),'utf8')).webhook_secret;
+ const user=await account(),order=await rpc('autotype_create_payment_order',[user.id,'coins_500']),session='cs_test_'+randomUUID(),intent='pi_fixture_'+randomUUID();
+ await rpc('autotype_attach_checkout_session',[order.order_id,user.id,session]);
+ const object={id:session,payment_status:'paid',payment_intent:intent,amount_total:99,currency:'usd',metadata:{order_id:order.order_id,user_id:user.id,pack_id:'coins_500'}};
+ async function send(id,livemode=false,invalid=false){
+  const body=JSON.stringify({id,type:'checkout.session.completed',livemode,data:{object}}),header=invalid?'invalid':signer.webhooks.generateTestHeaderString({payload:body,secret});
+  return fetch(url+'/functions/v1/stripe-webhook',{method:'POST',headers:{'Content-Type':'application/json','stripe-signature':header},body});
+ }
+ const event='evt_fixture_'+randomUUID(),outcomes=await Promise.all([send(event),send(event)]);
+ for(const response of outcomes)assert.equal(response.status,200,await response.clone().text());
+ assert.equal(Number((await snapshot(user.id)).wallet.coins),1000);
+ assert.equal((await db.query("select count(*)::int as n from economy_transactions where user_id=$1 and kind='stripe_coin_purchase'",[user.id])).rows[0].n,1);
+ const live='evt_live_fixture_'+randomUUID();assert.equal((await send(live,true)).status,400);assert.equal((await send('evt_invalid_fixture',false,true)).status,400);
+ assert.equal((await db.query('select count(*)::int as n from stripe_event_inbox where event_id=$1',[live])).rows[0].n,0);
 });

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Prepare ONLY a fresh runner-local stack; never link or accept hosted config."""
 import os
+import json
+import secrets
 from pathlib import Path
 import shutil
 import tempfile
@@ -13,7 +15,14 @@ target = Path(tempfile.mkdtemp(prefix="autotype-fullstack-", dir=os.environ["RUN
 supa = target / "supabase"
 (supa / "migrations").mkdir(parents=True)
 config = (root / "scripts/fullstack/config.toml").read_text() + "\n" + (root / "supabase/config.toml").read_text()
+# A fake key is not a Stripe credential. Only signed synthetic Checkout events
+# are exercised by the actual Edge worker; outbound service traffic is blocked.
+webhook = "whsec_ci_" + secrets.token_hex(32)
+config += '\n[edge_runtime.secrets]\nSTRIPE_SECRET_KEY="sk_test_fixture"\nSTRIPE_WEBHOOK_SECRET="' + webhook + '"\n'
 (supa / "config.toml").write_text(config)
+fixture = target / "stripe_fixture.json"
+fixture.write_text(json.dumps({"webhook_secret": webhook}))
+fixture.chmod(0o600)
 shutil.copytree(root / "supabase/functions", supa / "functions")
 shutil.copy(root / "supabase/bootstrap/001_backend_foundation.sql", supa / "migrations/00000000000000_foundation.sql")
 files = sorted((root / "supabase/migrations").glob("*.sql"))

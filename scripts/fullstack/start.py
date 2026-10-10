@@ -39,9 +39,16 @@ if result.returncode:
 print(f"CLI start completed in {time.monotonic()-started:.1f}s; reading local status with a 60s bound", flush=True)
 status = json.loads(subprocess.check_output(["supabase", "status", "-o", "json"], cwd=directory, timeout=60))
 print("Local status returned; warming local function imports", flush=True)
+print("::add-mask::" + json.loads((directory / "stripe_fixture.json").read_text())["webhook_secret"], flush=True)
 for name in ("ANON_KEY", "SERVICE_ROLE_KEY", "JWT_SECRET", "DB_URL"):
     if status.get(name):
         print("::add-mask::" + status[name], flush=True)
+# Capture only this freshly created fixture issuer's keys for the expired-JWT test.
+# Never inspect a hosted service or print the private key material.
+local_env = json.loads(subprocess.check_output(["docker", "inspect", "--format", "{{json .Config.Env}}", "supabase_auth_autotype-phase1-ci"], timeout=15))
+keys = next(value.split("=", 1)[1] for value in local_env if value.startswith("GOTRUE_JWT_KEYS="))
+status["CI_AUTH_SIGNING_KEYS"] = json.loads(keys)
+print("::add-mask::" + keys, flush=True)
 file = directory / "status.json"
 file.write_text(json.dumps(status))
 file.chmod(0o600)
