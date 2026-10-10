@@ -134,6 +134,7 @@ class Cluster:
 
 
 FIXTURE_SCHEMAS = """
+create role postgres superuser;
 create role anon; create role authenticated; create role service_role bypassrls;
 create schema auth; create schema storage; create schema extensions;
 set search_path=public,extensions;
@@ -164,7 +165,10 @@ class NativeConcurrency(unittest.TestCase):
         cls.db.query(FIXTURE_SCHEMAS)
         cls.db.query((ROOT / "supabase/bootstrap/001_backend_foundation.sql").read_text())
         for migration in sorted((ROOT / "supabase/migrations").glob("*.sql")):
-            cls.db.query(migration.read_text())
+            try:
+                cls.db.query(migration.read_text())
+            except DatabaseError as error:
+                raise RuntimeError(f"Migration {migration.name}: {error}") from error
             print(f"Applied {migration.name}", flush=True)
         print("Native server:", cls.db.query("select version() as version")[0]["version"], flush=True)
         assert cls.db.query("show listen_addresses")[0]["listen_addresses"] == ""
