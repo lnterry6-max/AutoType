@@ -67,6 +67,27 @@ jobs:
           sudo unshare --net -- sudo -u "$(id -un)" -- env "PATH=$PATH"
           python3 scripts/test_phase1_native.py --pg-bin /usr/lib/postgresql/16/bin
 
+  phase1-browser:
+    name: Phase 1 Chromium browser regressions
+    if: github.event_name == 'pull_request' && github.base_ref == 'beta-friends' && github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+      - run: npm ci
+        env:
+          NPM_CONFIG_IGNORE_SCRIPTS: "true"
+      - name: Install Chromium only on the disposable public runner
+        run: npx playwright install --with-deps chromium
+      - name: Run browser fixtures in loopback-only network namespace
+        run: >-
+          sudo unshare --net -- sh -c 'ip link set lo up; exec sudo -u "$1" -- env "PATH=$2" "AUTOTYPE_BROWSER_OUTPUT=$3/browser-results" npm run test:browser' -- "$(id -un)" "$PATH" "$RUNNER_TEMP"
+
   phase1-fullstack:
     name: Phase 1 full Supabase PostgreSQL 17 integration
     if: >-
@@ -110,6 +131,8 @@ jobs:
       - name: Start actual PostgreSQL 17 and all required Supabase services
         timeout-minutes: 12
         run: python3 scripts/fullstack/start.py
+      - name: Install Chromium before isolation on disposable runner
+        run: PLAYWRIGHT_BROWSERS_PATH="$RUNNER_TEMP/browser-binaries" npx playwright install --with-deps chromium
       - name: Block external networking after dependency warm-up
         id: fullstack_isolated
         run: python3 scripts/fullstack/isolate.py
@@ -132,6 +155,12 @@ jobs:
           sudo -u autotype_ci -- env "PATH=$PATH" GITHUB_ACTIONS=true "RUNNER_TEMP=$RUNNER_TEMP" "AUTOTYPE_CI_RUN_ID=$AUTOTYPE_CI_RUN_ID" "AUTOTYPE_STACK_DIR=$AUTOTYPE_STACK_DIR" "AUTOTYPE_STACK_SCENARIO=$AUTOTYPE_STACK_SCENARIO" node --require ./scripts/fullstack/network-guard.cjs --test --test-concurrency=1 scripts/fullstack-phase1.test.cjs
         env:
           AUTOTYPE_STACK_SCENARIO: fresh
+      - name: Browser UI against real disposable Auth and PostgreSQL 17
+        if: ${{ !cancelled() && steps.fullstack_reset.outcome == 'success' }}
+        timeout-minutes: 6
+        run: |
+          sudo install -d -o autotype_ci -g "$(id -gn)" "$RUNNER_TEMP/browser-results-stack"
+          sudo -u autotype_ci -- env "PATH=$PATH" GITHUB_ACTIONS=true "RUNNER_TEMP=$RUNNER_TEMP" "AUTOTYPE_CI_RUN_ID=$AUTOTYPE_CI_RUN_ID" "AUTOTYPE_STACK_DIR=$AUTOTYPE_STACK_DIR" AUTOTYPE_BROWSER_STACK=true "AUTOTYPE_BROWSER_OUTPUT=$RUNNER_TEMP/browser-results-stack" "PLAYWRIGHT_BROWSERS_PATH=$RUNNER_TEMP/browser-binaries" npm run test:browser -- stack.spec.cjs
       - name: Run 15 real multi-connection scenarios on the actual Supabase PostgreSQL 17 database
         if: ${{ !cancelled() && steps.fullstack_reset.outcome == 'success' }}
         run: >-

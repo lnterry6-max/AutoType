@@ -1,0 +1,2 @@
+const {defineConfig}=require('@playwright/test');
+module.exports=defineConfig({testDir:__dirname,testMatch:'*.spec.cjs',workers:1,retries:0,timeout:90000,reporter:'line',outputDir:process.env.AUTOTYPE_BROWSER_OUTPUT||'/private/tmp/autotype-browser-results',use:{baseURL:'http://127.0.0.1:4173',headless:true,trace:'off',screenshot:'off',video:'off'},webServer:{command:'node server.cjs',url:'http://127.0.0.1:4173',reuseExistingServer:false,timeout:20000}});

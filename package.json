@@ -2,10 +2,13 @@
   "name": "autotype-development-tests",
   "private": true,
   "scripts": {
-    "test:phase1": "node scripts/test-phase1-isolation.cjs && node --require ./scripts/phase1-network-guard.cjs --test scripts/phase1-*.test.cjs"
+    "test:phase1": "node scripts/test-phase1-isolation.cjs && node --require ./scripts/phase1-network-guard.cjs --test scripts/phase1-*.test.cjs",
+    "test:browser": "playwright test --config scripts/browser/config.cjs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@electric-sql/pglite": "0.5.8",
+    "@playwright/test": "1.64.0",
     "@supabase/supabase-js": "2.117.3",
     "pg": "8.23.1",
     "stripe": "22.6.2",
