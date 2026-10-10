@@ -18,7 +18,7 @@ assert.ok(backend.includes("auth.updateUser({data:{autotype_onboarding_pending:f
 assert.equal(account.split("AutoTypeBackend.postSignInDestination(").length-1,3, "Login, immediate signup, and existing session each need routing");
 assert.ok(account.includes("postSignInDestination(login.user)"));
 assert.ok(account.includes("postSignInDestination(data.user)"));
-assert.ok(account.includes("backend.js?v=20261008-first-login-v1"), "Auth page must load fresh onboarding logic");
+assert.ok(account.includes("backend.js?v=20261009-phase1-v1"), "Auth page must load fresh onboarding logic");
 assert.match(howto, /id="try-it"/);
 assert.match(howto, /id="tutorialStage"/);
 assert.match(howto, /how-to-tutorial\.js/);

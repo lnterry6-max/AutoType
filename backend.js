@@ -561,6 +561,10 @@
     };
   }
 
+  function currentTournamentEntries(tournaments,entries){
+    const runs=new Map((tournaments||[]).map(t=>[t.id,t.run_id]));
+    return (entries||[]).filter(e=>runs.has(e.tournament_id)&&runs.get(e.tournament_id)===e.run_id);
+  }
   async function tournamentsSnapshot(){
     const db=getClient();
     if(!db)return {tournaments:[],entries:[],profiles:[]};
@@ -580,7 +584,7 @@
       profiles=data||[];
     }
 
-    return {tournaments:tournaments||[],entries:entries||[],profiles};
+    return {tournaments:tournaments||[],entries:currentTournamentEntries(tournaments,entries),profiles};
   }
 
   async function predictionsSnapshot(){
@@ -736,6 +740,7 @@
   async function adminResetPlayer(userId){return api("admin_reset_player",{userId})}
   async function adminSnapshot(){
     const snapshot=await api("admin_snapshot",{});
+    if(snapshot?.tournaments&&snapshot?.entries)snapshot.entries=currentTournamentEntries(snapshot.tournaments,snapshot.entries);
     if(snapshot?.role!=="developer")return snapshot;
     const db=getClient();
     if(!db)throw new Error("Cannot read player achievements.");

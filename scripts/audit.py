@@ -351,7 +351,7 @@ def main() -> int:
             if 'id="developerPanel"' in text:
                 fail("Developer controls must live in Admin Console, not Profile", issues)
         if page.name == "admin.html":
-            if 'backend.js?v=20261008-beta-polish-v1' not in text:
+            if 'backend.js?v=20261009-phase1-v1' not in text:
                 fail("Admin level code is not cache-busted", issues)
             if 'achievements:m.achievements[profile.id]||{}' not in text:
                 fail("Admin player levels are ignoring achievements", issues)
@@ -361,7 +361,7 @@ def main() -> int:
         for path_or_script in ("styles.css", "core.js", "backend.js"):
             for match in re.finditer(re.escape(path_or_script) + r'\?v=([^"]+)', text):
                 expected = ("20261009-accessibility-v1" if path_or_script == "core.js"
-                            else "20261008-first-login-v1" if page.name == "account.html" and path_or_script == "backend.js"
+                            else "20261009-phase1-v1" if path_or_script == "backend.js"
                             else "20261008-beta-polish-v1")
                 if match.group(1) != expected:
                     fail(f"{page.name}: stale shared asset build {match.group(0)}", issues)

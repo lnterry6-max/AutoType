@@ -767,6 +767,12 @@ AutoType.ready().then(async()=>{
         newlyUnlocked=[];
         if($("verifiedResult"))$("verifiedResult").hidden=true;
         AutoType.toast(error.message||"Round finished, but the backend could not save it.");
+        if(mode==="tournament"){
+          const registrationLink=document.createElement("a");
+          registrationLink.href="tournaments.html";
+          registrationLink.textContent="Check tournament registration before starting another attempt";
+          $("results").append(registrationLink);
+        }
       }
     }else if(!npc&&!activeAccount?.online){
       const p=AutoType.currentProfile();
